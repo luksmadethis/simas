@@ -1516,6 +1516,24 @@ header.panel{margin-bottom:20px}
     db = firebase.firestore();
     db.settings({ignoreUndefinedProperties:true, merge:true});
   }catch(e){ show("vOffline"); }
+  async function trocarPinObrigatorio(){
+    let pin=null;
+    while(true){
+      pin=prompt("teu PIN foi resetado pelo organizador 🔐\nescolhe um PIN NOVO de 4 numeros (e nao esquece dessa vez porra):");
+      if(pin===null){ alert("sem PIN novo nao rola. vou perguntar de novo da proxima vez que tu abrir o site"); window.__trocandoPin=false; return; }
+      pin=pin.trim();
+      if(/^\d{4}$/.test(pin) && pin!=="1234") break;
+      alert(pin==="1234" ? "1234 nao pode, escolhe outro" : "tem que ser 4 numeros");
+    }
+    try{
+      await firebase.auth().currentUser.updatePassword(pinPass(pin));
+      await db.doc("participants/"+uid).update({trocarPin: firebase.firestore.FieldValue.delete()});
+      alert("PIN trocado ✔ agora é "+pin+". anota ai");
+    }catch(e){
+      alert("nao deu pra trocar o PIN agora ("+(e.code||e.message)+"). sai e entra de novo com o 1234 que eu pergunto de novo");
+      window.__trocandoPin=false;
+    }
+  }
   if(db) firebase.auth().onAuthStateChanged(async u=>{
     if(!u){ try{ await firebase.auth().signInAnonymously(); }catch(e){ show("vOffline"); } return; }
     if(uid) return; // já iniciado
@@ -1539,6 +1557,8 @@ header.panel{margin-bottom:20px}
       people = s.docs.map(x=>({...x.data(), _id:x.id}));
       me = people.find(p=>p._id===uid) || null;
       render(); renderFeed(); renderAdmin(); renderLate();
+      // PIN resetado pelo organizador: obriga a escolher um novo assim que entrar
+      if(me && me.trocarPin && !window.__trocandoPin){ window.__trocandoPin=true; setTimeout(trocarPinObrigatorio, 400); }
     }, ()=>{ show("vOffline"); });
   });
 })();

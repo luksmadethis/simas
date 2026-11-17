@@ -1,0 +1,33 @@
+name: resetar PIN do Fitness
+on:
+  workflow_dispatch:
+    inputs:
+      login:
+        description: login da pessoa no Fitness (ex. xavier)
+        required: true
+      pin:
+        description: PIN temporário de 4 números (a pessoa troca ao entrar)
+        required: true
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm i firebase-admin@12 --no-save --silent
+      - env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          LOGIN: ${{ inputs.login }}
+          PIN: ${{ inputs.pin }}
+        run: |
+          node -e '
+          const a = require("firebase-admin");
+          const { LOGIN, PIN } = process.env;
+          if (!/^[a-z0-9]{1,40}$/.test(LOGIN)) throw new Error("login invalido");
+          if (!/^\d{4}$/.test(PIN)) throw new Error("PIN tem que ser 4 numeros");
+          a.initializeApp({ credential: a.credential.cert(JSON.parse(process.env.SA)) });
+          (async () => {
+            const u = await a.auth().getUserByEmail(LOGIN + "@simasfitness2.app");
+            await a.auth().updateUser(u.uid, { password: "sf2-pin-" + PIN });
+            await a.firestore().doc("participants/" + u.uid).set({ trocarPin: true }, { merge: true });
+            console.log("ok", LOGIN, u.uid);
+          })().catch(e => { console.error(e.message); process.exit(1); });
+          '
