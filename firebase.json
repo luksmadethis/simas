@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "simas",
+    "site": "ofisimas",
     "public": "public",
     "ignore": ["firebase.json", "**/.*"],
     "cleanUrls": true,
