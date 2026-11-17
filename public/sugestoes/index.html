@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sugestões · Simas</title>
+<meta name="theme-color" content="#9b2bc2">
+<meta property="og:title" content="Caixinha de sugestões do Simas">
+<meta property="og:description" content="manda tua ideia ai porra">
+<meta property="og:image" content="https://ofisimas.web.app/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 6'><rect y='0' width='6' height='1' fill='%23e40303'/><rect y='1' width='6' height='1' fill='%23ff8c00'/><rect y='2' width='6' height='1' fill='%23ffed00'/><rect y='3' width='6' height='1' fill='%23008026'/><rect y='4' width='6' height='1' fill='%23004dff'/><rect y='5' width='6' height='1' fill='%23750787'/></svg>">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+  :root{--r:#e40303;--o:#ff8c00;--y:#ffed00;--g:#00a83a;--b:#2a6bff;--v:#9b2bc2;
+    --rainbow:linear-gradient(90deg,var(--r),var(--o),var(--y),var(--g),var(--b),var(--v));
+    --bg:#0d0c12;--card:#17151f;--card2:#1e1b28;--line:#2a2733;--txt:#f3f1f7;--mut:#9a95a8}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+  .flag{height:6px;background:var(--rainbow)}
+  .grad{background:var(--rainbow);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .wrap{max-width:820px;margin:0 auto;padding:28px 18px 60px}
+  h1{font-size:clamp(30px,6vw,46px);letter-spacing:-1px;line-height:1.05}
+  .sub{color:var(--mut);margin-top:8px}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-top:20px;position:relative;overflow:hidden}
+  .box.top::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:var(--rainbow)}
+  label{display:block;font-size:13px;color:var(--mut);font-weight:700;margin:10px 0 6px}
+  input,textarea{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:12px 14px;font:inherit;font-size:15px;outline:none}
+  input:focus,textarea:focus{border-color:#6b4fa0}
+  textarea{min-height:96px;resize:vertical}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+  button{font:inherit;font-weight:800;border:0;border-radius:11px;padding:11px 18px;cursor:pointer;color:#fff;background:var(--card2);border:1px solid var(--line)}
+  button:hover{filter:brightness(1.15)}
+  button:disabled{opacity:.5;cursor:default}
+  .main{background:linear-gradient(90deg,var(--r),var(--o) 25%,var(--g) 55%,var(--b) 80%,var(--v));border:0}
+  .sm{padding:6px 11px;font-size:13px;border-radius:9px}
+  .err{color:#ff6b6b;font-size:14px;min-height:20px;margin-top:8px}
+  .mut{color:var(--mut);font-size:14px}
+  .tabs{display:flex;gap:6px;margin-top:26px;flex-wrap:wrap}
+  .tabs button{padding:8px 14px;font-size:14px;color:var(--mut)}
+  .tabs button.on{color:var(--txt);background:#2a2340;border-color:#6b4fa0}
+  .sug{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:12px}
+  .sug .hd{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mut)}
+  .sug .hd b{color:var(--txt);font-size:14px}
+  .sug .tx{margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px}
+  .badge{margin-left:auto;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.5px}
+  .b-nova{background:#2a2340;color:#c9a7ff}.b-aprovada{background:#103a22;color:#5be38a}.b-feita{background:#0f2a4a;color:#7fb2ff}.b-recusada{background:#3a1212;color:#ff8a8a}
+  .vote.on{background:#2a2340;border-color:#6b4fa0}
+  .switch{display:flex;align-items:center;gap:12px;font-weight:800}
+  .sw{width:58px;height:32px;border-radius:999px;background:#3a1212;position:relative;transition:background .2s;flex:none;padding:0;border:1px solid var(--line)}
+  .sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .2s}
+  .sw.on{background:#13803a}.sw.on::after{left:29px}
+  .mem{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+  .mem:first-child{border-top:0}
+  .mem span{flex:1;overflow:hidden;text-overflow:ellipsis}
+  .closed{background:#2a1416;border:1px solid #5a2328;color:#ffb3b3;border-radius:14px;padding:14px;margin-top:20px;font-weight:700}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="flag"></div>
+<nav class="snav"><a class="snav-logo" href="/" aria-label="Simas, voltar pra home"><b style="color:#e40303">S</b><b style="color:#ff8c00">i</b><b style="color:#ffed00">m</b><b style="color:#00c13a">a</b><b style="color:#2a6bff">s</b></a><div class="snav-links"><a href="/">🏠 Home</a><a href="/simastelas/">📺 SimasTelas</a><a href="/simasfitness/">💪 Fitness</a><a href="/sugestoes/" class="on">💡 Sugestões</a></div></nav>
+<style>
+.snav{flex:none;position:relative;z-index:70;display:flex;align-items:center;gap:14px;height:44px;padding:0 14px;background:#0d0c12;border-bottom:1px solid #2a2733;font:600 14px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#f3f1f7;box-sizing:border-box}
+.snav *{box-sizing:border-box;margin:0}
+.snav a{color:inherit;text-decoration:none}
+.snav-logo{font-weight:900;font-size:20px;letter-spacing:-.3px}
+.snav-logo b{font-weight:900}
+.snav-links{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+.snav-links a{padding:7px 11px;border-radius:9px;color:#9a95a8;white-space:nowrap}
+.snav-links a:hover{background:#17151f;color:#f3f1f7}
+.snav-links a.on{background:#1e1b28;color:#f3f1f7;box-shadow:inset 0 -2px 0 #9b2bc2}
+@media(max-width:520px){.snav{gap:8px;padding:0 8px}.snav-logo{font-size:18px}.snav-links a{padding:7px 8px;font-size:13px}}
+</style>
+<div class="wrap">
+  <h1>caixinha de <span class="grad">sugestões</span></h1>
+  <p class="sub">manda tua ideia pro site ai porra. a galera vota, quem manda aprova e ai alguem faz. ideia de merda vai ser recusada sem do</p>
+
+  <div id="loading" class="box mut">carregando essa porra…</div>
+
+  <!-- entrar com a senha do grupo -->
+  <div id="vEntrar" class="box top" hidden>
+    <b>so entra quem é da quadrilha</b>
+    <p class="mut">pede a senha pro luketa no grupo</p>
+    <label for="eNome">teu nick</label>
+    <input id="eNome" maxlength="40" placeholder="ex: Xavier">
+    <label for="eSenha">senha do grupo</label>
+    <input id="eSenha" type="password" autocomplete="off">
+    <div class="row"><button class="main" id="eBtn">entrar</button></div>
+    <div class="err" id="eErr"></div>
+  </div>
+
+  <div id="vFechado" class="closed" hidden>🔒 a caixinha ta FECHADA pelo luketa. da pra ver as sugestões mas nao da pra mandar nem votar</div>
+
+  <!-- mandar sugestão -->
+  <div id="vMandar" class="box top" hidden>
+    <b>manda ai, <span id="mNome"></span></b>
+    <label for="sTexto">tua sugestão (o que mudar, colocar ou tirar do site)</label>
+    <textarea id="sTexto" maxlength="800" placeholder="ex: bota a foto do cha de bebe na home"></textarea>
+    <div class="row"><button class="main" id="sBtn">mandar</button><span class="mut" id="sCount">0/800</span></div>
+    <div class="err" id="sErr"></div>
+  </div>
+
+  <!-- painel do organizador -->
+  <div id="vAdmin" class="box top" hidden>
+    <b>👑 painel do chefe</b>
+    <p class="mut">so tu ve isso</p>
+    <div class="row switch"><button class="sw" id="swAberto" aria-label="Abrir ou fechar a caixinha"></button><span id="swTxt">…</span></div>
+    <label for="aSenha">senha do grupo</label>
+    <div class="row" style="margin-top:0"><input id="aSenha" style="flex:1;min-width:160px" autocomplete="off" placeholder="cria uma senha"><button id="aSenhaBtn">salvar senha</button></div>
+    <p class="mut" style="margin-top:6px">trocar a senha nao expulsa quem ja entrou. pra expulsar alguem usa o botao abaixo</p>
+    <label>quem ta dentro</label>
+    <div id="aMembros" class="mut">…</div>
+    <div class="err" id="aErr"></div>
+  </div>
+
+  <p id="vModLogin" class="mut" style="margin-top:14px" hidden>é o luketa ou aprovador? <a href="/simasfitness/" style="color:#c9a7ff">entra na tua conta do Fitness</a> e volta aqui pra moderar</p>
+
+  <div id="vLista" hidden>
+    <div class="tabs" id="tabs"></div>
+    <div id="lista"></div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyA0G_qSK5eEVzGnLskGS8leXCwC7XNzK0A",
+  authDomain: "simasfitness2.firebaseapp.com",
+  projectId: "simasfitness2",
+  storageBucket: "simasfitness2.firebasestorage.app",
+  messagingSenderId: "1068623437415",
+  appId: "1:1068623437415:web:63ccdb065e991452563ec2"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth(), db = firebase.firestore(), FV = firebase.firestore.FieldValue;
+const $ = id => document.getElementById(id);
+const show = (id, on) => { $(id).hidden = !on; };
+
+let uid = null, eu = null, cfg = { aberto: false, aprovadores: [] }, admin = false, sugs = [], aba = 'nova', unsubs = [];
+const STATUS = [['nova','🆕 novas'],['aprovada','✅ aprovadas'],['feita','🚀 feitas'],['recusada','🗑️ recusadas']];
+const aprov = () => admin || (uid && (cfg.aprovadores || []).includes(uid));
+
+auth.onAuthStateChanged(async u => {
+  unsubs.forEach(f => f()); unsubs = [];
+  if (!u) { try { await auth.signInAnonymously(); } catch (e) { $('loading').textContent = 'deu pau pra conectar, recarrega a pagina'; } return; }
+  uid = u.uid;
+  admin = await db.doc('segredo/sugestoes').get().then(() => true).catch(() => false);
+  eu = await db.doc('membros/' + uid).get().then(d => d.exists ? d.data() : null).catch(() => null);
+  unsubs.push(db.doc('config/sugestoes').onSnapshot(d => { cfg = Object.assign({ aberto: false, aprovadores: [] }, d.exists ? d.data() : {}); render(); if (admin) carregaMembros(); }, () => {}));
+  if (eu || aprov()) ouvirLista();
+  if (admin) { db.doc('segredo/sugestoes').get().then(d => { $('aSenha').value = d.exists ? (d.data().senha || '') : ''; }); }
+  render();
+});
+
+function ouvirLista() {
+  if (unsubs.lista) return;
+  unsubs.lista = true;
+  unsubs.push(db.collection('sugestoes').orderBy('t', 'desc').limit(300).onSnapshot(q => {
+    sugs = q.docs.map(d => Object.assign({ id: d.id }, d.data())); renderLista();
+  }, e => { $('lista').innerHTML = '<p class="mut" style="margin-top:12px">nao deu pra carregar as sugestões</p>'; }));
+}
+
+function render() {
+  show('loading', false);
+  const dentro = !!eu || aprov();
+  show('vEntrar', !dentro);
+  show('vFechado', dentro && !cfg.aberto);
+  show('vMandar', !!eu && cfg.aberto);
+  show('vAdmin', admin);
+  show('vModLogin', !aprov() && !!auth.currentUser && auth.currentUser.isAnonymous);
+  show('vLista', dentro);
+  if (eu) $('mNome').textContent = eu.nome;
+  $('swAberto').classList.toggle('on', !!cfg.aberto);
+  $('swTxt').textContent = cfg.aberto ? 'caixinha ABERTA (galera manda e vota)' : 'caixinha FECHADA (ninguem manda nem vota)';
+  if (dentro) ouvirLista();
+  renderLista();
+}
+
+function renderLista() {
+  const tabs = $('tabs'); tabs.innerHTML = '';
+  for (const [k, n] of STATUS) {
+    const c = sugs.filter(s => s.status === k).length;
+    const b = document.createElement('button'); b.textContent = `${n} (${c})`; b.className = k === aba ? 'on' : '';
+    b.onclick = () => { aba = k; renderLista(); }; tabs.appendChild(b);
+  }
+  const box = $('lista'); box.innerHTML = '';
+  let l = sugs.filter(s => s.status === aba);
+  if (aba === 'nova' || aba === 'aprovada') l = l.slice().sort((a, b) => (b.votos || []).length - (a.votos || []).length);
+  if (!l.length) { box.innerHTML = '<p class="mut" style="margin-top:14px">nada aqui ainda</p>'; return; }
+  for (const s of l) {
+    const el = document.createElement('div'); el.className = 'sug';
+    const hd = document.createElement('div'); hd.className = 'hd';
+    const nm = document.createElement('b'); nm.textContent = s.nome || '?';
+    const dt = document.createElement('span'); dt.textContent = s.t && s.t.toDate ? s.t.toDate().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+    const bd = document.createElement('span'); bd.className = 'badge b-' + s.status; bd.textContent = s.status;
+    hd.append(nm, dt, bd);
+    const tx = document.createElement('div'); tx.className = 'tx'; tx.textContent = s.texto;
+    const row = document.createElement('div'); row.className = 'row';
+    const votos = s.votos || [], votei = votos.includes(uid);
+    const v = document.createElement('button'); v.className = 'sm vote' + (votei ? ' on' : ''); v.textContent = `👍 ${votos.length}`;
+    v.disabled = !eu || !cfg.aberto;
+    v.onclick = () => db.doc('sugestoes/' + s.id).update({ votos: votei ? FV.arrayRemove(uid) : FV.arrayUnion(uid) }).catch(erro('sErr'));
+    row.appendChild(v);
+    const btn = (t, f) => { const b = document.createElement('button'); b.className = 'sm'; b.textContent = t; b.onclick = f; row.appendChild(b); };
+    if (aprov()) {
+      if (s.status !== 'aprovada') btn('✅ aprovar', () => muda(s, 'aprovada'));
+      if (s.status !== 'feita') btn('🚀 feita', () => muda(s, 'feita'));
+      if (s.status !== 'recusada') btn('🗑️ recusar', () => muda(s, 'recusada'));
+      if (s.status !== 'nova') btn('↩️ voltar pra nova', () => muda(s, 'nova'));
+      btn('❌ apagar', () => { if (confirm('apagar essa sugestão de vez?')) db.doc('sugestoes/' + s.id).delete().catch(erro('aErr')); });
+    } else if (s.autor === uid && s.status === 'nova') {
+      btn('❌ apagar', () => { if (confirm('apagar tua sugestão?')) db.doc('sugestoes/' + s.id).delete().catch(erro('sErr')); });
+    }
+    el.append(hd, tx, row); box.appendChild(el);
+  }
+}
+const muda = (s, st) => db.doc('sugestoes/' + s.id).update({ status: st }).catch(erro('aErr'));
+const erro = id => e => { $(id).textContent = e && e.code === 'permission-denied' ? 'sem permissao pra isso' : 'deu erro: ' + (e && e.message || e); };
+
+$('eBtn').onclick = async () => {
+  const nome = $('eNome').value.trim(), senha = $('eSenha').value.trim();
+  $('eErr').textContent = '';
+  if (!nome) { $('eErr').textContent = 'bota um nick porra'; return; }
+  if (!senha || senha.includes('/')) { $('eErr').textContent = 'senha errada'; return; }
+  $('eBtn').disabled = true;
+  try {
+    await db.doc('membros/' + uid).set({ nome, senha, t: FV.serverTimestamp() });
+    eu = { nome }; localStorage.setItem('simas-nick', nome); render();
+  } catch (e) { $('eErr').textContent = e.code === 'permission-denied' ? 'senha errada, vai pedir pro luketa' : 'deu erro: ' + e.message; }
+  $('eBtn').disabled = false;
+};
+try { $('eNome').value = localStorage.getItem('simas-nick') || localStorage.getItem('simastelas-nick') || ''; } catch (e) {}
+
+$('sTexto').oninput = () => { $('sCount').textContent = $('sTexto').value.length + '/800'; };
+$('sBtn').onclick = async () => {
+  const texto = $('sTexto').value.trim(); $('sErr').textContent = '';
+  if (!texto) { $('sErr').textContent = 'escreve alguma coisa ne'; return; }
+  $('sBtn').disabled = true;
+  try {
+    await db.collection('sugestoes').add({ autor: uid, nome: eu.nome, texto, status: 'nova', votos: [], t: FV.serverTimestamp() });
+    $('sTexto').value = ''; $('sCount').textContent = '0/800'; aba = 'nova'; renderLista();
+  } catch (e) { erro('sErr')(e); }
+  $('sBtn').disabled = false;
+};
+
+/* ---- painel do chefe ---- */
+$('swAberto').onclick = () => db.doc('config/sugestoes').set({ aberto: !cfg.aberto }, { merge: true }).catch(erro('aErr'));
+$('aSenhaBtn').onclick = async () => {
+  const nova = $('aSenha').value.trim(); $('aErr').textContent = '';
+  if (nova.length < 4 || nova.includes('/')) { $('aErr').textContent = 'senha com pelo menos 4 caracteres e sem /'; return; }
+  try {
+    const old = await db.doc('segredo/sugestoes').get();
+    const velha = old.exists ? old.data().senha : null;
+    await db.doc('senhas/' + nova).set({ t: FV.serverTimestamp() });
+    if (velha && velha !== nova) await db.doc('senhas/' + velha).delete().catch(() => {});
+    await db.doc('segredo/sugestoes').set({ senha: nova });
+    $('aErr').textContent = ''; $('aSenhaBtn').textContent = 'salvo ✔'; setTimeout(() => $('aSenhaBtn').textContent = 'salvar senha', 1500);
+  } catch (e) { erro('aErr')(e); }
+};
+async function carregaMembros() {
+  const q = await db.collection('membros').get().catch(() => null); const box = $('aMembros');
+  if (!q) { box.textContent = 'nao deu pra carregar'; return; }
+  if (q.empty) { box.textContent = 'ninguem entrou ainda'; return; }
+  box.innerHTML = '';
+  for (const d of q.docs) {
+    const m = d.data(), ehAprov = (cfg.aprovadores || []).includes(d.id);
+    const row = document.createElement('div'); row.className = 'mem';
+    const sp = document.createElement('span'); sp.textContent = (m.nome || '?') + (ehAprov ? ' · aprovador' : '');
+    const b1 = document.createElement('button'); b1.className = 'sm'; b1.textContent = ehAprov ? 'tirar aprovador' : 'tornar aprovador';
+    b1.onclick = () => db.doc('config/sugestoes').set({ aprovadores: ehAprov ? FV.arrayRemove(d.id) : FV.arrayUnion(d.id) }, { merge: true }).catch(erro('aErr'));
+    const b2 = document.createElement('button'); b2.className = 'sm'; b2.textContent = 'expulsar';
+    b2.onclick = () => { if (confirm('expulsar ' + (m.nome || '') + '?')) db.doc('membros/' + d.id).delete().then(carregaMembros).catch(erro('aErr')); };
+    row.append(sp, b1, b2); box.appendChild(row);
+  }
+}
+</script>
+</body>
+</html>

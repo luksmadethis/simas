@@ -1,0 +1,112 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    // Inscrições até 00:00 (horário de Brasília) do dia de início
+    function startDate() {
+      let cfgPath = /databases/$(database)/documents/config/challenge;
+      return exists(cfgPath) && get(cfgPath).data.get("startDate", null) is string
+        ? get(cfgPath).data.startDate : "2026-11-03";
+    }
+    function registrationOpen() {
+      return request.time < timestamp.value(startDate() + "T03:00:00Z");
+    }
+    // Exceção: nomes liberados pelo organizador podem se inscrever depois do prazo
+    function lateAllowed(login) {
+      let cfgPath = /databases/$(database)/documents/config/challenge;
+      return exists(cfgPath) && login in get(cfgPath).data.get("lateSignups", []);
+    }
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/config/admins)
+        && request.auth.uid in get(/databases/$(database)/documents/config/admins).data.uids;
+    }
+
+    // Data de início, modo teste etc. Só o organizador muda.
+    match /config/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // Fichas: cada um mexe só na sua. Depois de criada, nome, idade,
+    // altura, peso e meta ficam travados (só o organizador muda).
+    match /participants/{uid} {
+      allow read: if signedIn();
+      // Inscrições reabertas: qualquer um pode criar a própria ficha.
+      // Pra fechar de novo, troque "true" por: (registrationOpen() || lateAllowed(request.resource.data.get("login", "")))
+      allow create: if (signedIn() && request.auth.uid == uid && true) || isAdmin();
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == uid
+        && request.resource.data.name == resource.data.name
+        && request.resource.data.age == resource.data.age
+        && request.resource.data.height == resource.data.height
+        && request.resource.data.weight == resource.data.weight
+        && request.resource.data.goal == resource.data.goal);
+      allow delete: if isAdmin();
+    }
+
+    // Fórum
+    match /posts/{postId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.author == request.auth.uid;
+      allow update, delete: if isAdmin() || (signedIn() && resource.data.author == request.auth.uid);
+    }
+    match /likes/{likeId} {
+      allow read: if signedIn();
+      allow create: if isAdmin() || (signedIn() && request.resource.data.user == request.auth.uid);
+      allow delete: if isAdmin() || (signedIn() && (resource.data.user == request.auth.uid
+        || get(/databases/$(database)/documents/posts/$(resource.data.post)).data.author == request.auth.uid));
+    }
+    match /comments/{commentId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.author == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin() || (signedIn() && (resource.data.author == request.auth.uid
+        || get(/databases/$(database)/documents/posts/$(resource.data.post)).data.author == request.auth.uid));
+    }
+
+    // ===== Sugestões (site Simas) =====
+    // senhas/{senha}: existe = senha do grupo válida. Ninguém lê, só o organizador cria/apaga.
+    // config/sugestoes: { aberto: bool, aprovadores: [uids] } — só o organizador muda (regra de /config acima).
+    // segredo/sugestoes: { senha } — só o organizador lê/escreve (pra lembrar a senha atual).
+    function sugCfg() { return /databases/$(database)/documents/config/sugestoes; }
+    function sugAberto() { return exists(sugCfg()) && get(sugCfg()).data.get("aberto", false) == true; }
+    function aprovador() {
+      return isAdmin() || (signedIn() && exists(sugCfg())
+        && request.auth.uid in get(sugCfg()).data.get("aprovadores", []));
+    }
+    function membro() {
+      return signedIn() && exists(/databases/$(database)/documents/membros/$(request.auth.uid));
+    }
+    match /senhas/{s} {
+      allow read: if false;
+      allow write: if isAdmin();
+    }
+    match /segredo/{d} {
+      allow read, write: if isAdmin();
+    }
+    match /membros/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || aprovador());
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.senha is string
+        && exists(/databases/$(database)/documents/senhas/$(request.resource.data.senha))
+        && request.resource.data.nome is string && request.resource.data.nome.size() > 0 && request.resource.data.nome.size() <= 40;
+      allow delete: if aprovador() || (signedIn() && request.auth.uid == uid);
+    }
+    match /sugestoes/{id} {
+      allow read: if membro() || aprovador();
+      allow create: if membro() && sugAberto()
+        && request.resource.data.keys().hasOnly(["autor", "nome", "texto", "status", "t", "votos"])
+        && request.resource.data.autor == request.auth.uid
+        && request.resource.data.nome is string && request.resource.data.nome.size() <= 40
+        && request.resource.data.texto is string && request.resource.data.texto.size() > 0 && request.resource.data.texto.size() <= 800
+        && request.resource.data.status == "nova"
+        && request.resource.data.votos == []
+        && request.resource.data.t == request.time;
+      allow update: if aprovador()
+        || (membro() && sugAberto()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["votos"])
+            && request.resource.data.votos is list && request.resource.data.votos.size() <= 200);
+      allow delete: if aprovador() || (membro() && resource.data.autor == request.auth.uid && resource.data.status == "nova");
+    }
+  }
+}

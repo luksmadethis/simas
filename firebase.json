@@ -19,5 +19,8 @@
       }
     ],
     "trailingSlash": true
+  },
+  "firestore": {
+    "rules": "firestore.rules"
   }
 }
