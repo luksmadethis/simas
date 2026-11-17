@@ -47,6 +47,7 @@
   .badge{margin-left:auto;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.5px}
   .b-nova{background:#2a2340;color:#c9a7ff}.b-aprovada{background:#103a22;color:#5be38a}.b-feita{background:#0f2a4a;color:#7fb2ff}.b-recusada{background:#3a1212;color:#ff8a8a}
   .vote.on{background:#2a2340;border-color:#6b4fa0}
+  .vote.down.on{background:#3a1212;border-color:#a33}
   .switch{display:flex;align-items:center;gap:12px;font-weight:800}
   .sw{width:58px;height:32px;border-radius:999px;background:#3a1212;position:relative;transition:background .2s;flex:none;padding:0;border:1px solid var(--line)}
   .sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .2s}
@@ -75,7 +76,7 @@
 </style>
 <div class="wrap">
   <h1>caixinha de <span class="grad">sugestões</span></h1>
-  <p class="sub">manda tua ideia pro site ai porra. qualquer um manda, a galera vota, quem manda aprova e ai alguem faz. ideia de merda vai ser recusada sem do</p>
+  <p class="sub">manda tua ideia pro site ai porra. qualquer um manda, a galera vota 👍 ou 👎, quem manda aprova e ai alguem faz. ideia de merda vai ser recusada sem do</p>
 
   <div id="loading" class="box mut">carregando essa porra…</div>
 
@@ -168,7 +169,7 @@ function renderLista() {
   }
   const box = $('lista'); box.innerHTML = '';
   let l = sugs.filter(s => s.status === aba);
-  if (aba === 'nova' || aba === 'aprovada') l = l.slice().sort((a, b) => (b.votos || []).length - (a.votos || []).length);
+  if (aba === 'nova' || aba === 'aprovada') l = l.slice().sort((a, b) => ((b.votos || []).length - (b.deslikes || []).length) - ((a.votos || []).length - (a.deslikes || []).length));
   if (!l.length) { box.innerHTML = '<p class="mut" style="margin-top:14px">nada aqui ainda</p>'; return; }
   for (const s of l) {
     const el = document.createElement('div'); el.className = 'sug';
@@ -179,11 +180,14 @@ function renderLista() {
     hd.append(nm, dt, bd);
     const tx = document.createElement('div'); tx.className = 'tx'; tx.textContent = s.texto;
     const row = document.createElement('div'); row.className = 'row';
-    const votos = s.votos || [], votei = votos.includes(uid);
+    const votos = s.votos || [], votei = votos.includes(uid), desl = s.deslikes || [], deslikei = desl.includes(uid);
     const v = document.createElement('button'); v.className = 'sm vote' + (votei ? ' on' : ''); v.textContent = `👍 ${votos.length}`;
     v.disabled = !cfg.aberto;
-    v.onclick = () => db.doc('sugestoes/' + s.id).update({ votos: votei ? FV.arrayRemove(uid) : FV.arrayUnion(uid) }).catch(erro('sErr'));
-    row.appendChild(v);
+    v.onclick = () => db.doc('sugestoes/' + s.id).update(votei ? { votos: FV.arrayRemove(uid) } : { votos: FV.arrayUnion(uid), deslikes: FV.arrayRemove(uid) }).catch(erro('sErr'));
+    const dv = document.createElement('button'); dv.className = 'sm vote down' + (deslikei ? ' on' : ''); dv.textContent = `👎 ${desl.length}`;
+    dv.title = 'ideia de merda'; dv.disabled = !cfg.aberto;
+    dv.onclick = () => db.doc('sugestoes/' + s.id).update(deslikei ? { deslikes: FV.arrayRemove(uid) } : { deslikes: FV.arrayUnion(uid), votos: FV.arrayRemove(uid) }).catch(erro('sErr'));
+    row.append(v, dv);
     const btn = (t, f) => { const b = document.createElement('button'); b.className = 'sm'; b.textContent = t; b.onclick = f; row.appendChild(b); };
     if (aprov()) {
       if (s.status !== 'aprovada') btn('✅ aprovar', () => muda(s, 'aprovada'));
@@ -210,7 +214,7 @@ $('sBtn').onclick = async () => {
   try { localStorage.setItem('simas-nick', nome); } catch (e) {}
   $('sBtn').disabled = true;
   try {
-    await db.collection('sugestoes').add({ autor: uid, nome, texto, status: 'nova', votos: [], t: FV.serverTimestamp() });
+    await db.collection('sugestoes').add({ autor: uid, nome, texto, status: 'nova', votos: [], deslikes: [], t: FV.serverTimestamp() });
     $('sTexto').value = ''; $('sCount').textContent = '0/800'; aba = 'nova'; renderLista(); $('sErr').textContent = 'mandado ✔';
   } catch (e) { erro('sErr')(e); }
   $('sBtn').disabled = false;

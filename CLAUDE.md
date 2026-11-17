@@ -47,7 +47,7 @@ Push na branch `main` publica sozinho, pelo GitHub Actions:
 - Áudio do FL Studio sem eco: usar VB-Cable só na saída do FL (ASIO) e escolher "CABLE Output" no seletor de microfone do SimasTelas. Nunca colocar o VB-Cable como padrão do Windows.
 
 ## Caixinha de sugestões (/sugestoes/)
-- **Aberta pra qualquer um** (sem senha): bota o nick, manda sugestão (até 800 caracteres) e vota com 👍. O dono pode fechar no painel.
+- **Aberta pra qualquer um** (sem senha): bota o nick, manda sugestão (até 800 caracteres) e vota com 👍 ou 👎 (ordem = likes menos deslikes). O dono pode fechar no painel.
 - Status: nova, aprovada, feita, recusada.
 - **Painel do chefe:** aparece pra quem é admin do Fitness (uid em `config/admins`) logado na conta do Fitness. Ali dá pra ligar e desligar a caixinha e tornar aprovador quem já mandou sugestão.
 - Coleções: `senhas/{senha}` (ninguém lê), `segredo/sugestoes` (senha atual, só admin), `config/sugestoes` (`aberto`, `aprovadores`), `membros/{uid}`, `sugestoes/{id}`.

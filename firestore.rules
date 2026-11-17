@@ -96,17 +96,19 @@ service cloud.firestore {
     match /sugestoes/{id} {
       allow read: if signedIn();
       allow create: if signedIn() && sugAberto()
-        && request.resource.data.keys().hasOnly(["autor", "nome", "texto", "status", "t", "votos"])
+        && request.resource.data.keys().hasOnly(["autor", "nome", "texto", "status", "t", "votos", "deslikes"])
         && request.resource.data.autor == request.auth.uid
         && request.resource.data.nome is string && request.resource.data.nome.size() > 0 && request.resource.data.nome.size() <= 40
         && request.resource.data.texto is string && request.resource.data.texto.size() > 0 && request.resource.data.texto.size() <= 800
         && request.resource.data.status == "nova"
         && request.resource.data.votos == []
+        && request.resource.data.get("deslikes", []) == []
         && request.resource.data.t == request.time;
       allow update: if aprovador()
         || (signedIn() && sugAberto()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["votos"])
-            && request.resource.data.votos is list && request.resource.data.votos.size() <= 200);
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["votos", "deslikes"])
+            && request.resource.data.votos is list && request.resource.data.votos.size() <= 200
+            && request.resource.data.get("deslikes", []) is list && request.resource.data.get("deslikes", []).size() <= 200);
       allow delete: if aprovador() || (signedIn() && resource.data.autor == request.auth.uid && resource.data.status == "nova");
     }
   }
