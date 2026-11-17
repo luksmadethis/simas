@@ -9,6 +9,7 @@ Site do grupo de amigos **Simas** em **https://ofisimas.web.app**, hospedado no 
 - `/simastelas/`: SimasTelas, sala de live/compartilhamento de tela
 - `/simasfitness/`: Simas Fitness 2.0, desafio fitness de 30 dias com ranking e fórum
 - `/sugestoes/`: caixinha de sugestões da galera
+- `/simastok/`: SimasTok, vídeos verticais tipo TikTok
 
 O site é interno da galera. O tom dos textos é **escrachado de propósito**: palavrão, português chucro, minúsculo com erros e CAPS em palavras de destaque, e piada interna.
 **Nunca usar a palavra "panela"** (pedido do dono).
@@ -19,6 +20,7 @@ O site é interno da galera. O tom dos textos é **escrachado de propósito**: p
   - `public/simastelas/index.html` + `og.png`: app SimasTelas (um arquivo só, HTML+CSS+JS)
   - `public/simasfitness/index.html` + ícones/og: app Simas Fitness
   - `public/sugestoes/index.html`: caixinha de sugestões
+  - `public/simastok/index.html`: SimasTok (vídeos estilo TikTok; arquivos no Cloudinary, dados em `tok` e `tokcom` no Firestore; `CLOUD`/`PRESET` no topo do script)
   - `firestore.rules`: regras de segurança do banco (Firestore) do projeto
   - `firebase.json`: config da hospedagem (site `ofisimas`, cleanUrls, trailingSlash, HTML sem cache)
 - luksmadethis/simastelas e luksmadethis/simasfitness2: **antigos**. Hoje só redirecionam (GitHub Pages) pro endereço novo. Não mexer.
@@ -59,7 +61,7 @@ Array `GALERA` no fim de `public/index.html` (`nome`, `papel`, `frase`, `foto`).
 Piadas internas já usadas: "aqui pagou papai #constancia", "duas serie de levanta da cadera", "aí é brincadeira dj cas", #ChádeBebê, "quem é o pai?", "NO DIA 3 VAI SER REVELADO O SEXO DO BEBÊ", "cla, ú, dê, eu amo voce", "que linda barriga".
 
 ## Visual
-Fundo escuro (#0d0c12), cores do arco-íris LGBT. O cabeçalho (`.snav`) é igual em todas as páginas: logo Simas + Home, SimasTelas, Fitness e Sugestões.
+Fundo escuro (#0d0c12), cores do arco-íris LGBT. O cabeçalho (`.snav`) é igual em todas as páginas: logo Simas + Home, SimasTelas, Fitness, SimasTok e Sugestões.
 Home: arco-íris que desce serpenteando conforme o scroll e barra de progresso arco-íris no topo. O mouse é o normal: a varinha e o brilho foram removidos porque deixavam o site lento.
 
 ## Pendências

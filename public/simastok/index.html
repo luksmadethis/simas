@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SimasTok</title>
+<meta name="theme-color" content="#000000">
+<meta property="og:title" content="SimasTok 🎬">
+<meta property="og:description" content="o tiktok da quadrilha. so video de qualidade duvidosa">
+<meta property="og:image" content="https://ofisimas.web.app/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 6'><rect y='0' width='6' height='1' fill='%23e40303'/><rect y='1' width='6' height='1' fill='%23ff8c00'/><rect y='2' width='6' height='1' fill='%23ffed00'/><rect y='3' width='6' height='1' fill='%23008026'/><rect y='4' width='6' height='1' fill='%23004dff'/><rect y='5' width='6' height='1' fill='%23750787'/></svg>">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+  :root{--r:#e40303;--o:#ff8c00;--y:#ffed00;--g:#00a83a;--b:#2a6bff;--v:#9b2bc2;
+    --rainbow:linear-gradient(90deg,var(--r),var(--o),var(--y),var(--g),var(--b),var(--v));
+    --card:#17151f;--card2:#1e1b28;--line:#2a2733;--txt:#f3f1f7;--mut:#9a95a8}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#000;color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+  body{display:flex;flex-direction:column;height:100dvh}
+  .flag{height:6px;background:var(--rainbow);flex:none}
+  button{font:inherit;cursor:pointer}
+  [hidden]{display:none!important}
+
+  /* feed */
+  .feed{flex:1;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;overscroll-behavior:contain;position:relative}
+  .feed::-webkit-scrollbar{display:none}
+  .item{height:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;display:flex;justify-content:center;background:#000;overflow:hidden}
+  .item .bg{position:absolute;inset:-40px;background-size:cover;background-position:center;filter:blur(30px) brightness(.35);transform:scale(1.1)}
+  .stage{position:relative;height:100%;width:100%;max-width:min(100%,calc((100dvh - 50px) * 9 / 16 + 120px));display:flex;align-items:center;justify-content:center}
+  .stage video{width:100%;height:100%;object-fit:contain;background:transparent;display:block}
+  .tapzone{position:absolute;inset:0;z-index:2}
+  .playic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:3;pointer-events:none;font-size:70px;opacity:0;transition:opacity .2s;text-shadow:0 2px 20px #000}
+  .item.paused .playic{opacity:.85}
+  .heart-pop{position:absolute;z-index:4;font-size:90px;pointer-events:none;animation:pop .8s ease-out forwards}
+  @keyframes pop{0%{transform:translate(-50%,-50%) scale(.3) rotate(-15deg);opacity:0}25%{transform:translate(-50%,-50%) scale(1.2) rotate(0);opacity:1}100%{transform:translate(-50%,-90%) scale(1);opacity:0}}
+
+  .side{position:absolute;right:10px;bottom:90px;z-index:5;display:flex;flex-direction:column;gap:16px;align-items:center}
+  .av{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;color:#fff;position:relative}
+  .av::after{content:"";position:absolute;inset:-3px;border-radius:50%;padding:2px;background:var(--rainbow);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+  .act{background:none;border:0;color:#fff;display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:800;font-size:13px;text-shadow:0 1px 6px #000}
+  .act .ic{font-size:32px;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6));transition:transform .15s}
+  .act:active .ic{transform:scale(.85)}
+  .act.on .ic{animation:bate .35s}
+  @keyframes bate{50%{transform:scale(1.35)}}
+  .info{position:absolute;left:14px;right:80px;bottom:22px;z-index:5;text-shadow:0 1px 6px #000}
+  .info .who{font-weight:900;font-size:16px}
+  .info .cap{font-size:14px;margin-top:4px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:4.5em;overflow:hidden}
+  .info .when{font-size:12px;color:#ccc;margin-top:4px}
+  .prog{position:absolute;left:0;right:0;bottom:0;height:3px;z-index:6;background:rgba(255,255,255,.15)}
+  .prog i{display:block;height:100%;width:0;background:var(--rainbow)}
+
+  .topbtns{position:absolute;top:56px;right:12px;z-index:20;display:flex;gap:8px}
+  .rbtn{border:0;color:#fff;font-weight:900;border-radius:999px;padding:10px 16px;background:linear-gradient(90deg,var(--r),var(--o) 25%,var(--g) 55%,var(--b) 80%,var(--v));box-shadow:0 4px 18px rgba(0,0,0,.5)}
+  .gbtn{border:1px solid rgba(255,255,255,.25);color:#fff;font-weight:800;border-radius:999px;padding:10px 14px;background:rgba(0,0,0,.45);backdrop-filter:blur(6px)}
+  .empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:30px;color:var(--mut)}
+  .empty h1{color:var(--txt);font-size:clamp(34px,7vw,56px);letter-spacing:-1px}
+  .grad{background:var(--rainbow);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+  /* modais */
+  .modal{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center}
+  .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:80dvh;display:flex;flex-direction:column;position:relative;overflow:hidden}
+  .sheet::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:var(--rainbow)}
+  .sheet header{display:flex;align-items:center;padding:16px 18px 8px;font-weight:900}
+  .sheet header button{margin-left:auto;background:none;border:0;color:var(--mut);font-size:22px}
+  .sheet .body{padding:0 18px 18px;overflow-y:auto}
+  label{display:block;font-size:13px;color:var(--mut);font-weight:700;margin:12px 0 6px}
+  input,textarea{width:100%;background:#0d0c12;border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:12px 14px;font:inherit;font-size:15px;outline:none}
+  textarea{min-height:70px;resize:vertical}
+  .pick{display:flex;align-items:center;justify-content:center;gap:10px;border:2px dashed #3b3550;border-radius:14px;padding:22px;color:var(--mut);font-weight:700;cursor:pointer;text-align:center}
+  .pick video{max-height:180px;border-radius:10px}
+  .bar{height:8px;border-radius:99px;background:#0d0c12;overflow:hidden;margin-top:12px}
+  .bar i{display:block;height:100%;width:0;background:var(--rainbow);transition:width .2s}
+  .err{color:#ff6b6b;font-size:14px;min-height:20px;margin-top:8px}
+  .mut{color:var(--mut);font-size:13px}
+  .send{width:100%;margin-top:14px;border:0;border-radius:12px;padding:13px;font-weight:900;color:#fff;background:linear-gradient(90deg,var(--r),var(--o) 25%,var(--g) 55%,var(--b) 80%,var(--v))}
+  .send:disabled{opacity:.5}
+  .com{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+  .com:first-child{border-top:0}
+  .com .av{width:34px;height:34px;font-size:14px;flex:none}
+  .com b{font-size:13px}.com p{font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+  .com .x{margin-left:auto;background:none;border:0;color:var(--mut);font-size:13px;align-self:flex-start}
+  .cbox{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
+  .cbox input{flex:1}
+  .cbox button{border:0;border-radius:12px;padding:0 16px;font-weight:900;color:#fff;background:#2a2340}
+  .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#24212d;border:1px solid var(--line);padding:10px 18px;border-radius:12px;font-size:14px;z-index:99}
+  .menu{position:absolute;right:66px;bottom:150px;z-index:7;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .menu button{display:block;width:100%;background:none;border:0;color:var(--txt);padding:10px 16px;text-align:left;font-weight:700}
+  .menu button:hover{background:var(--card2)}
+</style>
+</head>
+<body>
+<div class="flag"></div>
+<nav class="snav"><a class="snav-logo" href="/" aria-label="Simas, voltar pra home"><b style="color:#e40303">S</b><b style="color:#ff8c00">i</b><b style="color:#ffed00">m</b><b style="color:#00c13a">a</b><b style="color:#2a6bff">s</b></a><div class="snav-links"><a href="/">🏠 Home</a><a href="/simastelas/">📺 SimasTelas</a><a href="/simasfitness/">💪 Fitness</a><a href="/simastok/" class="on">🎬 SimasTok</a><a href="/sugestoes/">💡 Sugestões</a></div></nav>
+<style>
+.snav{flex:none;position:relative;z-index:70;display:flex;align-items:center;gap:14px;height:44px;padding:0 14px;background:#0d0c12;border-bottom:1px solid #2a2733;font:600 14px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#f3f1f7;box-sizing:border-box}
+.snav *{box-sizing:border-box;margin:0}
+.snav a{color:inherit;text-decoration:none}
+.snav-logo{font-weight:900;font-size:20px;letter-spacing:-.3px}
+.snav-logo b{font-weight:900}
+.snav-links{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+.snav-links a{padding:7px 11px;border-radius:9px;color:#9a95a8;white-space:nowrap}
+.snav-links a:hover{background:#17151f;color:#f3f1f7}
+.snav-links a.on{background:#1e1b28;color:#f3f1f7;box-shadow:inset 0 -2px 0 #9b2bc2}
+@media(max-width:520px){.snav{gap:8px;padding:0 8px}.snav-logo{font-size:18px}.snav-links a{padding:7px 8px;font-size:13px}}
+</style>
+<div class="feed" id="feed">
+  <div class="empty" id="empty"><div class="spinner"></div>carregando os video…</div>
+</div>
+<div class="topbtns">
+  <button class="gbtn" id="muteBtn" title="som">🔇</button>
+  <button class="rbtn" id="upBtn">＋ postar</button>
+</div>
+
+<!-- postar -->
+<div class="modal" id="mUp" hidden>
+  <div class="sheet">
+    <header>posta essa merda ai <button data-close>✕</button></header>
+    <div class="body">
+      <label class="pick" id="pick"><input type="file" id="file" accept="video/*" hidden><span id="pickTxt">📹 escolhe o video (ate 100 MB)</span></label>
+      <label for="nick">teu nick</label>
+      <input id="nick" maxlength="30" placeholder="ex: Xavier">
+      <label for="cap">legenda</label>
+      <textarea id="cap" maxlength="300" placeholder="#ChádeBebê"></textarea>
+      <div class="bar" id="bar" hidden><i></i></div>
+      <div class="err" id="upErr"></div>
+      <button class="send" id="sendBtn">postar</button>
+    </div>
+  </div>
+</div>
+
+<!-- comentários -->
+<div class="modal" id="mCom" hidden>
+  <div class="sheet">
+    <header><span id="comTitle">comentarios</span> <button data-close>✕</button></header>
+    <div class="body" id="comList"></div>
+    <div class="cbox"><input id="comTxt" maxlength="300" placeholder="comenta ai…"><button id="comSend">➤</button></div>
+  </div>
+</div>
+
+<script>
+/* ===== Cloudinary (onde os vídeos ficam) ===== */
+const CLOUD = '';          // nome da nuvem (cloud name)
+const PRESET = '';         // upload preset "Unsigned"
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA0G_qSK5eEVzGnLskGS8leXCwC7XNzK0A",
+  authDomain: "simasfitness2.firebaseapp.com",
+  projectId: "simasfitness2",
+  storageBucket: "simasfitness2.firebasestorage.app",
+  messagingSenderId: "1068623437415",
+  appId: "1:1068623437415:web:63ccdb065e991452563ec2"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth(), db = firebase.firestore(), FV = firebase.firestore.FieldValue;
+const $ = id => document.getElementById(id);
+const COLORS = ['#e40303','#ff8c00','#c99a00','#00a83a','#2a6bff','#9b2bc2','#e0457b','#1aa3a3'];
+const colorOf = s => { let h = 0; for (const ch of s || '?') h = (h * 31 + ch.charCodeAt(0)) >>> 0; return COLORS[h % COLORS.length]; };
+const avatar = (nome, cls = 'av') => { const a = document.createElement('div'); a.className = cls; a.style.background = colorOf(nome); a.textContent = ([...(nome || '?')][0] || '?').toUpperCase(); return a; };
+const toast = t => { const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 2200); };
+const quando = ts => { if (!ts || !ts.toDate) return 'agora'; const s = (Date.now() - ts.toDate()) / 1000; if (s < 60) return 'agora'; if (s < 3600) return Math.floor(s / 60) + ' min'; if (s < 86400) return Math.floor(s / 3600) + ' h'; return ts.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }); };
+const vurl = v => `https://res.cloudinary.com/${v.cloud}/video/upload/q_auto,vc_auto,w_720,c_limit/${v.pid}.mp4`;
+const purl = v => `https://res.cloudinary.com/${v.cloud}/video/upload/so_0,w_480,c_limit/${v.pid}.jpg`;
+
+let uid = null, admin = false, aprovadores = [], vids = [], items = new Map(), atual = null;
+let mudo = true; try { mudo = localStorage.getItem('simastok-som') !== '1'; } catch (e) {}
+const updMute = () => { $('muteBtn').textContent = mudo ? '🔇' : '🔊'; for (const it of items.values()) it.video.muted = mudo; };
+$('muteBtn').onclick = () => { mudo = !mudo; try { localStorage.setItem('simastok-som', mudo ? '0' : '1'); } catch (e) {} updMute(); if (atual) atual.video.play().catch(() => {}); };
+updMute();
+
+auth.onAuthStateChanged(async u => {
+  if (!u) { try { await auth.signInAnonymously(); } catch (e) { $('empty').textContent = 'deu pau pra conectar, recarrega a pagina'; } return; }
+  uid = u.uid;
+  admin = await db.doc('segredo/sugestoes').get().then(() => true).catch(() => false);
+  db.doc('config/sugestoes').onSnapshot(d => { aprovadores = (d.exists && d.data().aprovadores) || []; }, () => {});
+  db.collection('tok').orderBy('t', 'desc').limit(100).onSnapshot(q => {
+    vids = q.docs.map(d => Object.assign({ id: d.id }, d.data()));
+    render();
+  }, e => { $('empty').textContent = 'nao deu pra carregar os video'; });
+});
+const podeApagar = v => admin || aprovadores.includes(uid) || v.autor === uid;
+
+/* ===== feed ===== */
+const io = new IntersectionObserver(es => {
+  for (const e of es) {
+    const it = items.get(e.target.dataset.id); if (!it) continue;
+    if (e.isIntersecting && e.intersectionRatio > 0.6) ativar(it);
+  }
+}, { root: $('feed'), threshold: [0, 0.6, 1] });
+
+function render() {
+  const feed = $('feed');
+  if (!vids.length) {
+    feed.innerHTML = '';
+    const e = document.createElement('div'); e.className = 'empty'; e.id = 'empty';
+    e.innerHTML = '<h1><span class="grad">SimasTok</span></h1><div>ninguem postou porra nenhuma ainda.<br>seja o primeiro a passar vergonha</div>';
+    if (CLOUD) { const b = document.createElement('button'); b.className = 'rbtn'; b.textContent = '＋ postar'; b.onclick = abrirUp; e.appendChild(b); }
+    else { const m = document.createElement('div'); m.className = 'mut'; m.textContent = '(o upload ainda ta sendo ligado)'; e.appendChild(m); }
+    feed.appendChild(e); items.clear(); atual = null; return;
+  }
+  $('empty') && $('empty').remove();
+  const ids = new Set(vids.map(v => v.id));
+  for (const [id, it] of items) if (!ids.has(id)) { io.unobserve(it.el); it.el.remove(); items.delete(id); if (atual === it) atual = null; }
+  vids.forEach((v, i) => {
+    let it = items.get(v.id);
+    if (!it) { it = criar(v); items.set(v.id, it); io.observe(it.el); }
+    it.v = v; atualizar(it);
+    if (feed.children[i] !== it.el) feed.insertBefore(it.el, feed.children[i] || null);
+  });
+  if (!render.foi) { render.foi = true; const alvo = new URLSearchParams(location.search).get('v'); if (alvo && items.get(alvo)) items.get(alvo).el.scrollIntoView(); }
+  carregarPerto();
+}
+
+function criar(v) {
+  const el = document.createElement('section'); el.className = 'item'; el.dataset.id = v.id;
+  const bg = document.createElement('div'); bg.className = 'bg'; bg.style.backgroundImage = `url("${purl(v)}")`;
+  const stage = document.createElement('div'); stage.className = 'stage';
+  const video = document.createElement('video'); video.loop = true; video.playsInline = true; video.muted = mudo; video.preload = 'none'; video.poster = purl(v);
+  video.setAttribute('playsinline', ''); video.setAttribute('webkit-playsinline', '');
+  const tap = document.createElement('div'); tap.className = 'tapzone';
+  const pic = document.createElement('div'); pic.className = 'playic'; pic.textContent = '▶';
+  stage.append(video, tap, pic);
+  const side = document.createElement('div'); side.className = 'side';
+  const av = avatar(v.nome);
+  const like = document.createElement('button'); like.className = 'act'; like.innerHTML = '<span class="ic">🤍</span><span class="n">0</span>';
+  const com = document.createElement('button'); com.className = 'act'; com.innerHTML = '<span class="ic">💬</span><span class="n">💬</span>';
+  const share = document.createElement('button'); share.className = 'act'; share.innerHTML = '<span class="ic">↗️</span><span>link</span>';
+  const mais = document.createElement('button'); mais.className = 'act'; mais.innerHTML = '<span class="ic">⋯</span>';
+  side.append(av, like, com, share, mais);
+  const info = document.createElement('div'); info.className = 'info';
+  const who = document.createElement('div'); who.className = 'who';
+  const cap = document.createElement('div'); cap.className = 'cap';
+  const when = document.createElement('div'); when.className = 'when';
+  info.append(who, cap, when);
+  const prog = document.createElement('div'); prog.className = 'prog'; prog.innerHTML = '<i></i>';
+  el.append(bg, stage, side, info, prog);
+  const it = { el, video, like, com, who, cap, when, prog: prog.firstChild, v };
+
+  let lastTap = 0, tapT = null;
+  tap.addEventListener('click', ev => {
+    const now = Date.now();
+    if (now - lastTap < 300) { clearTimeout(tapT); lastTap = 0; curtir(it, true); coracao(ev, stage); return; }
+    lastTap = now;
+    tapT = setTimeout(() => { if (video.paused) { video.play().catch(() => {}); el.classList.remove('paused'); } else { video.pause(); el.classList.add('paused'); } }, 280);
+  });
+  like.onclick = () => curtir(it);
+  com.onclick = () => abrirCom(it.v);
+  share.onclick = () => { const url = location.origin + '/simastok/?v=' + it.v.id; (navigator.share ? navigator.share({ url, title: 'SimasTok' }) : navigator.clipboard.writeText(url).then(() => toast('link copiado'))).catch(() => {}); };
+  mais.onclick = () => {
+    const old = el.querySelector('.menu'); if (old) { old.remove(); return; }
+    const m = document.createElement('div'); m.className = 'menu';
+    const b1 = document.createElement('button'); b1.textContent = '⬇️ baixar'; b1.onclick = () => { window.open(`https://res.cloudinary.com/${it.v.cloud}/video/upload/fl_attachment/${it.v.pid}.mp4`, '_blank'); m.remove(); };
+    m.appendChild(b1);
+    if (podeApagar(it.v)) { const b2 = document.createElement('button'); b2.textContent = '🗑️ apagar'; b2.onclick = () => { m.remove(); if (confirm('apagar esse video?')) db.doc('tok/' + it.v.id).delete().then(() => toast('apagado')).catch(() => toast('sem permissao')); }; m.appendChild(b2); }
+    el.appendChild(m); setTimeout(() => document.addEventListener('click', function f(e) { if (!m.contains(e.target)) { m.remove(); document.removeEventListener('click', f); } }), 0);
+  };
+  video.addEventListener('timeupdate', () => { if (video.duration) it.prog.style.width = (video.currentTime / video.duration * 100) + '%'; });
+  return it;
+}
+
+function atualizar(it) {
+  const v = it.v, likes = v.likes || [], meu = likes.includes(uid);
+  it.like.querySelector('.ic').textContent = meu ? '❤️' : '🤍';
+  it.like.querySelector('.n').textContent = likes.length;
+  it.com.querySelector('.n').textContent = v.coms || 0;
+  it.who.textContent = '@' + (v.nome || '?');
+  it.cap.textContent = v.legenda || '';
+  it.when.textContent = quando(v.t);
+}
+
+function curtir(it, soLike) {
+  const meu = (it.v.likes || []).includes(uid);
+  if (meu && soLike) return;
+  it.like.classList.remove('on'); void it.like.offsetWidth; it.like.classList.add('on');
+  db.doc('tok/' + it.v.id).update({ likes: meu ? FV.arrayRemove(uid) : FV.arrayUnion(uid) }).catch(() => toast('nao deu pra curtir'));
+}
+function coracao(ev, stage) {
+  const r = stage.getBoundingClientRect(), h = document.createElement('div'); h.className = 'heart-pop';
+  h.textContent = ['❤️','🏳️‍🌈','💖','🔥'][Math.floor(Math.random() * 4)];
+  h.style.left = (ev.clientX - r.left) + 'px'; h.style.top = (ev.clientY - r.top) + 'px';
+  stage.appendChild(h); setTimeout(() => h.remove(), 850);
+}
+
+function ativar(it) {
+  if (atual === it) return;
+  if (atual) { atual.video.pause(); }
+  atual = it; it.el.classList.remove('paused');
+  if (!it.video.src) it.video.src = vurl(it.v);
+  it.video.muted = mudo; it.video.currentTime = 0;
+  it.video.play().catch(() => { it.video.muted = true; mudo = true; updMute(); it.video.play().catch(() => it.el.classList.add('paused')); });
+  carregarPerto();
+  const u = new URL(location.href); u.searchParams.set('v', it.v.id); history.replaceState(null, '', u);
+}
+// só baixa o vídeo atual e o próximo (economiza internet e a cota grátis)
+function carregarPerto() {
+  const lista = [...$('feed').children].filter(e => e.dataset.id);
+  const i = atual ? lista.indexOf(atual.el) : 0;
+  lista.forEach((el, k) => {
+    const it = items.get(el.dataset.id); if (!it) return;
+    if (k === i + 1 && !it.video.src) { it.video.preload = 'auto'; it.video.src = vurl(it.v); }
+    if (Math.abs(k - i) > 2 && it.video.src) { it.video.pause(); it.video.removeAttribute('src'); it.video.load(); }
+  });
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden && atual) atual.video.pause(); else if (atual && !atual.el.classList.contains('paused')) atual.video.play().catch(() => {}); });
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input,textarea')) return;
+  const f = $('feed');
+  if (e.key === 'ArrowDown' || e.key === 'j') { f.scrollBy({ top: f.clientHeight, behavior: 'smooth' }); e.preventDefault(); }
+  if (e.key === 'ArrowUp' || e.key === 'k') { f.scrollBy({ top: -f.clientHeight, behavior: 'smooth' }); e.preventDefault(); }
+  if (e.key === 'm') $('muteBtn').click();
+  if (e.key === ' ' && atual) { atual.el.querySelector('.tapzone').click(); e.preventDefault(); }
+});
+
+/* ===== modais ===== */
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.closest('.modal').hidden = true);
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.hidden = true; }));
+try { $('nick').value = localStorage.getItem('simas-nick') || localStorage.getItem('simastelas-nick') || ''; } catch (e) {}
+
+/* ===== postar ===== */
+let arquivo = null;
+function abrirUp() {
+  if (!CLOUD || !PRESET) { toast('o upload ainda ta sendo ligado, segura ai'); return; }
+  $('mUp').hidden = false;
+}
+$('upBtn').onclick = abrirUp;
+$('file').onchange = () => {
+  const f = $('file').files[0]; arquivo = null; $('upErr').textContent = '';
+  if (!f) return;
+  if (!/^video\//.test(f.type)) { $('upErr').textContent = 'isso ai nao é video nao'; return; }
+  if (f.size > 100 * 1024 * 1024) { $('upErr').textContent = 'video muito grande (max 100 MB). corta ele ai'; return; }
+  arquivo = f;
+  const pk = $('pickTxt'); pk.innerHTML = ''; const pv = document.createElement('video'); pv.src = URL.createObjectURL(f); pv.muted = true; pv.autoplay = true; pv.loop = true; pv.playsInline = true; pk.appendChild(pv);
+};
+$('sendBtn').onclick = () => {
+  const nome = $('nick').value.trim(), legenda = $('cap').value.trim();
+  $('upErr').textContent = '';
+  if (!arquivo) { $('upErr').textContent = 'escolhe o video primeiro porra'; return; }
+  if (!nome) { $('upErr').textContent = 'bota teu nick'; return; }
+  try { localStorage.setItem('simas-nick', nome); } catch (e) {}
+  const fd = new FormData(); fd.append('file', arquivo); fd.append('upload_preset', PRESET); fd.append('folder', 'simastok');
+  const xhr = new XMLHttpRequest(); xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD}/video/upload`);
+  $('bar').hidden = false; $('sendBtn').disabled = true; $('sendBtn').textContent = 'subindo…';
+  xhr.upload.onprogress = e => { if (e.lengthComputable) $('bar').firstChild.style.width = (e.loaded / e.total * 100) + '%'; };
+  const fim = msg => { $('sendBtn').disabled = false; $('sendBtn').textContent = 'postar'; if (msg) $('upErr').textContent = msg; };
+  xhr.onerror = () => fim('caiu a internet no meio, tenta de novo');
+  xhr.onload = async () => {
+    let r = {}; try { r = JSON.parse(xhr.responseText); } catch (e) {}
+    if (xhr.status !== 200 || !r.public_id) { fim('o upload deu ruim: ' + ((r.error && r.error.message) || xhr.status)); return; }
+    try {
+      await db.collection('tok').add({ autor: uid, nome, legenda, cloud: CLOUD, pid: r.public_id, dur: Math.round(r.duration || 0), w: r.width || 0, h: r.height || 0, likes: [], coms: 0, t: FV.serverTimestamp() });
+      $('mUp').hidden = true; $('cap').value = ''; $('file').value = ''; arquivo = null; $('pickTxt').textContent = '📹 escolhe o video (ate 100 MB)'; $('bar').hidden = true; $('bar').firstChild.style.width = '0';
+      fim(); toast('postado 🔥'); $('feed').scrollTo({ top: 0 });
+    } catch (e) { fim('subiu mas nao salvou: ' + (e.code || e.message)); }
+  };
+  xhr.send(fd);
+};
+
+/* ===== comentários ===== */
+let comVid = null, comUnsub = null;
+function abrirCom(v) {
+  comVid = v; $('mCom').hidden = false; $('comList').innerHTML = '<p class="mut">carregando…</p>';
+  if (comUnsub) comUnsub();
+  comUnsub = db.collection('tokcom').where('vid', '==', v.id).limit(200).onSnapshot(q => {
+    const l = q.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((a, b) => ((a.t && a.t.toMillis()) || 9e15) - ((b.t && b.t.toMillis()) || 9e15));
+    $('comTitle').textContent = l.length + ' comentario' + (l.length === 1 ? '' : 's');
+    const box = $('comList'); box.innerHTML = '';
+    if (!l.length) box.innerHTML = '<p class="mut">ninguem comentou ainda. comenta ai porra</p>';
+    for (const c of l) {
+      const row = document.createElement('div'); row.className = 'com';
+      const d = document.createElement('div'); const b = document.createElement('b'); b.textContent = c.nome; const p = document.createElement('p'); p.textContent = c.texto; d.append(b, p);
+      row.append(avatar(c.nome), d);
+      if (admin || aprovadores.includes(uid) || c.autor === uid) { const x = document.createElement('button'); x.className = 'x'; x.textContent = '🗑️'; x.onclick = () => db.doc('tokcom/' + c.id).delete().then(() => db.doc('tok/' + comVid.id).update({ coms: FV.increment(-1) }).catch(() => {})); row.appendChild(x); }
+      box.appendChild(row);
+    }
+    box.scrollTop = box.scrollHeight;
+  }, () => { $('comList').innerHTML = '<p class="mut">nao deu pra carregar</p>'; });
+}
+$('mCom').addEventListener('click', e => { if (e.target === $('mCom') || e.target.closest('[data-close]')) { if (comUnsub) { comUnsub(); comUnsub = null; } } });
+const mandarCom = async () => {
+  const texto = $('comTxt').value.trim(); if (!texto || !comVid) return;
+  let nome = ''; try { nome = localStorage.getItem('simas-nick') || ''; } catch (e) {}
+  if (!nome) { nome = (prompt('qual teu nick?') || '').trim().slice(0, 30); if (!nome) return; try { localStorage.setItem('simas-nick', nome); } catch (e) {} }
+  $('comTxt').value = '';
+  try {
+    await db.collection('tokcom').add({ vid: comVid.id, autor: uid, nome, texto, t: FV.serverTimestamp() });
+    db.doc('tok/' + comVid.id).update({ coms: FV.increment(1) }).catch(() => {});
+  } catch (e) { toast('nao deu pra comentar'); $('comTxt').value = texto; }
+};
+$('comSend').onclick = mandarCom;
+$('comTxt').addEventListener('keydown', e => { if (e.key === 'Enter') mandarCom(); });
+</script>
+</body>
+</html>

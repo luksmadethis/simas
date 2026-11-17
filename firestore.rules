@@ -111,5 +111,35 @@ service cloud.firestore {
             && request.resource.data.get("deslikes", []) is list && request.resource.data.get("deslikes", []).size() <= 200);
       allow delete: if aprovador() || (signedIn() && resource.data.autor == request.auth.uid && resource.data.status == "nova");
     }
+
+    // ===== SimasTok (vídeos no Cloudinary, só os dados aqui) =====
+    match /tok/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(["autor", "nome", "legenda", "cloud", "pid", "dur", "w", "h", "likes", "coms", "t"])
+        && request.resource.data.autor == request.auth.uid
+        && request.resource.data.nome is string && request.resource.data.nome.size() > 0 && request.resource.data.nome.size() <= 30
+        && request.resource.data.legenda is string && request.resource.data.legenda.size() <= 300
+        && request.resource.data.cloud is string && request.resource.data.cloud.matches("^[a-z0-9_-]{1,64}$")
+        && request.resource.data.pid is string && request.resource.data.pid.matches("^simastok/[A-Za-z0-9_-]{1,100}$")
+        && request.resource.data.likes == [] && request.resource.data.coms == 0
+        && request.resource.data.t == request.time;
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["likes", "coms"])
+        && request.resource.data.likes is list && request.resource.data.likes.size() <= 500
+        && request.resource.data.coms is int && request.resource.data.coms >= 0;
+      allow delete: if aprovador() || (signedIn() && resource.data.autor == request.auth.uid);
+    }
+    match /tokcom/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(["vid", "autor", "nome", "texto", "t"])
+        && request.resource.data.autor == request.auth.uid
+        && request.resource.data.vid is string
+        && request.resource.data.nome is string && request.resource.data.nome.size() > 0 && request.resource.data.nome.size() <= 30
+        && request.resource.data.texto is string && request.resource.data.texto.size() > 0 && request.resource.data.texto.size() <= 300
+        && request.resource.data.t == request.time;
+      allow delete: if aprovador() || (signedIn() && resource.data.autor == request.auth.uid);
+    }
   }
 }
