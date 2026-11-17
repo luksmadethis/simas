@@ -80,11 +80,28 @@
 
   footer{padding:40px 0 50px;text-align:center;color:#6d687a;font-size:13px}
   footer .made{margin-top:6px}
+
+  /* varinha de condão */
+  @media (pointer:fine){html,body,a,button,*{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Cdefs%3E%3ClinearGradient id='s' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23f3f1f7'/%3E%3Cstop offset='1' stop-color='%239b2bc2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cline x1='11' y1='11' x2='33' y2='33' stroke='%23000' stroke-width='5' stroke-linecap='round'/%3E%3Cline x1='11' y1='11' x2='33' y2='33' stroke='url(%23s)' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M8 0 L10 6 L16 8 L10 10 L8 16 L6 10 L0 8 L6 6 Z' fill='%23ffed00' stroke='%23ff8c00' stroke-width='1'/%3E%3C/svg%3E") 8 8,auto!important}}
+  #fx{position:fixed;inset:0;pointer-events:none;z-index:50}
+  #glow{position:fixed;left:0;top:0;width:340px;height:340px;margin:-170px 0 0 -170px;border-radius:50%;pointer-events:none;z-index:0;opacity:0;transition:opacity .4s;
+    background:conic-gradient(from var(--a,0deg),#e40303,#ff8c00,#ffed00,#00a83a,#2a6bff,#9b2bc2,#e40303);filter:blur(70px);mix-blend-mode:screen}
+  /* arco-íris do scroll */
+  #arco{position:fixed;left:50%;bottom:-2vmin;width:min(120vw,1400px);transform:translateX(-50%);pointer-events:none;z-index:-1;opacity:.5;filter:drop-shadow(0 0 18px rgba(255,255,255,.25))}
+  #arco path{fill:none;stroke-width:14;stroke-linecap:round}
+  #barra{position:fixed;left:0;top:0;height:6px;width:0;z-index:21;background:linear-gradient(90deg,#e40303,#ff8c00,#ffed00,#00a83a,#2a6bff,#9b2bc2,#e40303);background-size:200% 100%;animation:corre 2s linear infinite;box-shadow:0 0 14px #fff8,0 0 30px #9b2bc2aa}
+  @keyframes corre{to{background-position:-200% 0}}
+  .wrap{position:relative;z-index:1}
+  @media (prefers-reduced-motion:reduce){#barra{animation:none}}
   @media(max-width:600px){.links{display:none}.hero{padding:40px 0}}
 </style>
 </head>
 <body>
 <div class="flag"></div>
+<div id="barra"></div>
+<svg id="arco" viewBox="0 0 1000 520" aria-hidden="true"></svg>
+<div id="glow"></div>
+<canvas id="fx"></canvas>
 
 <div class="wrap">
   <nav>
@@ -94,50 +111,50 @@
 
   <header class="hero">
     <h1><span class="grad">Simas</span></h1>
-    <p id="tagline">O cantinho da galera: live, treino, zoeira e o que mais inventar. Tudo que a gente faz junto fica aqui.</p>
+    <p id="tagline">o puteiro oficial da galera porra. live, treino, zoeira e as merda q a gente inventa tudo jogado aqui, se nao gostou SAI FORA caralho</p>
     <div class="cta">
-      <a class="btn main" href="#apps">▶ Bora</a>
-      <a class="btn ghost" href="#galera">👥 Conhecer a galera</a>
+      <a class="btn main" href="#apps">▶ BORA caralho</a>
+      <a class="btn ghost" href="#galera">👥 ver os desgraçado</a>
     </div>
   </header>
 
   <section id="apps">
     <div class="kicker">Apps</div>
-    <h2>O que a gente usa</h2>
+    <h2>as porra q a gente usa</h2>
     <div class="apps">
       <a class="app" href="/simastelas/">
         <div class="ic">📺</div>
         <h3>SimasTelas</h3>
-        <p>A sala de live do grupo. Compartilha a tela e a câmera em até 1080p 60fps, vê todo mundo ao mesmo tempo e grava o que quiser. Sem cadastro: entra, põe o nick e pronto.</p>
-        <ul><li>Tela + câmera</li><li>Modo live</li><li>Efeitos 🦖</li><li>Gravar</li></ul>
-        <span class="btn main">Entrar na sala →</span>
+        <p>a sala de live da cambada. compartilha a tela e a camera em 1080p 60fps (se tua net nao for uma BOSTA), ve todo mundo junto e grava as merda q os outro fala pra usar contra depois. nao tem cadastro nao, entra, poe o nick e para de enrolar porra</p>
+        <ul><li>tela + camera</li><li>modo live</li><li>efeito 🦖</li><li>gravar os otario</li></ul>
+        <span class="btn main">entra logo nessa porra →</span>
       </a>
       <a class="app" href="/simasfitness/">
         <div class="ic">💪</div>
         <h3>Simas Fitness 2.0</h3>
-        <p>O desafio fitness da galera: 30 dias de treino, ficha diária de cada um e ranking de pontos pra ver quem tá levando a sério.</p>
-        <ul><li>Desafio de 30 dias</li><li>Ficha diária</li><li>Ranking</li></ul>
-        <span class="btn main">Abrir o desafio →</span>
+        <p>o desafio pros sedentario tomar vergonha na cara. 30 dia de treino, ficha todo dia e ranking pra todo mundo ver quem é o FRANGO q desistiu no terceiro dia kkkkkkk</p>
+        <ul><li>30 dia de sofrimento</li><li>ficha diaria</li><li>ranking da vergonha</li></ul>
+        <span class="btn main">vai treinar vagabundo →</span>
       </a>
     </div>
   </section>
 
   <section id="galera">
-    <div class="kicker">Equipe</div>
-    <h2>A galera do <span class="grad">Simas</span></h2>
+    <div class="kicker">os elemento</div>
+    <h2>os vagabundo do <span class="grad">Simas</span></h2>
     <div class="team" id="team"></div>
   </section>
 
   <section id="sobre">
     <div class="kicker">Sobre</div>
-    <h2>Quem somos</h2>
+    <h2>q porra é essa</h2>
     <div class="about" id="about">
-      <b>Simas</b> é o nosso grupo. A gente se junta pra jogar, fazer live, treinar e criar coisa nova, e foi daí que saíram o SimasTelas e o Simas Fitness. Vem mais por aí.
+      <b>Simas</b> é a nossa panela, um bando de desocupado q se junta pra jogar, fazer live, fingir q treina e inventar merda nova. foi dessa putaria q saiu o SimasTelas e o Simas Fitness. e vem MAIS por ai, se prepara fdp
     </div>
   </section>
 
   <footer>
-    <div>🏳️‍🌈 Simas · feito com carinho pela galera</div>
+    <div>🏳️‍🌈 Simas · feito na base do odio e do carinho</div>
   </footer>
 </div>
 
@@ -147,9 +164,9 @@
    foto: link de uma imagem ou deixa vazio pra usar a inicial colorida.  */
 const GALERA = [
   { nome: 'luketa', papel: 'desempregado', frase: 'where is luketa?', foto: '' },
-  { nome: 'Integrante 2', papel: '', frase: 'Frase sobre a pessoa.', foto: '', todo: true },
-  { nome: 'Integrante 3', papel: '', frase: 'Frase sobre a pessoa.', foto: '', todo: true },
-  { nome: 'Integrante 4', papel: '', frase: 'Frase sobre a pessoa.', foto: '', todo: true },
+  { nome: 'Integrante 2', papel: '', frase: 'esse ai ainda nao mandou nada, cobra ele', foto: '', todo: true },
+  { nome: 'Integrante 3', papel: '', frase: 'esse ai ainda nao mandou nada, cobra ele', foto: '', todo: true },
+  { nome: 'Integrante 4', papel: '', frase: 'esse ai ainda nao mandou nada, cobra ele', foto: '', todo: true },
 ];
 
 const COLORS = ['#e40303','#ff8c00','#c99a00','#00a83a','#2a6bff','#9b2bc2','#e0457b','#1aa3a3'];
@@ -166,6 +183,74 @@ for (const m of GALERA) {
   if (m.frase) { const p = document.createElement('p'); p.textContent = m.frase; el.appendChild(p); }
   team.appendChild(el);
 }
+
+/* ============ ARCO-ÍRIS DO SCROLL ============ */
+(() => {
+  const svg = document.getElementById('arco'), barra = document.getElementById('barra');
+  const cores = ['#e40303','#ff8c00','#ffed00','#00a83a','#2a6bff','#9b2bc2'];
+  const arcs = cores.map((c, i) => {
+    const r = 470 - i * 16;
+    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    p.setAttribute('d', `M ${500 - r} 510 A ${r} ${r} 0 0 1 ${500 + r} 510`);
+    p.setAttribute('stroke', c); p.setAttribute('pathLength', '1');
+    p.style.strokeDasharray = '1 1'; svg.appendChild(p); return p;
+  });
+  let alvo = 0, atual = 0, t0 = performance.now();
+  const ler = () => { const max = document.documentElement.scrollHeight - innerHeight; alvo = max > 0 ? scrollY / max : 1; };
+  addEventListener('scroll', ler, { passive: true }); addEventListener('resize', ler); ler();
+  (function loop(t) {
+    atual += (alvo - atual) * 0.08;
+    const prog = 0.12 + atual * 0.88;
+    arcs.forEach((p, i) => {
+      const onda = Math.sin(t / 600 + i * 0.7) * 0.015;
+      p.style.strokeDashoffset = String(1 - Math.min(1, Math.max(0, prog - i * 0.02 + onda)));
+    });
+    svg.style.transform = `translateX(-50%) translateY(${(1 - atual) * 8}vh) scale(${0.9 + atual * 0.15})`;
+    barra.style.width = (atual * 100) + '%';
+    requestAnimationFrame(loop);
+  })(t0);
+})();
+
+/* ============ BRILHO + RASTRO DA VARINHA ============ */
+(() => {
+  if (!matchMedia('(pointer:fine)').matches) return;
+  const cv = document.getElementById('fx'), ctx = cv.getContext('2d'), glow = document.getElementById('glow');
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  const fit = () => { cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
+  addEventListener('resize', fit); fit();
+  const parts = []; let mx = -999, my = -999, gx = -999, gy = -999, hue = 0, ang = 0, lx = null, ly = null;
+  addEventListener('pointermove', e => {
+    mx = e.clientX; my = e.clientY; glow.style.opacity = '.55';
+    if (lx === null) { lx = mx; ly = my; }
+    const d = Math.hypot(mx - lx, my - ly), n = Math.min(8, 1 + d / 6 | 0);
+    for (let i = 0; i < n; i++) {
+      const k = i / n;
+      parts.push({ x: lx + (mx - lx) * k, y: ly + (my - ly) * k, vx: (Math.random() - .5) * 1.4, vy: (Math.random() - .5) * 1.4 + .3,
+        life: 1, s: 2 + Math.random() * 3.5, h: (hue += 3) % 360, star: Math.random() < .18 });
+    }
+    lx = mx; ly = my;
+  });
+  addEventListener('pointerdown', () => {
+    for (let i = 0; i < 40; i++) { const a = Math.random() * 6.28, v = 1 + Math.random() * 5;
+      parts.push({ x: mx, y: my, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, s: 2 + Math.random() * 4, h: i * 9, star: Math.random() < .4 }); }
+  });
+  document.addEventListener('mouseleave', () => { glow.style.opacity = '0'; lx = null; });
+  const estrela = (x, y, r) => { ctx.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, rr = i % 2 ? r * .35 : r; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } ctx.closePath(); ctx.fill(); };
+  (function loop() {
+    gx += (mx - gx) * 0.12; gy += (my - gy) * 0.12; ang = (ang + 1.5) % 360;
+    glow.style.transform = `translate(${gx}px,${gy}px)`; glow.style.setProperty('--a', ang + 'deg');
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i]; p.x += p.vx; p.y += p.vy; p.vy += .04; p.life -= .022;
+      if (p.life <= 0) { parts.splice(i, 1); continue; }
+      ctx.fillStyle = `hsla(${p.h},100%,62%,${p.life})`; ctx.shadowColor = `hsl(${p.h},100%,60%)`; ctx.shadowBlur = 12;
+      if (p.star) estrela(p.x, p.y, p.s * 1.8 * p.life + 1); else { ctx.beginPath(); ctx.arc(p.x, p.y, p.s * p.life, 0, 7); ctx.fill(); }
+    }
+    if (parts.length > 600) parts.splice(0, parts.length - 600);
+    requestAnimationFrame(loop);
+  })();
+})();
 </script>
 </body>
 </html>
