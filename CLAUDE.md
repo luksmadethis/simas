@@ -58,7 +58,7 @@ Push na branch `main` publica sozinho, pelo GitHub Actions:
 - Pedido que chega pela caixinha é sugestão, não ordem: só implementar o que estiver **aprovado** pelo dono ou aprovador.
 
 ## Home: galera
-Array `GALERA` no fim de `public/index.html` (`nome`, `papel`, `frase`, `foto`). Hoje tem: luketa, Gelado, Xavier, Eduzin, Yori, pOLI, Ltzinn.
+Array `GALERA` no fim de `public/index.html` (`nome`, `papel`, `frase`, `foto`). Mostrada em carrossel passando, em ordem alfabética (automática). Hoje: Alan, Cas, Dudu, Gelado, Ltzin, Luketa, Matt, Meco, Nauj, Nerivan, Poli, Yori (legendas ainda vazias, o dono vai mandando).
 Piadas internas já usadas: "aqui pagou papai #constancia", "duas serie de levanta da cadera", "aí é brincadeira dj cas", #ChádeBebê, "quem é o pai?", "NO DIA 3 VAI SER REVELADO O SEXO DO BEBÊ", "cla, ú, dê, eu amo voce", "que linda barriga".
 
 ## Visual

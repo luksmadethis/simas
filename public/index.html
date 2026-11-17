@@ -65,7 +65,12 @@
   .app .btn{align-self:flex-start;margin-top:6px}
 
   /* galera */
-  .team{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+  .team{overflow:hidden;margin:0 -22px;padding:6px 0 10px;-webkit-mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+  .trilho{display:flex;gap:16px;width:max-content;animation:passa 40s linear infinite;padding:4px 0}
+  .team:hover .trilho,.trilho.pausa{animation-play-state:paused}
+  .trilho .member{width:210px;flex:none}
+  @keyframes passa{to{transform:translateX(calc(-50% - 8px))}}
+  @media (prefers-reduced-motion:reduce){.trilho{animation:none}.team{overflow-x:auto}}
   .member{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 18px;text-align:center;transition:transform .15s}
   .member:hover{transform:translateY(-3px)}
   .av{width:92px;height:92px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:38px;font-weight:900;color:#fff;background-size:cover;background-position:center;position:relative}
@@ -173,19 +178,25 @@
    Pra adicionar alguém: copia uma linha e troca os dados.
    foto: link de uma imagem ou deixa vazio pra usar a inicial colorida.  */
 const GALERA = [
-  { nome: 'luketa', papel: 'desempregado', frase: 'where is luketa?', foto: '' },
-  { nome: 'Gelado', papel: 'critico gastronomico', frase: 'Delicia', foto: '' },
-  { nome: 'Xavier', papel: 'comenta tudo duas vez', frase: 'Kkkkkkkkkkkkkkk aí é brincadeira dj cas (2x)', foto: '' },
-  { nome: 'Eduzin', papel: 'investigador de paternidade', frase: 'quem é o pai? (um degrau de cada vez)', foto: '' },
-  { nome: 'Yori', papel: 'barrigudo oficial', frase: 'cla, ú, dê, eu amo voce....', foto: '' },
-  { nome: 'pOLI', papel: 'admirador de barriga', frase: 'que linda barriga', foto: '' },
-  { nome: 'Ltzinn', papel: 'filho do luis gustavo', frase: 'chamou o luis gustavo de mamãe na call', foto: '' },
+  { nome: 'Alan', papel: '', frase: '', foto: '' },
+  { nome: 'Dudu', papel: '', frase: '', foto: '' },
+  { nome: 'Nauj', papel: '', frase: '', foto: '' },
+  { nome: 'Poli', papel: '', frase: '', foto: '' },
+  { nome: 'Cas', papel: '', frase: '', foto: '' },
+  { nome: 'Gelado', papel: '', frase: '', foto: '' },
+  { nome: 'Ltzin', papel: '', frase: '', foto: '' },
+  { nome: 'Matt', papel: '', frase: '', foto: '' },
+  { nome: 'Luketa', papel: '', frase: '', foto: '' },
+  { nome: 'Nerivan', papel: '', frase: '', foto: '' },
+  { nome: 'Yori', papel: '', frase: '', foto: '' },
+  { nome: 'Meco', papel: '', frase: '', foto: '' },
 ];
 
 const COLORS = ['#e40303','#ff8c00','#c99a00','#00a83a','#2a6bff','#9b2bc2','#e0457b','#1aa3a3'];
 const colorOf = s => { let h = 0; for (const ch of s) h = (h*31 + ch.charCodeAt(0)) >>> 0; return COLORS[h % COLORS.length]; };
 const team = document.getElementById('team');
-for (const m of GALERA) {
+const ordem = [...GALERA].sort((x, y) => x.nome.localeCompare(y.nome, 'pt-BR', { sensitivity: 'base' }));
+const card = m => {
   const el = document.createElement('div'); el.className = 'member' + (m.todo ? ' todo' : '');
   const av = document.createElement('div'); av.className = 'av';
   if (m.foto) av.style.backgroundImage = `url("${m.foto}")`;
@@ -194,83 +205,16 @@ for (const m of GALERA) {
   el.append(av, h);
   if (m.papel) { const r = document.createElement('div'); r.className = 'role'; r.textContent = m.papel; el.appendChild(r); }
   if (m.frase) { const p = document.createElement('p'); p.textContent = m.frase; el.appendChild(p); }
-  team.appendChild(el);
-}
-
-/* ============ ARCO-ÍRIS DO SCROLL ============
-   desce de cima pra baixo serpenteando de uma ponta a outra da tela, atrás de tudo.
-   brilho que corre pela faixa + estrelinhas piscando (só CSS, leve).
-   o desenho só refaz quando scrolla. */
-(() => {
-  const svg = document.getElementById('arco'), barra = document.getElementById('barra');
-  const NS = 'http://www.w3.org/2000/svg';
-  const cores = ['#e40303','#ff8c00','#ffed00','#00a83a','#2a6bff','#9b2bc2'];
-  const mk = (tag, attrs, pai = svg) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); pai.appendChild(e); return e; };
-  const halo = cores.map(c => mk('path', { stroke: c, class: 'halo' }));
-  const bandas = cores.map(c => mk('path', { stroke: c }));
-  const reflexo = mk('path', { class: 'reflexo' });
-  const corre = [mk('path', { class: 'corre', pathLength: 1000 }), mk('path', { class: 'corre b', pathLength: 1000 })];
-  const STAR = 'M0 -1 L.22 -.22 L1 0 L.22 .22 L0 1 L-.22 .22 L-1 0 L-.22 -.22 Z';
-  const estrelas = Array.from({ length: 16 }, (_, i) => {
-    const g = mk('g', {}); const p = mk('path', { d: STAR, class: 'pisca' }, g);
-    p.style.animationDelay = (i * 0.37 % 1.8).toFixed(2) + 's'; p.style.animationDuration = (1.4 + (i * 0.53 % 1.2)).toFixed(2) + 's';
-    return { g, t: (i + 0.5) / 16, lado: ((i * 7) % 6) - 2.5, s: 0.6 + (i * 0.31 % 0.8) };
-  });
-
-  let B = [], C = [], acc = [], bw = 16, total = 1;
-  const montar = () => {
-    const W = innerWidth, H = innerHeight; bw = Math.max(9, Math.min(20, W / 55));
-    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    const N = 260, y0 = -bw * 6, y1 = H + bw * 6, VOLTAS = 1.6;
-    // vai de uma ponta a outra da tela, mas a curva nunca fica mais fechada que a largura do arco-íris (senão a faixa de dentro dá nó)
-    const span = y1 - y0, raioMin = bw * 3.8;
-    const amp = Math.max(0, Math.min(W / 2 - bw * 3.6, span * span / ((VOLTAS * Math.PI) ** 2 * raioMin)));
-    C = [];
-    for (let k = 0; k <= N; k++) { const t = k / N; C.push([W / 2 + amp * Math.sin(t * Math.PI * VOLTAS - Math.PI / 2), y0 + t * (y1 - y0)]); }
-    acc = [0]; for (let k = 1; k <= N; k++) acc.push(acc[k - 1] + Math.hypot(C[k][0] - C[k - 1][0], C[k][1] - C[k - 1][1])); total = acc[N];
-    const norm = C.map((p, k) => { const a = C[Math.max(0, k - 1)], b = C[Math.min(N, k + 1)]; let nx = -(b[1] - a[1]), ny = b[0] - a[0]; const L = Math.hypot(nx, ny) || 1; return [nx / L, ny / L]; });
-    B = cores.map((_, i) => C.map((p, k) => [p[0] + norm[k][0] * (i - 2.5) * bw, p[1] + norm[k][1] * (i - 2.5) * bw]));
-    B.norm = norm;
-    bandas.forEach(p => p.setAttribute('stroke-width', bw + 1));
-    halo.forEach(p => p.setAttribute('stroke-width', bw * 2.8));
-    reflexo.setAttribute('stroke-width', Math.max(1.5, bw * .16));
-    corre[0].setAttribute('stroke-width', Math.max(3, bw * .5)); corre[1].setAttribute('stroke-width', Math.max(2, bw * .3));
-    desenhar(atual < 0 ? alvo : atual);
-  };
-  const ate = (pts, k, f) => {
-    let d = 'M' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1);
-    for (let i = 1; i <= k; i++) d += 'L' + pts[i][0].toFixed(1) + ' ' + pts[i][1].toFixed(1);
-    if (k + 1 < pts.length && f > 0) { const a = pts[k], b = pts[k + 1]; d += 'L' + (a[0] + (b[0] - a[0]) * f).toFixed(1) + ' ' + (a[1] + (b[1] - a[1]) * f).toFixed(1); }
-    return d;
-  };
-  const idx = len => { let k = 0; while (k < acc.length - 2 && acc[k + 1] < len) k++; return [k, Math.min(1, Math.max(0, (len - acc[k]) / ((acc[k + 1] - acc[k]) || 1)))]; };
-  function desenhar(prog) {
-    const L = (0.06 + prog * 0.94) * total, [k, f] = idx(L);
-    B.forEach((pts, i) => { const d = ate(pts, k, f); bandas[i].setAttribute('d', d); halo[i].setAttribute('d', d); });
-    const hl = B[0].map((p, i) => [p[0] + (B[1][i][0] - p[0]) * .4, p[1] + (B[1][i][1] - p[1]) * .4]);
-    reflexo.setAttribute('d', ate(hl, k, f));
-    const meio = B[2].map((p, i) => [(p[0] + B[3][i][0]) / 2, (p[1] + B[3][i][1]) / 2]);
-    const dm = ate(meio, k, f); corre.forEach(p => p.setAttribute('d', dm));
-    for (const e of estrelas) {
-      const vis = e.t * total < L - bw * 2;
-      e.g.style.display = vis ? '' : 'none'; if (!vis) continue;
-      const [kk] = idx(e.t * total), c = C[kk], n = B.norm[kk];
-      e.g.setAttribute('transform', `translate(${(c[0] + n[0] * e.lado * bw * 1.25).toFixed(1)} ${(c[1] + n[1] * e.lado * bw * 1.25).toFixed(1)}) scale(${(bw * .55 * e.s).toFixed(2)})`);
-    }
-    barra.style.transform = `scaleX(${prog})`;
-  }
-  let alvo = 0, atual = -1, rodando = false;
-  const passo = () => {
-    atual = atual < 0 ? alvo : atual + (alvo - atual) * 0.16;
-    if (Math.abs(alvo - atual) < 0.0008) atual = alvo;
-    desenhar(atual);
-    if (atual !== alvo) requestAnimationFrame(passo); else rodando = false;
-  };
-  const ler = () => { const max = document.documentElement.scrollHeight - innerHeight; alvo = max > 0 ? Math.min(1, scrollY / max) : 1; if (!rodando) { rodando = true; requestAnimationFrame(passo); } };
-  addEventListener('scroll', ler, { passive: true });
-  let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(montar, 120); });
-  montar(); ler();
-})();
+  return el;
+};
+// carrossel passando sozinho: a lista vai 2x pra emendar sem buraco
+const trilho = document.createElement('div'); trilho.className = 'trilho';
+for (let k = 0; k < 2; k++) for (const m of ordem) { const c = card(m); if (k) c.setAttribute('aria-hidden', 'true'); trilho.appendChild(c); }
+trilho.style.animationDuration = (ordem.length * 3.2) + 's';
+team.appendChild(trilho);
+// segurou/arrastou no celular: pausa
+team.addEventListener('touchstart', () => trilho.classList.add('pausa'), { passive: true });
+team.addEventListener('touchend', () => setTimeout(() => trilho.classList.remove('pausa'), 1500), { passive: true });
 </script>
 </body>
 </html>
