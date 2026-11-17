@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simas</title>
+<meta name="description" content="O grupo Simas — SimasTelas, Simas Fitness e a galera toda.">
+<meta name="theme-color" content="#9b2bc2">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Simas">
+<meta property="og:title" content="Simas 🏳️‍🌈">
+<meta property="og:description" content="O grupo Simas — SimasTelas, Simas Fitness e a galera toda.">
+<meta property="og:image" content="https://simas.web.app/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 6'><rect y='0' width='6' height='1' fill='%23e40303'/><rect y='1' width='6' height='1' fill='%23ff8c00'/><rect y='2' width='6' height='1' fill='%23ffed00'/><rect y='3' width='6' height='1' fill='%23008026'/><rect y='4' width='6' height='1' fill='%23004dff'/><rect y='5' width='6' height='1' fill='%23750787'/></svg>">
+<style>
+  :root{
+    --r:#e40303;--o:#ff8c00;--y:#ffed00;--g:#00a83a;--b:#2a6bff;--v:#9b2bc2;
+    --rainbow:linear-gradient(90deg,var(--r),var(--o),var(--y),var(--g),var(--b),var(--v));
+    --bg:#0d0c12;--card:#17151f;--card2:#1e1b28;--line:#2a2733;--txt:#f3f1f7;--mut:#9a95a8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  .flag{height:6px;background:var(--rainbow);position:sticky;top:0;z-index:20}
+  .grad{background:var(--rainbow);-webkit-background-clip:text;background-clip:text;color:transparent;display:inline-block}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 22px}
+
+  /* topo */
+  nav{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+  .logo{font-weight:900;font-size:26px;letter-spacing:-.3px}
+  .logo span:nth-child(6n+1){color:#e40303}.logo span:nth-child(6n+2){color:#ff8c00}.logo span:nth-child(6n+3){color:#ffed00}
+  .logo span:nth-child(6n+4){color:#00c13a}.logo span:nth-child(6n+5){color:#2a6bff}.logo span:nth-child(6n){color:#a43cd8}
+  .links{display:flex;gap:18px;font-size:14px;color:var(--mut)}
+  .links a:hover{color:var(--txt)}
+
+  /* hero */
+  .hero{padding:70px 0 60px;text-align:center;position:relative}
+  .hero::before{content:"";position:absolute;inset:-40px -200px auto;height:420px;background:radial-gradient(closest-side,rgba(155,43,194,.25),transparent),radial-gradient(closest-side at 30% 60%,rgba(42,107,255,.18),transparent),radial-gradient(closest-side at 70% 40%,rgba(228,3,3,.14),transparent);z-index:-1;filter:blur(10px)}
+  .hero h1{font-size:clamp(56px,11vw,120px);line-height:.95;font-weight:900;letter-spacing:-3px}
+  .hero p{max-width:640px;margin:22px auto 0;font-size:clamp(16px,2.2vw,19px);color:#c9c4d6}
+  .cta{display:inline-flex;gap:12px;margin-top:30px;flex-wrap:wrap;justify-content:center}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;padding:13px 22px;font-weight:800;font-size:15px;transition:transform .1s,filter .15s}
+  .btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+  .btn.main{background:linear-gradient(90deg,var(--r),var(--o) 25%,var(--g) 55%,var(--b) 80%,var(--v));color:#fff}
+  .btn.ghost{background:var(--card);border:1px solid var(--line)}
+
+  section{padding:50px 0}
+  .kicker{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);font-weight:700;margin-bottom:8px}
+  h2{font-size:clamp(28px,4vw,38px);letter-spacing:-1px;margin-bottom:24px}
+
+  /* apps */
+  .apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+  .app{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:12px;transition:transform .15s,border-color .15s}
+  .app:hover{transform:translateY(-3px);border-color:#3b3550}
+  .app::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--rainbow)}
+  .app .ic{font-size:40px;line-height:1}
+  .app h3{font-size:24px;letter-spacing:-.5px}
+  .app p{color:var(--mut);font-size:15px;flex:1}
+  .app ul{list-style:none;display:flex;flex-wrap:wrap;gap:6px}
+  .app li{font-size:12px;background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:#c9c4d6}
+  .app .btn{align-self:flex-start;margin-top:6px}
+
+  /* galera */
+  .team{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+  .member{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 18px;text-align:center;transition:transform .15s}
+  .member:hover{transform:translateY(-3px)}
+  .av{width:92px;height:92px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:38px;font-weight:900;color:#fff;background-size:cover;background-position:center;position:relative}
+  .av::after{content:"";position:absolute;inset:-4px;border-radius:50%;padding:3px;background:var(--rainbow);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+  .member h4{font-size:18px}
+  .member .role{font-size:12px;color:#c9a7ff;font-weight:700;margin-top:2px}
+  .member p{font-size:14px;color:var(--mut);margin-top:8px}
+  .member.todo{opacity:.55;border-style:dashed}
+
+  .about{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:28px;font-size:16px;color:#c9c4d6}
+  .about b{color:var(--txt)}
+
+  footer{padding:40px 0 50px;text-align:center;color:#6d687a;font-size:13px}
+  footer .made{margin-top:6px}
+  @media(max-width:600px){.links{display:none}.hero{padding:40px 0}}
+</style>
+</head>
+<body>
+<div class="flag"></div>
+
+<div class="wrap">
+  <nav>
+    <a href="#" class="logo" aria-label="Simas"><span>S</span><span>i</span><span>m</span><span>a</span><span>s</span></a>
+    <div class="links"><a href="#apps">Apps</a><a href="#galera">Galera</a><a href="#sobre">Sobre</a></div>
+  </nav>
+
+  <header class="hero">
+    <h1><span class="grad">Simas</span></h1>
+    <p id="tagline">O cantinho da galera: live, treino, zoeira e o que mais inventar. Tudo que a gente faz junto fica aqui.</p>
+    <div class="cta">
+      <a class="btn main" href="#apps">▶ Bora</a>
+      <a class="btn ghost" href="#galera">👥 Conhecer a galera</a>
+    </div>
+  </header>
+
+  <section id="apps">
+    <div class="kicker">Apps</div>
+    <h2>O que a gente usa</h2>
+    <div class="apps">
+      <a class="app" href="https://luksmadethis.github.io/simastelas/">
+        <div class="ic">📺</div>
+        <h3>SimasTelas</h3>
+        <p>A sala de live do grupo. Compartilha a tela e a câmera em até 1080p 60fps, vê todo mundo ao mesmo tempo e grava o que quiser. Sem cadastro: entra, põe o nick e pronto.</p>
+        <ul><li>Tela + câmera</li><li>Modo live</li><li>Efeitos 🦖</li><li>Gravar</li></ul>
+        <span class="btn main">Entrar na sala →</span>
+      </a>
+      <a class="app" href="https://luksmadethis.github.io/simasfitness2/">
+        <div class="ic">💪</div>
+        <h3>Simas Fitness 2.0</h3>
+        <p>O desafio fitness da galera: 30 dias de treino, ficha diária de cada um e ranking de pontos pra ver quem tá levando a sério.</p>
+        <ul><li>Desafio de 30 dias</li><li>Ficha diária</li><li>Ranking</li></ul>
+        <span class="btn main">Abrir o desafio →</span>
+      </a>
+    </div>
+  </section>
+
+  <section id="galera">
+    <div class="kicker">Equipe</div>
+    <h2>A galera do <span class="grad">Simas</span></h2>
+    <div class="team" id="team"></div>
+  </section>
+
+  <section id="sobre">
+    <div class="kicker">Sobre</div>
+    <h2>Quem somos</h2>
+    <div class="about" id="about">
+      <b>Simas</b> é o nosso grupo. A gente se junta pra jogar, fazer live, treinar e criar coisa nova, e foi daí que saíram o SimasTelas e o Simas Fitness. Vem mais por aí.
+    </div>
+  </section>
+
+  <footer>
+    <div>🏳️‍🌈 Simas · feito com carinho pela galera</div>
+    <div class="made">made by Kiddy Luks</div>
+  </footer>
+</div>
+
+<script>
+/* ============ GALERA ============
+   Pra adicionar alguém: copia uma linha e troca os dados.
+   foto: link de uma imagem ou deixa vazio pra usar a inicial colorida.  */
+const GALERA = [
+  { nome: 'luketa', papel: 'criador dos apps', frase: 'Produtor no FL Studio e quem inventa as coisas do Simas.', foto: '' },
+  { nome: 'Integrante 2', papel: '', frase: 'Frase sobre a pessoa.', foto: '', todo: true },
+  { nome: 'Integrante 3', papel: '', frase: 'Frase sobre a pessoa.', foto: '', todo: true },
+  { nome: 'Integrante 4', papel: '', frase: 'Frase sobre a pessoa.', foto: '', todo: true },
+];
+
+const COLORS = ['#e40303','#ff8c00','#c99a00','#00a83a','#2a6bff','#9b2bc2','#e0457b','#1aa3a3'];
+const colorOf = s => { let h = 0; for (const ch of s) h = (h*31 + ch.charCodeAt(0)) >>> 0; return COLORS[h % COLORS.length]; };
+const team = document.getElementById('team');
+for (const m of GALERA) {
+  const el = document.createElement('div'); el.className = 'member' + (m.todo ? ' todo' : '');
+  const av = document.createElement('div'); av.className = 'av';
+  if (m.foto) av.style.backgroundImage = `url("${m.foto}")`;
+  else { av.style.background = colorOf(m.nome); av.textContent = ([...m.nome][0] || '?').toUpperCase(); }
+  const h = document.createElement('h4'); h.textContent = m.nome;
+  el.append(av, h);
+  if (m.papel) { const r = document.createElement('div'); r.className = 'role'; r.textContent = m.papel; el.appendChild(r); }
+  if (m.frase) { const p = document.createElement('p'); p.textContent = m.frase; el.appendChild(p); }
+  team.appendChild(el);
+}
+</script>
+</body>
+</html>
