@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="build" content="1794945786">
+<meta name="build" content="1794956163">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SimasTelas</title>
 <meta name="description" content="Faz live ai primo 🏳️‍🌈 Transmissão de tela em 1080p 60fps.">
@@ -521,7 +521,7 @@ const genOf = pid => pid === HUB_ID ? 0 : (pid.startsWith(HUB_ID + '-g') ? +pid.
 const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 let hubGen = -1, probe = null, pingMs = null, lastPong = 0, hubHost = null, joinTries = 0, joinMsg = 'carregando a sala…', mobileMayClaim = !IS_MOBILE, noClaimUntil = 0;
 let bootAt = 0, hubPongs = false, hubAlive = 0;
-const badGen = {};   // "porta" que abre mas não responde (dono travado): ignora por um tempo
+const badGen = {}, unreach = [];   // "porta" que abre mas não responde (dono travado): ignora por um tempo
 
 function boot(){
   renderMe();
@@ -577,7 +577,16 @@ function joinHub(){
     if (g >= 0) { p.done = true; clearTimeout(p.timer); closeOthers(p.conns[g]); attachHub(p.conns[g], g); return; }
     if (!final && p.res.some(r => r == null)) return;
     p.done = true; clearTimeout(p.timer); closeOthers(null);
-    const free = p.res.indexOf('gone');
+    // sala que existe mas não conecta (timeout) = provavelmente a rede de alguém bloqueando.
+    // NÃO cria sala reserva por cima dela (isso deixava a pessoa sozinha numa sala vazia): continua tentando.
+    for (let k = 0; k < HUB_GENS; k++) unreach[k] = p.res[k] === 'timeout' && !(badGen[k] > Date.now()) ? (unreach[k] || 0) + 1 : 0;
+    let free = -1;
+    for (let k = 0; k < HUB_GENS; k++) {
+      if (p.res[k] === 'gone') { free = k; break; }
+      if (p.res[k] === 'timeout' && !(badGen[k] > Date.now()) && unreach[k] < 25) break;   // tem sala viva antes: não pula ela
+    }
+    const blocked = unreach.some(n => n >= 2);
+    if (blocked && !gotList) { joinMsg = 'a sala ta aberta mas tua conexão nao ta chegando nela 😩 continuo tentando… se nao rolar, testa outra internet (4G) ou desliga VPN/antivirus'; render(); }
     if (free >= 0 && (mobileMayClaim || joinTries > 3) && Date.now() > noClaimUntil) claimHub(free);
     else { if (IS_MOBILE) mobileMayClaim = true; setTimeout(joinHub, free >= 0 ? 1500 : 600); }  // celular espera um PC virar dono primeiro
   };
