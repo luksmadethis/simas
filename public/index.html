@@ -65,7 +65,7 @@
   .app .btn{align-self:flex-start;margin-top:6px}
 
   /* galera */
-  .team{overflow:hidden;margin:0 -22px;padding:6px 0 10px;-webkit-mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+  .team{overflow:hidden;width:100vw;margin-left:calc(50% - 50vw);padding:6px 0 10px}
   .trilho{display:flex;gap:16px;width:max-content;animation:passa 40s linear infinite;padding:4px 0}
   .team:hover .trilho,.trilho.pausa{animation-play-state:paused}
   .trilho .member{width:210px;flex:none}
@@ -183,7 +183,7 @@ const GALERA = [
   { nome: 'Nauj', papel: '', frase: '', foto: '' },
   { nome: 'Poli', papel: '', frase: '', foto: '' },
   { nome: 'Cas', papel: '', frase: '', foto: '' },
-  { nome: 'Gelado', papel: '', frase: '', foto: '' },
+  { nome: 'Gelado', papel: 'Empresário e magnata', frase: 'Não faz menos que R$500 por dia.', foto: '' },
   { nome: 'Ltzin', papel: '', frase: '', foto: '' },
   { nome: 'Matt', papel: '', frase: '', foto: '' },
   { nome: 'Luketa', papel: '', frase: '', foto: '' },
@@ -210,7 +210,7 @@ const card = m => {
 // carrossel passando sozinho: a lista vai 2x pra emendar sem buraco
 const trilho = document.createElement('div'); trilho.className = 'trilho';
 for (let k = 0; k < 2; k++) for (const m of ordem) { const c = card(m); if (k) c.setAttribute('aria-hidden', 'true'); trilho.appendChild(c); }
-trilho.style.animationDuration = (ordem.length * 3.2) + 's';
+trilho.style.animationDuration = (ordem.length * 6) + 's';   // devagarinho
 team.appendChild(trilho);
 // segurou/arrastou no celular: pausa
 team.addEventListener('touchstart', () => trilho.classList.add('pausa'), { passive: true });
