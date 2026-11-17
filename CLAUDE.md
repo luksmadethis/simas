@@ -67,4 +67,5 @@ Home: arco-íris que desce serpenteando conforme o scroll e barra de progresso a
 
 ## Pendências
 - Colocar foto de cada um da galera, se mandarem.
+- Cloudinary do SimasTok: cloud `k4mjzxdz`, preset unsigned `nv5gv6px` (pasta simastok). Tem um vídeo de teste `simastok/emymgeykftu2cajkjiir` lá (não tá no feed).
 - (caixinha já começa aberta)

@@ -121,7 +121,7 @@ service cloud.firestore {
         && request.resource.data.nome is string && request.resource.data.nome.size() > 0 && request.resource.data.nome.size() <= 30
         && request.resource.data.legenda is string && request.resource.data.legenda.size() <= 300
         && request.resource.data.cloud is string && request.resource.data.cloud.matches("^[a-z0-9_-]{1,64}$")
-        && request.resource.data.pid is string && request.resource.data.pid.matches("^simastok/[A-Za-z0-9_-]{1,100}$")
+        && request.resource.data.pid is string && request.resource.data.pid.matches("^[A-Za-z0-9_/-]{1,150}$")
         && request.resource.data.likes == [] && request.resource.data.coms == 0
         && request.resource.data.t == request.time;
       allow update: if signedIn()
