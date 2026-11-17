@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="build" content="1794957787">
+<meta name="build" content="1794959981">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SimasTelas</title>
 <meta name="description" content="Faz live ai primo 🏳️‍🌈 Transmissão de tela em 1080p 60fps.">
@@ -1330,14 +1330,45 @@ async function switchCam(nextId){
   try { s = await getCam(next.deviceId); store.set('simastelas-cam', next.deviceId); }
   catch(e) { try { s = await getCam(cur); } catch(e2){ stopBroadcast('cam'); return; } toast('Não deu pra virar a câmera'); }
   if (B.cam !== b) { s.getTracks().forEach(t => t.stop()); return; }
-  const nt = s.getVideoTracks()[0];
+  await plugaCam(b, s.getVideoTracks()[0]);
+}
+
+// celular: quando a pessoa sai do site (alt-tab, home, outra app) o sistema desliga a câmera.
+// em vez de derrubar a transmissão, segura ela (quem assiste fica com a última imagem) e religa sozinho quando volta.
+let hiddenAt = 0;
+function camCaiu(b){
+  if (B.cam !== b) return;
+  const fora = document.hidden || Date.now() - hiddenAt < 4000;
+  if (IS_MOBILE && fora) { b.pausada = true; return; }
+  stopBroadcast('cam');
+}
+function plugaCam(b, nt){
   nt.contentHint = 'motion';
-  nt.addEventListener('ended', () => { if (B.cam === b) stopBroadcast('cam'); });
+  nt.addEventListener('ended', () => camCaiu(b));
   b.rawTrack = nt;
   b.capture = new MediaStream([nt]);
-  if (FX) { FX.src.stop(); FX.src = frameSource(nt); }   // com efeito: só troca a entrada do efeito
-  else await setCamVideo(nt);
+  if (FX) { FX.src.stop(); FX.src = frameSource(nt); }
+  else return setCamVideo(nt);
 }
+async function religaCam(){
+  const b = B.cam; if (!b) return;
+  const t = b.rawTrack;
+  const morta = !t || t.readyState === 'ended';
+  if (!b.pausada && !morta) return;
+  b.pausada = false;
+  const id = store.get('simastelas-cam') || (t && t.getSettings().deviceId) || undefined;
+  let st;
+  try { st = await getCam(id); }
+  catch(e) { try { st = await getCam(); } catch(e2) { toast('a camera nao voltou, liga de novo'); stopBroadcast('cam'); return; } }
+  if (B.cam !== b) { st.getTracks().forEach(x => x.stop()); return; }
+  await plugaCam(b, st.getVideoTracks()[0]);
+  toast('camera de volta 📷');
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) hiddenAt = Date.now();
+  else setTimeout(religaCam, 300);
+});
+window.addEventListener('focus', () => setTimeout(religaCam, 300));
 
 const WHY = { cpu:'PC no limite 🔥', bandwidth:'internet no limite 🐌', none:'de boa ✅', other:'limitado' };
 setInterval(async () => {
@@ -1398,7 +1429,7 @@ function beginBroadcast(kind, s, peer){
   const b = { kind, peer, sid: peer.id, capture: s, stream: new MediaStream([v, at]), ctx, sg, mg, hasScreenAudio: !!sa, viewers: new Map(), wantQ: new Map() };
   B[kind] = b;
   if (kind === 'cam') b.rawTrack = v;
-  v.addEventListener('ended', () => { if (B[kind] === b) stopBroadcast(kind); });
+  v.addEventListener('ended', () => { if (kind === 'cam') camCaiu(b); else if (B[kind] === b) stopBroadcast(kind); });
   if (kind === 'cam') {
     peer.on('connection', c => serveConn(c, 'cam'));
     peer.on('disconnected', () => setTimeout(() => { if (B.cam === b && !peer.destroyed && peer.disconnected) peer.reconnect(); }, 1000));
