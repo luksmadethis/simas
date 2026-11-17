@@ -65,11 +65,11 @@ service cloud.firestore {
     }
 
     // ===== Sugestões (site Simas) =====
-    // senhas/{senha}: existe = senha do grupo válida. Ninguém lê, só o organizador cria/apaga.
+    // senhas/membros: sobra da versão com senha (não usado mais).
     // config/sugestoes: { aberto: bool, aprovadores: [uids] } — só o organizador muda (regra de /config acima).
     // segredo/sugestoes: { senha } — só o organizador lê/escreve (pra lembrar a senha atual).
     function sugCfg() { return /databases/$(database)/documents/config/sugestoes; }
-    function sugAberto() { return exists(sugCfg()) && get(sugCfg()).data.get("aberto", false) == true; }
+    function sugAberto() { return !exists(sugCfg()) || get(sugCfg()).data.get("aberto", true) == true; }
     function aprovador() {
       return isAdmin() || (signedIn() && exists(sugCfg())
         && request.auth.uid in get(sugCfg()).data.get("aprovadores", []));
@@ -92,21 +92,22 @@ service cloud.firestore {
         && request.resource.data.nome is string && request.resource.data.nome.size() > 0 && request.resource.data.nome.size() <= 40;
       allow delete: if aprovador() || (signedIn() && request.auth.uid == uid);
     }
+    // Aberto pra qualquer um que abrir o site (login anônimo automático), sem senha.
     match /sugestoes/{id} {
-      allow read: if membro() || aprovador();
-      allow create: if membro() && sugAberto()
+      allow read: if signedIn();
+      allow create: if signedIn() && sugAberto()
         && request.resource.data.keys().hasOnly(["autor", "nome", "texto", "status", "t", "votos"])
         && request.resource.data.autor == request.auth.uid
-        && request.resource.data.nome is string && request.resource.data.nome.size() <= 40
+        && request.resource.data.nome is string && request.resource.data.nome.size() > 0 && request.resource.data.nome.size() <= 40
         && request.resource.data.texto is string && request.resource.data.texto.size() > 0 && request.resource.data.texto.size() <= 800
         && request.resource.data.status == "nova"
         && request.resource.data.votos == []
         && request.resource.data.t == request.time;
       allow update: if aprovador()
-        || (membro() && sugAberto()
+        || (signedIn() && sugAberto()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["votos"])
             && request.resource.data.votos is list && request.resource.data.votos.size() <= 200);
-      allow delete: if aprovador() || (membro() && resource.data.autor == request.auth.uid && resource.data.status == "nova");
+      allow delete: if aprovador() || (signedIn() && resource.data.autor == request.auth.uid && resource.data.status == "nova");
     }
   }
 }

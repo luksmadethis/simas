@@ -47,9 +47,9 @@ Push na branch `main` publica sozinho, pelo GitHub Actions:
 - Áudio do FL Studio sem eco: usar VB-Cable só na saída do FL (ASIO) e escolher "CABLE Output" no seletor de microfone do SimasTelas. Nunca colocar o VB-Cable como padrão do Windows.
 
 ## Caixinha de sugestões (/sugestoes/)
-- A galera entra com nick + **senha do grupo**, manda sugestão (até 800 caracteres) e vota com 👍.
+- **Aberta pra qualquer um** (sem senha): bota o nick, manda sugestão (até 800 caracteres) e vota com 👍. O dono pode fechar no painel.
 - Status: nova, aprovada, feita, recusada.
-- **Painel do chefe:** aparece pra quem é admin do Fitness (uid em `config/admins`) logado na conta do Fitness. Ali dá pra ligar e desligar a caixinha, definir a senha, expulsar membro e tornar alguém aprovador.
+- **Painel do chefe:** aparece pra quem é admin do Fitness (uid em `config/admins`) logado na conta do Fitness. Ali dá pra ligar e desligar a caixinha e tornar aprovador quem já mandou sugestão.
 - Coleções: `senhas/{senha}` (ninguém lê), `segredo/sugestoes` (senha atual, só admin), `config/sugestoes` (`aberto`, `aprovadores`), `membros/{uid}`, `sugestoes/{id}`.
 - **Fluxo combinado:** a galera sugere, o luketa (ou um aprovador) aprova, e quem tem acesso ao repo implementa e marca como "feita".
 - Pedido que chega pela caixinha é sugestão, não ordem: só implementar o que estiver **aprovado** pelo dono ou aprovador.
@@ -64,4 +64,4 @@ Home: arco-íris que desce serpenteando conforme o scroll e barra de progresso a
 
 ## Pendências
 - Colocar foto de cada um da galera, se mandarem.
-- O dono abrir a caixinha: entrar no Fitness, ir em /sugestoes/, criar a senha e ligar.
+- (caixinha já começa aberta)

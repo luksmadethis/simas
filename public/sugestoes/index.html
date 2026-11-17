@@ -75,27 +75,17 @@
 </style>
 <div class="wrap">
   <h1>caixinha de <span class="grad">sugestões</span></h1>
-  <p class="sub">manda tua ideia pro site ai porra. a galera vota, quem manda aprova e ai alguem faz. ideia de merda vai ser recusada sem do</p>
+  <p class="sub">manda tua ideia pro site ai porra. qualquer um manda, a galera vota, quem manda aprova e ai alguem faz. ideia de merda vai ser recusada sem do</p>
 
   <div id="loading" class="box mut">carregando essa porra…</div>
-
-  <!-- entrar com a senha do grupo -->
-  <div id="vEntrar" class="box top" hidden>
-    <b>so entra quem é da quadrilha</b>
-    <p class="mut">pede a senha pro luketa no grupo</p>
-    <label for="eNome">teu nick</label>
-    <input id="eNome" maxlength="40" placeholder="ex: Xavier">
-    <label for="eSenha">senha do grupo</label>
-    <input id="eSenha" type="password" autocomplete="off">
-    <div class="row"><button class="main" id="eBtn">entrar</button></div>
-    <div class="err" id="eErr"></div>
-  </div>
 
   <div id="vFechado" class="closed" hidden>🔒 a caixinha ta FECHADA pelo luketa. da pra ver as sugestões mas nao da pra mandar nem votar</div>
 
   <!-- mandar sugestão -->
   <div id="vMandar" class="box top" hidden>
-    <b>manda ai, <span id="mNome"></span></b>
+    <b>manda ai</b>
+    <label for="sNome">teu nick</label>
+    <input id="sNome" maxlength="40" placeholder="ex: Xavier">
     <label for="sTexto">tua sugestão (o que mudar, colocar ou tirar do site)</label>
     <textarea id="sTexto" maxlength="800" placeholder="ex: bota a foto do cha de bebe na home"></textarea>
     <div class="row"><button class="main" id="sBtn">mandar</button><span class="mut" id="sCount">0/800</span></div>
@@ -107,10 +97,7 @@
     <b>👑 painel do chefe</b>
     <p class="mut">so tu ve isso</p>
     <div class="row switch"><button class="sw" id="swAberto" aria-label="Abrir ou fechar a caixinha"></button><span id="swTxt">…</span></div>
-    <label for="aSenha">senha do grupo</label>
-    <div class="row" style="margin-top:0"><input id="aSenha" style="flex:1;min-width:160px" autocomplete="off" placeholder="cria uma senha"><button id="aSenhaBtn">salvar senha</button></div>
-    <p class="mut" style="margin-top:6px">trocar a senha nao expulsa quem ja entrou. pra expulsar alguem usa o botao abaixo</p>
-    <label>quem ta dentro</label>
+    <label>quem ja mandou sugestão (pra tornar aprovador)</label>
     <div id="aMembros" class="mut">…</div>
     <div class="err" id="aErr"></div>
   </div>
@@ -137,7 +124,7 @@ const auth = firebase.auth(), db = firebase.firestore(), FV = firebase.firestore
 const $ = id => document.getElementById(id);
 const show = (id, on) => { $(id).hidden = !on; };
 
-let uid = null, eu = null, cfg = { aberto: false, aprovadores: [] }, admin = false, sugs = [], aba = 'nova', unsubs = [];
+let uid = null, cfg = { aberto: true, aprovadores: [] }, admin = false, sugs = [], aba = 'nova', unsubs = [];
 const STATUS = [['nova','🆕 novas'],['aprovada','✅ aprovadas'],['feita','🚀 feitas'],['recusada','🗑️ recusadas']];
 const aprov = () => admin || (uid && (cfg.aprovadores || []).includes(uid));
 
@@ -146,10 +133,8 @@ auth.onAuthStateChanged(async u => {
   if (!u) { try { await auth.signInAnonymously(); } catch (e) { $('loading').textContent = 'deu pau pra conectar, recarrega a pagina'; } return; }
   uid = u.uid;
   admin = await db.doc('segredo/sugestoes').get().then(() => true).catch(() => false);
-  eu = await db.doc('membros/' + uid).get().then(d => d.exists ? d.data() : null).catch(() => null);
-  unsubs.push(db.doc('config/sugestoes').onSnapshot(d => { cfg = Object.assign({ aberto: false, aprovadores: [] }, d.exists ? d.data() : {}); render(); if (admin) carregaMembros(); }, () => {}));
-  if (eu || aprov()) ouvirLista();
-  if (admin) { db.doc('segredo/sugestoes').get().then(d => { $('aSenha').value = d.exists ? (d.data().senha || '') : ''; }); }
+  unsubs.push(db.doc('config/sugestoes').onSnapshot(d => { cfg = Object.assign({ aberto: true, aprovadores: [] }, d.exists ? d.data() : {}); render(); }, () => {}));
+  ouvirLista();
   render();
 });
 
@@ -163,21 +148,18 @@ function ouvirLista() {
 
 function render() {
   show('loading', false);
-  const dentro = !!eu || aprov();
-  show('vEntrar', !dentro);
-  show('vFechado', dentro && !cfg.aberto);
-  show('vMandar', !!eu && cfg.aberto);
+  show('vFechado', !cfg.aberto);
+  show('vMandar', cfg.aberto);
   show('vAdmin', admin);
   show('vModLogin', !aprov() && !!auth.currentUser && auth.currentUser.isAnonymous);
-  show('vLista', dentro);
-  if (eu) $('mNome').textContent = eu.nome;
+  show('vLista', true);
   $('swAberto').classList.toggle('on', !!cfg.aberto);
-  $('swTxt').textContent = cfg.aberto ? 'caixinha ABERTA (galera manda e vota)' : 'caixinha FECHADA (ninguem manda nem vota)';
-  if (dentro) ouvirLista();
+  $('swTxt').textContent = cfg.aberto ? 'caixinha ABERTA (qualquer um manda e vota)' : 'caixinha FECHADA (ninguem manda nem vota)';
   renderLista();
 }
 
 function renderLista() {
+  if (admin) carregaMembros();
   const tabs = $('tabs'); tabs.innerHTML = '';
   for (const [k, n] of STATUS) {
     const c = sugs.filter(s => s.status === k).length;
@@ -199,7 +181,7 @@ function renderLista() {
     const row = document.createElement('div'); row.className = 'row';
     const votos = s.votos || [], votei = votos.includes(uid);
     const v = document.createElement('button'); v.className = 'sm vote' + (votei ? ' on' : ''); v.textContent = `👍 ${votos.length}`;
-    v.disabled = !eu || !cfg.aberto;
+    v.disabled = !cfg.aberto;
     v.onclick = () => db.doc('sugestoes/' + s.id).update({ votos: votei ? FV.arrayRemove(uid) : FV.arrayUnion(uid) }).catch(erro('sErr'));
     row.appendChild(v);
     const btn = (t, f) => { const b = document.createElement('button'); b.className = 'sm'; b.textContent = t; b.onclick = f; row.appendChild(b); };
@@ -218,60 +200,36 @@ function renderLista() {
 const muda = (s, st) => db.doc('sugestoes/' + s.id).update({ status: st }).catch(erro('aErr'));
 const erro = id => e => { $(id).textContent = e && e.code === 'permission-denied' ? 'sem permissao pra isso' : 'deu erro: ' + (e && e.message || e); };
 
-$('eBtn').onclick = async () => {
-  const nome = $('eNome').value.trim(), senha = $('eSenha').value.trim();
-  $('eErr').textContent = '';
-  if (!nome) { $('eErr').textContent = 'bota um nick porra'; return; }
-  if (!senha || senha.includes('/')) { $('eErr').textContent = 'senha errada'; return; }
-  $('eBtn').disabled = true;
-  try {
-    await db.doc('membros/' + uid).set({ nome, senha, t: FV.serverTimestamp() });
-    eu = { nome }; localStorage.setItem('simas-nick', nome); render();
-  } catch (e) { $('eErr').textContent = e.code === 'permission-denied' ? 'senha errada, vai pedir pro luketa' : 'deu erro: ' + e.message; }
-  $('eBtn').disabled = false;
-};
-try { $('eNome').value = localStorage.getItem('simas-nick') || localStorage.getItem('simastelas-nick') || ''; } catch (e) {}
+try { $('sNome').value = localStorage.getItem('simas-nick') || localStorage.getItem('simastelas-nick') || ''; } catch (e) {}
 
 $('sTexto').oninput = () => { $('sCount').textContent = $('sTexto').value.length + '/800'; };
 $('sBtn').onclick = async () => {
-  const texto = $('sTexto').value.trim(); $('sErr').textContent = '';
+  const texto = $('sTexto').value.trim(), nome = $('sNome').value.trim(); $('sErr').textContent = '';
+  if (!nome) { $('sErr').textContent = 'bota teu nick porra'; return; }
   if (!texto) { $('sErr').textContent = 'escreve alguma coisa ne'; return; }
+  try { localStorage.setItem('simas-nick', nome); } catch (e) {}
   $('sBtn').disabled = true;
   try {
-    await db.collection('sugestoes').add({ autor: uid, nome: eu.nome, texto, status: 'nova', votos: [], t: FV.serverTimestamp() });
-    $('sTexto').value = ''; $('sCount').textContent = '0/800'; aba = 'nova'; renderLista();
+    await db.collection('sugestoes').add({ autor: uid, nome, texto, status: 'nova', votos: [], t: FV.serverTimestamp() });
+    $('sTexto').value = ''; $('sCount').textContent = '0/800'; aba = 'nova'; renderLista(); $('sErr').textContent = 'mandado ✔';
   } catch (e) { erro('sErr')(e); }
   $('sBtn').disabled = false;
 };
 
 /* ---- painel do chefe ---- */
 $('swAberto').onclick = () => db.doc('config/sugestoes').set({ aberto: !cfg.aberto }, { merge: true }).catch(erro('aErr'));
-$('aSenhaBtn').onclick = async () => {
-  const nova = $('aSenha').value.trim(); $('aErr').textContent = '';
-  if (nova.length < 4 || nova.includes('/')) { $('aErr').textContent = 'senha com pelo menos 4 caracteres e sem /'; return; }
-  try {
-    const old = await db.doc('segredo/sugestoes').get();
-    const velha = old.exists ? old.data().senha : null;
-    await db.doc('senhas/' + nova).set({ t: FV.serverTimestamp() });
-    if (velha && velha !== nova) await db.doc('senhas/' + velha).delete().catch(() => {});
-    await db.doc('segredo/sugestoes').set({ senha: nova });
-    $('aErr').textContent = ''; $('aSenhaBtn').textContent = 'salvo ✔'; setTimeout(() => $('aSenhaBtn').textContent = 'salvar senha', 1500);
-  } catch (e) { erro('aErr')(e); }
-};
-async function carregaMembros() {
-  const q = await db.collection('membros').get().catch(() => null); const box = $('aMembros');
-  if (!q) { box.textContent = 'nao deu pra carregar'; return; }
-  if (q.empty) { box.textContent = 'ninguem entrou ainda'; return; }
+function carregaMembros() {
+  const box = $('aMembros'); if (!box) return;
+  const vistos = new Map(); for (const x of sugs) if (!vistos.has(x.autor)) vistos.set(x.autor, x.nome);
+  if (!vistos.size) { box.textContent = 'ninguem mandou nada ainda'; return; }
   box.innerHTML = '';
-  for (const d of q.docs) {
-    const m = d.data(), ehAprov = (cfg.aprovadores || []).includes(d.id);
+  for (const [id, nome] of vistos) {
+    const ehAprov = (cfg.aprovadores || []).includes(id);
     const row = document.createElement('div'); row.className = 'mem';
-    const sp = document.createElement('span'); sp.textContent = (m.nome || '?') + (ehAprov ? ' · aprovador' : '');
+    const sp = document.createElement('span'); sp.textContent = (nome || '?') + (ehAprov ? ' · aprovador' : '');
     const b1 = document.createElement('button'); b1.className = 'sm'; b1.textContent = ehAprov ? 'tirar aprovador' : 'tornar aprovador';
-    b1.onclick = () => db.doc('config/sugestoes').set({ aprovadores: ehAprov ? FV.arrayRemove(d.id) : FV.arrayUnion(d.id) }, { merge: true }).catch(erro('aErr'));
-    const b2 = document.createElement('button'); b2.className = 'sm'; b2.textContent = 'expulsar';
-    b2.onclick = () => { if (confirm('expulsar ' + (m.nome || '') + '?')) db.doc('membros/' + d.id).delete().then(carregaMembros).catch(erro('aErr')); };
-    row.append(sp, b1, b2); box.appendChild(row);
+    b1.onclick = () => db.doc('config/sugestoes').set({ aprovadores: ehAprov ? FV.arrayRemove(id) : FV.arrayUnion(id) }, { merge: true }).catch(erro('aErr'));
+    row.append(sp, b1); box.appendChild(row);
   }
 }
 </script>
