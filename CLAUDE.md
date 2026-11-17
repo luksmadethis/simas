@@ -42,7 +42,7 @@ Push na branch `main` publica sozinho, pelo GitHub Actions:
 ## SimasTelas (resumo técnico)
 - Um arquivo só. PeerJS 1.5.4 (sinalização na nuvem 0.peerjs.com) + WebRTC em malha: quem transmite liga pra cada espectador.
 - Presença: um "hub" eleito com ID fixo `simastelas-v2-hub-<sala>`, mais backups `-g1`, `-g2`. Sala pelo parâmetro `?sala=`.
-- TURN: Metered (global.relay.metered.ca). As credenciais ficam no código de propósito.
+- TURN: ExpressTURN (free.expressturn.com:3478, grátis 1 TB/mês) + Metered de reserva (só 500 MB/mês, acaba rápido). As credenciais ficam no código de propósito.
 - Recursos: tela + câmera (câmera num Peer separado), modo live (câmeras flutuantes arrastáveis), modo stream (composição em canvas), efeitos MediaPipe (rosto e fundo), gravação (MediaRecorder), qualidade adaptativa por espectador, escolha de microfone com "modo música" (sem cancelamento de eco, estéreo, 510 kbps), ping por pessoa, diagnóstico, uma aba por navegador (BroadcastChannel).
 - Áudio do FL Studio sem eco: usar VB-Cable só na saída do FL (ASIO) e escolher "CABLE Output" no seletor de microfone do SimasTelas. Nunca colocar o VB-Cable como padrão do Windows.
 
