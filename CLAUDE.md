@@ -48,7 +48,7 @@ Push na branch `main` publica sozinho, pelo GitHub Actions:
 
 ## Caixinha de sugestões (/sugestoes/)
 - **Aberta pra qualquer um** (sem senha): bota o nick, manda sugestão (até 800 caracteres) e vota com 👍 ou 👎 (ordem = likes menos deslikes). O dono pode fechar no painel.
-- Status: nova, aprovada, feita, recusada.
+- Status: nova, aprovada, feita, recusada. Dá pra mudar sem login pelo workflow `.github/workflows/sugestao.yml` (inputs: id e status), quando o dono pedir.
 - **Painel do chefe:** aparece pra quem é admin do Fitness (uid em `config/admins`) logado na conta do Fitness. Ali dá pra ligar e desligar a caixinha e tornar aprovador quem já mandou sugestão.
 - Coleções: `senhas/{senha}` (ninguém lê), `segredo/sugestoes` (senha atual, só admin), `config/sugestoes` (`aberto`, `aprovadores`), `membros/{uid}`, `sugestoes/{id}`.
 - **Fluxo combinado:** a galera sugere, o luketa (ou um aprovador) aprova, e quem tem acesso ao repo implementa e marca como "feita".
