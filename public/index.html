@@ -221,9 +221,12 @@ for (const m of GALERA) {
   const montar = () => {
     const W = innerWidth, H = innerHeight; bw = Math.max(9, Math.min(20, W / 55));
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    const N = 260, amp = W / 2 - bw * 3.6, y0 = -bw * 6, y1 = H + bw * 6;   // vai de uma ponta a outra da tela
+    const N = 260, y0 = -bw * 6, y1 = H + bw * 6, VOLTAS = 1.6;
+    // vai de uma ponta a outra da tela, mas a curva nunca fica mais fechada que a largura do arco-íris (senão a faixa de dentro dá nó)
+    const span = y1 - y0, raioMin = bw * 3.8;
+    const amp = Math.max(0, Math.min(W / 2 - bw * 3.6, span * span / ((VOLTAS * Math.PI) ** 2 * raioMin)));
     C = [];
-    for (let k = 0; k <= N; k++) { const t = k / N; C.push([W / 2 + amp * Math.sin(t * Math.PI * 2.2 - Math.PI / 2), y0 + t * (y1 - y0)]); }
+    for (let k = 0; k <= N; k++) { const t = k / N; C.push([W / 2 + amp * Math.sin(t * Math.PI * VOLTAS - Math.PI / 2), y0 + t * (y1 - y0)]); }
     acc = [0]; for (let k = 1; k <= N; k++) acc.push(acc[k - 1] + Math.hypot(C[k][0] - C[k - 1][0], C[k][1] - C[k - 1][1])); total = acc[N];
     const norm = C.map((p, k) => { const a = C[Math.max(0, k - 1)], b = C[Math.min(N, k + 1)]; let nx = -(b[1] - a[1]), ny = b[0] - a[0]; const L = Math.hypot(nx, ny) || 1; return [nx / L, ny / L]; });
     B = cores.map((_, i) => C.map((p, k) => [p[0] + norm[k][0] * (i - 2.5) * bw, p[1] + norm[k][1] * (i - 2.5) * bw]));
