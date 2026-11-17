@@ -37,6 +37,7 @@ Push na branch `main` publica sozinho, pelo GitHub Actions:
 - Firestore, coleções do Fitness: `participants`, `posts`, `likes`, `comments`, `config/challenge`, `config/admins` (`uids` = admins do Fitness).
 - **Cuidado ao mexer em `firestore.rules`:** ele contém as regras do Fitness também. Publicar uma regra errada quebra o Fitness. Sempre partir do arquivo atual.
 - Login do Fitness: nome+PIN (por baixo é email/senha) ou anônimo.
+- **Detalhes completos do Fitness** (regras do desafio, pontuação, datas, telas, coleções, piadas, o que foi removido ou recusado): ver `docs/simasfitness.md`.
 
 ## SimasTelas (resumo técnico)
 - Um arquivo só. PeerJS 1.5.4 (sinalização na nuvem 0.peerjs.com) + WebRTC em malha: quem transmite liga pra cada espectador.
