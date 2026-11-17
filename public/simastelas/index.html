@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="build" content="1794957627">
+<meta name="build" content="1794957787">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SimasTelas</title>
 <meta name="description" content="Faz live ai primo 🏳️‍🌈 Transmissão de tela em 1080p 60fps.">
@@ -556,6 +556,18 @@ function boot(){
   setTimeout(() => { if (me && !me.open && !idle) { joinMsg = 'não tá conseguindo falar com o servidor de conexão. pode ser a internet ou a rede bloqueando (tenta o 4G ou outra wi-fi)'; render(); } }, 7000);
 }
 
+// qualidade da internet de cada um: tempo até o servidor do site (não depende de quem é o dono da sala)
+let netMs = null;
+async function medirNet(){
+  const v = [];
+  for (let i = 0; i < 3; i++) {
+    const t0 = performance.now();
+    try { await fetch('/simastelas/og.png?n=' + Math.random(), { method: 'HEAD', cache: 'no-store' }); v.push(performance.now() - t0); } catch(e){}
+  }
+  if (v.length) { netMs = Math.round(Math.min(...v) / 5) * 5; sendState(); }
+}
+medirNet(); setInterval(medirNet, 30000);
+
 function setNet(ok, txt){
   $('netDot').classList.toggle('off', !ok);
   if (txt) $('onlineTxt').textContent = txt;
@@ -613,7 +625,11 @@ function attachHub(c, g){
     hubAlive = Date.now();
     if (d.t === 'list') { hubHost = d.host || null; onList(d.members); }
     else if (d.t === 'pong') { lastPong = Date.now(); hubPongs = true; pingMs = Math.round(performance.now() - d.ts); if (gotList) setNet(true, onlineLabel()); sendState(); updatePing(); refreshMyPing(); }
-    else if (d.t === 'hubbye') { hubConn = null; try { c.close(); } catch(e){} setNet(false, 'reconectando…'); setTimeout(joinHub, (IS_MOBILE ? 1800 : 150) + Math.random()*700); }
+    else if (d.t === 'hubbye') {
+      hubConn = null; try { c.close(); } catch(e){} setNet(false, 'trocando o dono da sala…');
+      if (d.next === myId) { noClaimUntil = 0; mobileMayClaim = true; setTimeout(joinHub, 400); }        // eu fui escolhido: assumo a sala
+      else setTimeout(joinHub, d.next ? 2500 + Math.random()*800 : (IS_MOBILE ? 1800 : 150) + Math.random()*700);
+    }
   });
   c.on('close', () => { if (hubConn !== c) return; hubConn = null; setNet(false, 'reconectando…'); setTimeout(joinHub, 200 + Math.random()*1000); });
   sendState(true);
@@ -631,7 +647,7 @@ const pingBucket = v => v == null ? null : Math.max(1, Math.round(v));
 const pingCls = v => v == null ? '' : v <= 100 ? 'g' : v <= 200 ? 'o' : 'r';
 function sendState(force){
   if (!hubConn || !hubConn.open) return;
-  const st = { t:'state', cid: CID, mob: IS_MOBILE, ping: pingBucket(myPing()), nick, photo, sharing: !!B.screen, camId: (B.cam && !SM) ? B.cam.sid : null, rec: isRecording(), mic: micOn, sound: soundOn, watching: order.filter(id => !isSelfSid(id)) };
+  const st = { t:'state', cid: CID, mob: IS_MOBILE, net: netMs, ping: pingBucket(myPing()), nick, photo, sharing: !!B.screen, camId: (B.cam && !SM) ? B.cam.sid : null, rec: isRecording(), mic: micOn, sound: soundOn, watching: order.filter(id => !isSelfSid(id)) };
   const key = JSON.stringify(st);
   if (!force && key === lastSent) return;   // só manda se mudou alguma coisa
   lastSent = key;
@@ -684,11 +700,11 @@ function runHub(h, g){
         const w = Array.isArray(d.watching) ? d.watching.filter(x => typeof x === 'string').slice(0,16) : [];
         const prev = hm.get(c.peer);
         const nu = { conn:c, id:c.peer, mob: !!d.mob, cid: typeof d.cid === 'string' ? d.cid.slice(0,40) : '', joined: prev && prev.conn === c ? prev.joined : Date.now(), nick:String(d.nick || '???').slice(0,20), photo:ph,
-                     sharing:!!d.sharing, camId: typeof d.camId === 'string' ? d.camId.slice(0,64) : null, ping: Number.isFinite(d.ping) ? Math.max(0, Math.min(9999, Math.round(d.ping))) : null, mic:!!d.mic, sound:d.sound !== false, rec: !!d.rec, watching:w, seen:Date.now() };
+                     sharing:!!d.sharing, camId: typeof d.camId === 'string' ? d.camId.slice(0,64) : null, ping: Number.isFinite(d.ping) ? Math.max(0, Math.min(9999, Math.round(d.ping))) : null, net: Number.isFinite(d.net) ? Math.max(0, Math.min(9999, Math.round(d.net))) : null, mic:!!d.mic, sound:d.sound !== false, rec: !!d.rec, watching:w, seen:Date.now() };
         const old = prev;
         const same = old && old.conn === c && old.nick === nu.nick && old.photo === nu.photo && old.sharing === nu.sharing &&
-                     old.mic === nu.mic && old.cid === nu.cid && old.camId === nu.camId && old.ping === nu.ping && old.rec === nu.rec && old.sound === nu.sound && old.watching.join() === nu.watching.join();
-        const pingOnly = same === false && old && old.conn === c && old.nick === nu.nick && old.photo === nu.photo && old.sharing === nu.sharing && old.mic === nu.mic && old.cid === nu.cid && old.camId === nu.camId && old.rec === nu.rec && old.sound === nu.sound && old.watching.join() === nu.watching.join();
+                     old.mic === nu.mic && old.cid === nu.cid && old.camId === nu.camId && old.ping === nu.ping && old.net === nu.net && old.rec === nu.rec && old.sound === nu.sound && old.watching.join() === nu.watching.join();
+        const pingOnly = same === false && old && old.conn === c && (old.ping !== nu.ping || old.net !== nu.net) && old.nick === nu.nick && old.photo === nu.photo && old.sharing === nu.sharing && old.mic === nu.mic && old.cid === nu.cid && old.camId === nu.camId && old.rec === nu.rec && old.sound === nu.sound && old.watching.join() === nu.watching.join();
         hm.set(c.peer, nu);
         if (pingOnly) { if (!bcastT) bcastT = setTimeout(() => { bcastT = null; bcast(); }, 1000); }
         else if (!same) bcast();
@@ -709,6 +725,25 @@ function runHub(h, g){
     for (const [id, m] of hm) if (now - m.seen > 20000) { try { m.conn.close(); } catch(e){} hm.delete(id); changed = true; }
     if (changed) bcast();
   }, 5000);
+  // a sala fica sempre com quem tem a MELHOR internet (menor ms): se alguém no PC tiver bem melhor que eu, passo pra ele
+  const startedAt = Date.now(); let melhorSeguidas = 0, melhorId = null;
+  const troca = setInterval(() => {
+    if (hub !== h || !alive) { clearInterval(troca); return; }
+    if (Date.now() - startedAt < 40000 || netMs == null) return;
+    let best = null;
+    for (const m of hm.values()) {
+      if (m.id === myId || m.mob || !m.conn.open || m.net == null || Date.now() - m.seen > 10000) continue;
+      if (!best || m.net < best.net) best = m;
+    }
+    const vale = best && best.net < netMs * 0.75 && netMs - best.net >= 20;
+    if (vale && best.id === melhorId) melhorSeguidas++; else { melhorSeguidas = vale ? 1 : 0; melhorId = vale ? best.id : null; }
+    if (melhorSeguidas >= 2) {
+      clearInterval(troca); alive = false;
+      for (const m of hm.values()) if (m.conn.open && m.id !== myId) try { m.conn.send({ t:'hubbye', next: best.id }); } catch(e){}
+      noClaimUntil = Date.now() + 15000;
+      hubApi = null; dropHub();
+    }
+  }, 15000);
   // se eu sou uma sala reserva e a principal voltou a funcionar, manda todo mundo de volta pra ela
   if (g > 0) {
     const chk = setInterval(() => {
