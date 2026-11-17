@@ -1,0 +1,29 @@
+name: mudar status de sugestão
+on:
+  workflow_dispatch:
+    inputs:
+      id:
+        description: id da sugestão
+        required: true
+      status:
+        description: nova, aprovada, feita ou recusada
+        required: true
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm i firebase-admin@12 --no-save --silent
+      - env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          ID: ${{ inputs.id }}
+          ST: ${{ inputs.status }}
+        run: |
+          node -e '
+          const a = require("firebase-admin");
+          if (!["nova","aprovada","feita","recusada"].includes(process.env.ST)) throw new Error("status invalido");
+          if (!/^[A-Za-z0-9]{10,40}$/.test(process.env.ID)) throw new Error("id invalido");
+          a.initializeApp({ credential: a.credential.cert(JSON.parse(process.env.SA)) });
+          const ref = a.firestore().doc("sugestoes/" + process.env.ID);
+          ref.get().then(d => { if (!d.exists) throw new Error("nao existe"); return ref.update({ status: process.env.ST }); })
+            .then(() => console.log("ok", process.env.ID, process.env.ST));
+          '
