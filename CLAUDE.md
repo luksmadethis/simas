@@ -67,6 +67,6 @@ Fundo escuro (#0d0c12), cores do arco-íris LGBT. O cabeçalho (`.snav`) é igua
 Home: arco-íris que desce serpenteando conforme o scroll e barra de progresso arco-íris no topo. O mouse é o normal: a varinha e o brilho foram removidos porque deixavam o site lento.
 
 ## Pendências
-- Fotos da galera: padrão terno preto + gravata borboleta + fundo branco (o dono gera numa IA de imagem). Salvar em `public/galera/<nome>.jpg` (360x360, rosto no centro com um respiro em cima e a gravata aparecendo embaixo) e pôr no `foto`. Já tem: Gelado, Poli, Nerivan, Dudu, Yori, Meco, Ltzin.
+- Fotos da galera: padrão terno preto + gravata borboleta + fundo branco (o dono gera numa IA de imagem). Salvar em `public/galera/<nome>.jpg` (360x360, rosto no centro com um respiro em cima e a gravata aparecendo embaixo) e pôr no `foto`. Já tem: Gelado, Poli, Nerivan, Dudu, Yori, Meco, Ltzin, Nauj.
 - Cloudinary do SimasTok: cloud `k4mjzxdz`, preset unsigned `nv5gv6px` (pasta simastok). Tem um vídeo de teste `simastok/emymgeykftu2cajkjiir` lá (não tá no feed).
 - (caixinha já começa aberta)
