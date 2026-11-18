@@ -205,7 +205,7 @@
       <input id="nomeCanal" maxlength="40" placeholder="nome do canal (ex: TV Cultura)">
       <button class="bt2" type="submit">salvar</button>
     </form>
-    <p class="dica">o link precisa ser <b>https</b> e o site de origem tem que deixar tocar em outros sites. se der erro, não é a TV que tá quebrada, é o link que não deixa. os canais salvos ficam só no TEU navegador.</p>
+    <p class="dica">link <b>https</b> é o que funciona melhor. link http a TV tenta (primeiro em https, depois do jeito que veio), mas o navegador pode bloquear porque o site é https. o site de origem também tem que deixar tocar em outros sites. se der erro, não é a TV que tá quebrada, é o link que não deixa. os canais salvos ficam só no TEU navegador.</p>
   </div>
 
   <div class="box">
@@ -220,7 +220,7 @@ const ls = { get(k){ try { return localStorage.getItem(k) } catch(e){ return nul
 const esc = t => String(t).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 const video = $('video'), tela = $('tela'), msgEl = $('msg');
 let canais = []; try { canais = JSON.parse(ls.get('simastv-canais') || '[]'); } catch (e) {}
-let atual = '', hls = null, iframe = null, girando = 0;
+let atual = '', hls = null, iframe = null, girando = 0, fila = [], linkHttp = false;
 
 // ---------- chuvisco (quando tá sem sinal / carregando) ----------
 const cv = $('chuvisco'), cx = cv.getContext('2d'), img = cx.createImageData(160, 90);
@@ -254,9 +254,13 @@ function tipo(u) {
 function para() {
   if (hls) { try { hls.destroy(); } catch (e) {} hls = null; }
   if (iframe) { iframe.remove(); iframe = null; }
+  video.onplaying = video.onwaiting = video.onerror = null;   // não deixa aviso atrasado do vídeo antigo bagunçar a tela
   video.pause(); video.removeAttribute('src'); video.load(); video.hidden = true;
 }
 function erro(txt) {
+  // link http: se ainda tem outro jeito de tentar (https primeiro, depois o http do jeito que colou), tenta antes de desistir
+  if (fila.length) { const prox = fila.shift(); para(); msg('tentando de outro jeito... 📡'); tocar(prox); return; }
+  if (linkHttp) txt = 'não rolou nem em https nem em http. ou o link tá fora do ar, ou o navegador bloqueou o http (o site é https). se o canal tiver link https, usa ele';
   para(); mostraChuvisco(true); led(false);
   msg('📡 SEM SINAL<br><small style="font-size:.55em;font-weight:700">' + txt + '</small>');
 }
@@ -268,19 +272,26 @@ async function carregaHlsJs() {
 function tocaVideo() {
   video.hidden = false;
   const p = video.play();
-  if (p && p.catch) p.catch(() => { video.muted = true; video.play().then(() => msg('🔇 toca no video pra ligar o som')).catch(() => msg('▶ aperta o play')); setTimeout(() => msg(''), 3500); });
+  if (p && p.catch) p.catch(e => { if (!e || e.name !== 'NotAllowedError') return;   // link ruim: quem avisa é o erro
+    video.muted = true; video.play().then(() => msg('🔇 toca no video pra ligar o som')).catch(() => msg('▶ aperta o play')); setTimeout(() => msg(''), 3500); });
 }
 async function assistir(u, nomeCanal) {
   u = (u || '').trim();
   if (!u) return;
   if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
-  if (/^http:\/\//i.test(u)) { erro('esse link é http (sem o S). o navegador bloqueia http dentro de site https. procura a versão https do link'); return; }
   atual = u; ls.set('simastv-ultimo', u); $('link').value = u;
+  // http: tenta primeiro a mesma coisa em https (muito servidor tem os dois), depois o http do jeito que veio
+  linkHttp = /^http:\/\//i.test(u);
+  fila = linkHttp ? [u] : [];
   para(); mostraChuvisco(true); msg('sintonizando... 📡'); led(false);
   girando += 45; $('btCanal').style.setProperty('--g', girando + 'deg');
   const i = canais.findIndex(c => c.url === u);
   mostraCanal(i >= 0 ? 'CH ' + (i + 1) + (nomeCanal || canais[i].nome ? ' · ' + (nomeCanal || canais[i].nome) : '') : 'AV');
   marcaCanais();
+  tocar(linkHttp ? u.replace(/^http:/i, 'https:') : u);
+}
+async function tocar(u) {
+  const dono = atual;
   const t = tipo(u);
   if (t === 'youtube') {
     iframe = document.createElement('iframe');
@@ -298,7 +309,7 @@ async function assistir(u, nomeCanal) {
   if (t === 'hls' && !video.canPlayType('application/vnd.apple.mpegurl')) {
     let Hls;
     try { Hls = await carregaHlsJs(); } catch (e) { erro('não carregou o tocador de m3u8, tenta de novo'); return; }
-    if (atual !== u) return;
+    if (atual !== dono) return;
     if (!Hls.isSupported()) { erro('esse navegador não toca m3u8'); return; }
     hls = new Hls({ lowLatencyMode: true });
     hls.on(Hls.Events.ERROR, (ev, d) => {
@@ -307,9 +318,11 @@ async function assistir(u, nomeCanal) {
       erro(d.type === Hls.ErrorTypes.NETWORK_ERROR ? 'o link não respondeu ou não deixa tocar fora do site dele (bloqueio CORS)' : 'deu pau no sinal desse link');
     });
     hls.loadSource(u); hls.attachMedia(video);
+    if (linkHttp) setTimeout(() => { if (atual === dono && video.paused && !video.currentTime && hls) erro('sem resposta'); }, 6000);
     hls.on(Hls.Events.MANIFEST_PARSED, tocaVideo);
   } else {
     video.src = u; tocaVideo();
+    if (linkHttp) setTimeout(() => { if (atual === dono && video.paused && !video.currentTime && video.readyState < 2) erro('sem resposta'); }, 6000);
   }
 }
 function desliga() {
