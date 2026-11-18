@@ -60,7 +60,7 @@ function desenharHUD(dt) {
   g.fillStyle = 'rgba(10,8,20,.78)'; rr(g, x0, y0, bw, bh, 10); g.fill(); g.strokeStyle = '#ffd23f'; g.lineWidth = 2; g.stroke();
   iconeArma(g, j.arma, x0 + (peq ? 30 : 36), y0 + bh / 2, peq ? 1.3 : 1.6, '#fff');
   g.textAlign = 'right'; g.font = `900 ${peq ? 20 : 26}px ${FONTE}`;
-  textoContorno(g, j.arma === 'punho' ? '∞' : String(j.municao[j.arma]), x0 + bw - 10, y0 + bh / 2 + (peq ? 8 : 10), j.arma !== 'punho' && j.municao[j.arma] < 5 ? '#ff6b6b' : '#ffd23f', 4);
+  textoContorno(g, (j.arma === 'punho' || ARMAS[j.arma].corpo) ? '∞' : String(j.municao[j.arma]), x0 + bw - 10, y0 + bh / 2 + (peq ? 8 : 10), j.arma !== 'punho' && !ARMAS[j.arma].corpo && j.municao[j.arma] < 5 ? '#ff6b6b' : '#ffd23f', 4);
   g.textAlign = 'left'; g.font = `bold ${peq ? 9 : 10}px system-ui`; g.fillStyle = '#bbb'; g.fillText(ARMAS[j.arma].nome.toUpperCase(), x0 + 8, y0 + bh - 6);
   let yv = y0 + bh + (peq ? 12 : 15);
   const rc = peq ? 8 : 10;
@@ -152,6 +152,13 @@ function desenharHUD(dt) {
     const c = carroMaisPerto(j.x, j.y, 95);
     if (c) { g.textAlign = 'center'; g.font = 'bold 14px system-ui'; textoContorno(g, (toque ? 'toca 🚗' : 'E') + ' pra ' + (c.motorista ? 'ASSALTAR' : 'entrar') + ' · ' + TIPOS_CARRO[c.modelo].nome, VW / 2, VH - (toque ? 200 : 40), '#fff', 4); }
   }
+  if (CORTINA) {
+    CORTINA.t += dt; const k = CORTINA.t < 0.5 ? CORTINA.t / 0.5 : CORTINA.t > 3.6 ? Math.max(0, (4.1 - CORTINA.t) / 0.5) : 1;
+    g.fillStyle = `rgba(20,0,10,${0.95 * k})`; g.fillRect(0, 0, VW, VH);
+    g.globalAlpha = k; g.textAlign = 'center'; g.font = `900 ${peq ? 26 : 40}px ${FONTE}`; textoContorno(g, '💋 FATAL MODEL', VW / 2, VH * 0.4, '#ff3d8b', 6);
+    g.font = `bold ${peq ? 14 : 18}px system-ui`; quebraTexto(g, CORTINA.txt, Math.min(620, VW - 40)).forEach((l, i) => textoContorno(g, l, VW / 2, VH * 0.4 + 44 + i * 26, '#fff', 4));
+    g.globalAlpha = 1; if (CORTINA.t > 4.1) CORTINA = null;
+  }
   if (MISSAO.dialogo) desenharDialogo(g, dt);
   if (TELA_FIM) desenharFim(g, dt);
   if (MAPA_ABERTO) desenharMapaGrande(g);
@@ -212,25 +219,25 @@ function desenharMini(g) {
 
 function desenharMapaGrande(g) {
   g.fillStyle = 'rgba(5,5,12,.92)'; g.fillRect(0, 0, VW, VH);
-  const s = Math.min(VW - 40, VH - 70), x0 = (VW - s) / 2, y0 = 44, k = s / MW;
-  g.imageSmoothingEnabled = false; g.drawImage(MINI, x0, y0, s, s); g.imageSmoothingEnabled = true;
-  g.strokeStyle = '#ff6ec7'; g.lineWidth = 3; g.strokeRect(x0, y0, s, s);
-  g.textAlign = 'center'; g.font = '900 22px "Arial Black", system-ui'; textoContorno(g, 'MAPA — GTA 7: SIMAS EDITION', VW / 2, 30, '#ffd23f', 4);
+  const k = Math.min((VW - 40) / MW, (VH - 70) / MH), s = MW * k, hh = MH * k, x0 = (VW - s) / 2, y0 = 44;
+  g.imageSmoothingEnabled = false; g.drawImage(MINI, x0, y0, s, hh); g.imageSmoothingEnabled = true;
+  g.strokeStyle = '#ff6ec7'; g.lineWidth = 3; g.strokeRect(x0, y0, s, hh);
+  g.textAlign = 'center'; g.font = '900 22px "Arial Black", system-ui'; textoContorno(g, 'MAPA — GTA 7', VW / 2, 30, '#ffd23f', 4);
   // nomes das regiões
   g.font = `900 ${Math.max(10, s / 40)}px system-ui`; g.globalAlpha = 0.85;
-  const reg = [['JUAZEIRO', 96, 24], ['RIO DE JANEIRO', 36, 160], ['BH', 155, 96], ['RECIFE', 150, 160], ['SUBÚRBIO', 36, 58], ['SÃO SIMAS', 90, 90]];
+  const reg = [['JUAZEIRO', 96, 24], ['RIO DE JANEIRO', 36, 160], ['BH', 155, 96], ['RECIFE', 150, 160], ['SUBÚRBIO', 36, 58], ['SÃO SIMAS', 90, 90], ['INDONÉSIA', 222, 70], ['SERRA DO SIMAS', 96, 228]];
   for (const [n, tx, ty] of reg) textoContorno(g, n, x0 + tx * k, y0 + ty * k, '#fff', 4);
   g.globalAlpha = 1;
   const ic = (l, ico, nome) => { if (!l) return; const x = x0 + l.x / T * k, y = y0 + l.y / T * k; g.font = `${Math.max(12, s / 34)}px system-ui`; g.fillText(ico, x, y + 6); if (nome && s > 400) { g.font = `bold ${Math.max(9, s / 60)}px system-ui`; textoContorno(g, nome, x, y + 22, '#fff', 3); } };
   ic(LUGAR.garagem, '🔧', 'garagem'); ic(LUGAR.garagemBH, '🔧', 'garagem'); ic(LUGAR.roupas, '👕', 'roupas'); ic(LUGAR.armas, '🔫', 'arsenal'); ic(LUGAR.hospital, '🏥'); ic(LUGAR.policia, '🚔');
   ic(LUGAR.dudu, '💻', 'Dudu'); ic(LUGAR.cas, '🪑', 'Tio Cas'); ic(LUGAR.skate, '🛹', 'Alan'); ic(LUGAR.yori, '🥭', 'Yori'); ic(LUGAR.nauj, '🌿', 'Nauj'); ic(LUGAR.baile, '🔊', 'Meco');
-  ic(LUGAR.gelado, '🕶️', 'Gelado'); ic(LUGAR.poli, '🎙️', 'Poli'); ic(LUGAR.matheus, '🤖', 'Matheus'); ic(LUGAR.ltzin, '👑', 'Ltzin');
-  for (const it of W.itens) if (it.t === 'arma' && it.arma === 'foguete') { const x = x0 + it.x / T * k, y = y0 + it.y / T * k; g.fillStyle = '#e74c3c'; g.fillRect(x - 2, y - 2, 4, 4); }
+  ic(LUGAR.gelado, '🕶️', 'Gelado'); ic(LUGAR.poli, '🎙️', 'Poli'); ic(LUGAR.fatal, '💋', 'Fatal Model'); ic(LUGAR.matheus, '🤖', 'Matheus'); ic(LUGAR.ltzin, '👑', 'Ltzin');
+  ic(LUGAR.cafe, '☕', 'Café do Porto'); ic(LUGAR.masadakun, '🛕', 'Masadakun'); ic(LUGAR.motors, '🏍️', 'Simas Motors'); ic(LUGAR.mirante, '⛰️', 'Mirante');
   const alvo = MISSAO.ativa ? MISSAO.alvo : lugarMissao(proximaMissao());
   if (alvo) { const x = x0 + alvo.x / T * k, y = y0 + alvo.y / T * k; g.strokeStyle = '#ffd23f'; g.lineWidth = 3; g.beginPath(); g.arc(x, y, 10 + Math.sin(W.tempo * 6) * 3, 0, 7); g.stroke(); }
   const j = W.jog, jx = x0 + j.x / T * k, jy = y0 + j.y / T * k;
   g.fillStyle = (W.tempo * 3 | 0) % 2 ? '#fff' : '#ff6ec7'; g.beginPath(); g.arc(jx, jy, 6, 0, 7); g.fill(); g.strokeStyle = '#000'; g.lineWidth = 2; g.stroke();
-  g.font = 'bold 13px system-ui'; textoContorno(g, (ehToque() ? 'toca no 🗺️' : 'M') + ' pra fechar · 🔴 = lança-foguete escondido', VW / 2, VH - 8, '#ddd', 3);
+  g.font = 'bold 13px system-ui'; textoContorno(g, (ehToque() ? 'toca no 🗺️' : 'M') + ' pra fechar · tem segredo escondido no mapa todo 👀', VW / 2, VH - 8, '#ddd', 3);
 }
 
 let dialogoDigita = 0;
@@ -267,7 +274,7 @@ function desenharFim(g, dt) {
 }
 
 const LINHAS_CREDITOS = [
-  ['GTA 7: SIMAS EDITION', 'tit'], ['', ''], ['ELENCO', 'sub'],
+  ['GTA 7', 'tit'], ['GRAND THEFT AUTO 7', ''], ['', ''], ['ELENCO', 'sub'],
   ['Nerivan — rei da engenharia social', 'nerivan'], ['Luketa — guia, narrador e beatmaker', 'luketa'], ['Dudu — hacker de sistemas', 'dudu'],
   ['Tio Cas — DJ, sentado desde terça', 'cas'], ['Ana — a patroa', 'ana'], ['Alan — skatista e desenhista desvalorizado', 'alan'],
   ['Yori — alimenta o Brasil', 'yori'], ['Nauj — teu guia favorito', 'nauj'], ['Meco — o Neymar do funk BH', 'meco'],
@@ -346,16 +353,78 @@ function menuPintura() {
     c.cor = cor; if (W.procurado > 0) { W.procurado = 0; W.calor = 0; W.carros = W.carros.filter(x => !(x.ia && x.ia.tipo === 'policia' && dist(x.x, x.y, c.x, c.y) > 300)); falar('luketa', 'carro novo, placa nova. os home perderam teu rastro', 3); }
   } })), 'já pago, só escolher');
 }
+const TENIS = {
+  chinelo: { nome: 'Chinelo Havaiano', vel: 1, cor: '#2471a3', preco: 0 },
+  kenner: { nome: 'Kenner de Cria', vel: 1.08, cor: '#111', preco: 250 },
+  mola: { nome: 'Tênis de Mola', vel: 1.18, cor: '#ecf0f1', preco: 900 },
+  neymar: { nome: 'Chuteira do Meco (pré-lesão)', vel: 1.3, cor: '#f1c40f', preco: 2500 },
+  dourado: { nome: 'Tênis Dourado do Rei', vel: 1.38, cor: '#c9a227', preco: 6000 }
+};
 function menuRoupas() {
   const j = W.jog;
-  const itens = [
-    ...[['Camisa Rosa Simas', '#ff6ec7'], ['Camisa do Flamengo (genérica)', '#c0392b'], ['Camisa Preta Básica', '#151515'], ['Camisa Branca de Rico', '#f5f5f5'], ['Camisa Verde Galado', '#27ae60'], ['Camisa Amarela Seleção', '#f1c40f']].map(([n, c]) => ({ txt: '👕 ' + n, cor: c, preco: 100, fn: () => { j.camisa = c; } })),
-    ...[['Bermuda Jeans', '#2c3e50'], ['Calça Preta', '#111'], ['Bermuda Florida', '#e67e22']].map(([n, c]) => ({ txt: '👖 ' + n, cor: c, preco: 100, fn: () => { j.calca = c; } })),
-    ...[['Boné Rosa', '#ff6ec7'], ['Boné Preto', '#111'], ['Boné Vermelho', '#c0392b']].map(([n, c]) => ({ txt: '🧢 ' + n, cor: c, preco: 150, fn: () => { j.chapeu = c; } })),
-    { txt: j.chapeu ? '🧢 Tirar o boné' : '🧢 (sem boné)', off: !j.chapeu, fn: () => { j.chapeu = null; } },
-    { txt: j.oculos ? '🕶️ Tirar a Juliet' : '🕶️ Óculos Juliet', preco: j.oculos ? undefined : 200, fn: () => { j.oculos = !j.oculos; } }
-  ];
-  abrirMenu('👕 SIMAS STORE', itens, 'estilo é tudo, Nerivan');
+  const sub = (titulo, itens) => () => { abrirMenu(titulo, [...itens(), { txt: '⬅️ voltar', fn: () => { menuRoupas(); return false; } }], `${fmt$(j.grana)} no bolso`); return false; };
+  const cores = [['Rosa Simas', '#ff6ec7'], ['Vermelha', '#c0392b'], ['Preta Básica', '#151515'], ['Branca de Rico', '#f5f5f5'], ['Verde Galado', '#27ae60'], ['Amarela Seleção', '#f1c40f'], ['Azul Royal', '#2471a3'], ['Roxa Baile', '#7d3cff'], ['Laranja', '#e67e22'], ['Vinho', '#7b241c']];
+  abrirMenu('👕 SIMAS STORE', [
+    { txt: '👕 Camisas (10 cores)', fn: sub('👕 CAMISAS', () => cores.map(([n, c]) => ({ txt: 'Camisa ' + n, cor: c, preco: 100, fn: () => { j.camisa = c; j.estampa = null; } }))) },
+    { txt: '🎨 Estampas', fn: sub('🎨 ESTAMPAS', () => [['Listrada', 'listrada', 180], ['Arco-íris do Simas', 'simas', 400], ['Xadrez de Festa Junina', 'xadrez', 200], ['Camuflada', 'camuflada', 300], ['Rubro-negra (genérica)', 'flamengo', 250]].map(([n, e, p]) => ({ txt: n, preco: p, fn: () => { j.estampa = e; } })).concat([{ txt: 'tirar estampa', fn: () => { j.estampa = null; } }])) },
+    { txt: '🧥 Jaquetas', fn: sub('🧥 JAQUETAS', () => [['Jaqueta Jeans', '#5d6d7e', 350], ['Jaqueta de Couro', '#1b1b1b', 700], ['Corta-vento Neon', '#a3e635', 400], ['Moletom Rosa', '#ff6ec7', 300]].map(([n, c, p]) => ({ txt: n, cor: c, preco: p, fn: () => { j.jaqueta = c; } })).concat([{ txt: 'tirar jaqueta', fn: () => { j.jaqueta = null; } }])) },
+    { txt: '👖 Calças e bermudas', fn: sub('👖 CALÇAS', () => [['Bermuda Jeans', '#2c3e50'], ['Calça Preta', '#111'], ['Bermuda Florida', '#e67e22'], ['Calça Branca de Pagodeiro', '#f5f5f5'], ['Tactel Azul', '#2980b9'], ['Moletom Cinza', '#7f8c8d']].map(([n, c]) => ({ txt: n, cor: c, preco: 100, fn: () => { j.calca = c; } }))) },
+    { txt: '🧢 Bonés e chapéus', fn: sub('🧢 CABEÇA', () => [['Boné Rosa', '#ff6ec7', 'bone', 150], ['Boné Preto', '#111', 'bone', 150], ['Boné Vermelho', '#c0392b', 'bone', 150], ['Chapéu de Cowboy (Juazeiro)', '#8e5a2b', 'cowboy', 400], ['Bucket Hat', '#f5f5f5', 'bucket', 250], ['Bucket Hat Preto', '#111', 'bucket', 250]].map(([n, c, t, p]) => ({ txt: n, cor: c, preco: p, fn: () => { j.chapeu = c; j.chapeuTipo = t; } })).concat([{ txt: 'tirar o que tá na cabeça', off: !j.chapeu, fn: () => { j.chapeu = null; } }])) },
+    { txt: '💎 Acessórios', fn: sub('💎 ACESSÓRIOS', () => [
+      { txt: j.oculos ? '🕶️ Tirar a Juliet' : '🕶️ Óculos Juliet', preco: j.oculos ? undefined : 200, fn: () => { j.oculos = !j.oculos; } },
+      { txt: j.corrente ? '⛓️ Tirar a corrente' : '⛓️ Corrente de ouro (ostentação)', preco: j.corrente ? undefined : 2000, fn: () => { j.corrente = !j.corrente; } },
+      { txt: j.mochila ? '🎒 Tirar a mochila' : '🎒 Mochila de entregador', preco: j.mochila ? undefined : 150, fn: () => { j.mochila = j.mochila ? null : '#c0392b'; } }]) },
+    { txt: '👟 Tênis (corre mais)', fn: sub('👟 TÊNIS', () => Object.entries(TENIS).map(([k, t]) => ({ txt: `${t.nome} (+${Math.round((t.vel - 1) * 100)}% correndo)${j.tenis === k ? ' ✔' : ''}`, cor: t.cor, preco: (j.temTenis || {})[k] || !t.preco ? undefined : t.preco, fn: () => { j.temTenis = j.temTenis || {}; j.temTenis[k] = true; j.tenis = k; j.tenisCor = t.cor; } }))) },
+    { txt: '🛹 Skate e patins (aperta K pra usar)', fn: sub('🛹 RODAS', () => [
+      { txt: '🛹 Skate Simas SK8' + ((j.temRodas || {}).skate ? ' ✔ (tem)' : ''), preco: (j.temRodas || {}).skate ? undefined : 600, off: !!(j.temRodas || {}).skate, fn: () => { j.temRodas = j.temRodas || {}; j.temRodas.skate = true; j.rodaAtiva = 'skate'; } },
+      { txt: '⛸️ Patins Neon' + ((j.temRodas || {}).patins ? ' ✔ (tem)' : ''), preco: (j.temRodas || {}).patins ? undefined : 900, off: !!(j.temRodas || {}).patins, fn: () => { j.temRodas = j.temRodas || {}; j.temRodas.patins = true; j.rodaAtiva = 'patins'; } }]) }
+  ], 'estilo é tudo, Nerivan · ' + fmt$(j.grana) + ' no bolso');
+}
+function trocarRodas() {
+  const j = W.jog; if (j.carro || j.skate) return;
+  const tem = ['', ...Object.keys(j.temRodas || {})];
+  if (tem.length < 2) { falar('luketa', 'tu não tem skate nem patins. compra na Simas Store', 2.5); return; }
+  const i = tem.indexOf(j.rodaAtiva || ''); j.rodaAtiva = tem[(i + 1) % tem.length] || null;
+  SOM.pega(); CARRO_AVISO = { txt: j.rodaAtiva === 'skate' ? '🛹 de skate' : j.rodaAtiva === 'patins' ? '⛸️ de patins' : '🚶 a pé', t: 0 };
+}
+const VEICULOS_VENDA = [['biz', 1500], ['cg', 2500], ['trilha', 3500], ['xj6', 9000], ['fusca', 2000], ['gol', 3000], ['taxi', 4000], ['sw4', 12000], ['esporte', 8000], ['lambo', 35000], ['onibus', 7000]];
+const IMOVEIS = [
+  { id: 'kitnet', nome: 'Kitnet no Subúrbio', preco: 6000, renda: 80 },
+  { id: 'apeRio', nome: 'Apê na praia do Rio', preco: 15000, renda: 220 },
+  { id: 'barraco', nome: 'Barraco com laje em BH', preco: 9000, renda: 140 },
+  { id: 'sitio', nome: 'Sítio vizinho do Yori (Juazeiro)', preco: 12000, renda: 190 },
+  { id: 'mansao', nome: 'Mansão no porto de Recife', preco: 40000, renda: 650 },
+  { id: 'vila', nome: 'Vila na Indonésia', preco: 25000, renda: 400 }
+];
+function menuMotors() {
+  const j = W.jog;
+  abrirMenu('🏍️ SIMAS MOTORS & IMÓVEIS', [
+    { txt: '🚗 Comprar veículo', fn: () => { abrirMenu('🚗 VEÍCULOS', VEICULOS_VENDA.map(([m, p]) => ({ txt: TIPOS_CARRO[m].nome + (TIPOS_CARRO[m].moto ? ' 🏍️' : ''), preco: p, fn: () => {
+      const L = LUGAR.motors, c = novoCarro(m, L.x, L.y + 10, 0); W.carros.push(c);
+      if (j.carro) entrarSair(); j.x = c.x; j.y = c.y; c.motorista = j; j.carro = c; RADIO.tocar(true); CARRO_AVISO = { txt: TIPOS_CARRO[m].nome, t: 0 };
+      falar('luketa', 'comprado! e é teu de verdade, sem nota fiscal falsa. guarda na garagem pra não perder', 3.5);
+    } })), 'zero bala, com 0 km (de rolê)'); return false; } },
+    { txt: '🏠 Comprar imóvel (dá aluguel todo dia)', fn: () => { abrirMenu('🏠 IMÓVEIS', IMOVEIS.map(im => ({ txt: `${im.nome} · rende ${fmt$(im.renda)}/dia${(W.imoveis || []).includes(im.id) ? ' ✔ teu' : ''}`, preco: (W.imoveis || []).includes(im.id) ? undefined : im.preco, off: (W.imoveis || []).includes(im.id), fn: () => {
+      W.imoveis = W.imoveis || []; W.imoveis.push(im.id); falar('luketa', `${im.nome} é teu! o aluguel cai de 2 em 2 minutos`, 3.5);
+    } })), 'cada dia no jogo dura 2 minutos'); return false; } }
+  ], `${fmt$(j.grana)} no bolso`);
+}
+function menuPadaria() {
+  const j = W.jog;
+  abrirMenu('🥐 PADARIA', [
+    { txt: '🥟 Coxinha (+25 de vida)', preco: 15, fn: () => { j.hp = Math.min(100, j.hp + 25); } },
+    { txt: '🧀 Pão de queijo mineiro (+40)', preco: 30, fn: () => { j.hp = Math.min(100, j.hp + 40); } },
+    { txt: '🍱 Marmitão do Yori (vida cheia)', preco: 80, fn: () => { j.hp = 100; } },
+    { txt: '🍧 Açaí de 1 litro (vida cheia + 30 de colete)', preco: 150, fn: () => { j.hp = 100; j.colete = Math.min(100, j.colete + 30); } },
+    { txt: '☕ Pingado com pão na chapa (só pela vibe)', preco: 8, fn: () => { falar('luketa', 'que pão na chapa, hein', 2); } }
+  ], 'tudo fresquinho (mais ou menos)');
+}
+let rendaTimer = 120;
+function atualizaRenda(dt) {
+  if (!W.imoveis || !W.imoveis.length) return;
+  rendaTimer -= dt; if (rendaTimer > 0) return; rendaTimer = 120;
+  const v = W.imoveis.reduce((a, id) => a + (IMOVEIS.find(i => i.id === id) || { renda: 0 }).renda, 0);
+  W.jog.grana += v; SOM.grana(); falar('luketa', `caiu o aluguel dos teus imóveis: +${fmt$(v)}`, 3); salvar();
 }
 function menuArmas() {
   const j = W.jog;
@@ -364,6 +433,11 @@ function menuArmas() {
     { txt: '🔫 Submetralhadora + 90 balas', preco: 400, fn: () => { j.tem.uzi = true; j.municao.uzi += 90; } },
     { txt: '💥 Escopeta + 16 cartuchos', preco: 500, fn: () => { j.tem.escopeta = true; j.municao.escopeta += 16; } },
     { txt: '🚀 Lança-foguete + 3 foguetes', preco: 1200, fn: () => { j.tem.foguete = true; j.municao.foguete += 3; } },
+    { txt: '🏏 Taco de beisebol', preco: 120, off: !!j.tem.taco, fn: () => { j.tem.taco = true; } },
+    { txt: '🔫 Fuzil + 60 balas', preco: 900, fn: () => { j.tem.fuzil = true; j.municao.fuzil += 60; } },
+    { txt: '💣 Granada x5', preco: 600, fn: () => { j.tem.granada = true; j.municao.granada += 5; } },
+    { txt: '🍾 Coquetel molotov x5', preco: 450, fn: () => { j.tem.molotov = true; j.municao.molotov += 5; } },
+    { txt: '🔥 Lança-chamas + 200 de gás', preco: 1500, fn: () => { j.tem.lancachamas = true; j.municao.lancachamas += 200; } },
     { txt: '🛡️ Colete', preco: 300, off: j.colete >= 100, fn: () => { j.colete = 100; } },
     { txt: '❤️ Kit médico', preco: 100, off: j.hp >= 100, fn: () => { j.hp = 100; } }
   ], `${fmt$(j.grana)} no bolso`);
@@ -372,13 +446,14 @@ function menuPausa() {
   abrirMenu('⏸️ PAUSA', [
     { txt: '▶️ Continuar', fn: () => { } },
     { txt: '🗺️ Ver o mapa', fn: () => { MAPA_ABERTO = true; } },
+    { txt: `🔍 Segredos achados: ${(W.segredos || []).length}/${SEGREDOS.length}`, fn: () => { abrirMenu('🔍 SEGREDOS', SEGREDOS.map(sg => ({ txt: (W.segredos || []).includes(sg[0]) ? '✅ ' + sg[1] : '❓ ' + sg[2], off: true, fn: () => { } })).concat([{ txt: '⬅️ voltar', fn: () => { menuPausa(); return false; } }]), 'acha todos e ganha a PLATINA SIMAS'); return false; } },
     { txt: '💾 Salvar agora', fn: () => { salvar(); falar('luketa', 'jogo salvo!', 2); } },
     { txt: PAUSA_SOM ? '🔊 Ligar o som' : '🔇 Tirar o som', fn: () => { PAUSA_SOM = !PAUSA_SOM; if (SOM.master) SOM.master.gain.value = PAUSA_SOM ? 0 : 0.8; atualizaYT(); } },
     { txt: '🚪 Sair pros Jogos do Simas', fn: () => { salvar(); location.href = '/jogos/'; } },
     { txt: '🗑️ Começar do zero (apaga o save)', fn: () => { if (!MENU.confirma) { MENU.confirma = true; const it = document.querySelectorAll('#menu .item span'); it[it.length - 1].textContent = '⚠️ certeza? clica de novo pra apagar tudo'; return false; } try { localStorage.removeItem('gta7-save'); } catch (e) { } location.reload(); } }
   ], CONTROLES_TXT);
 }
-const CONTROLES_TXT = 'WASD/setas: andar e dirigir · E ou F: entrar/sair/assaltar · mouse ou CTRL/ESPAÇO: atirar · TAB/Q: trocar arma · ESPAÇO no carro: freio de mão · SHIFT: correr · R: rádio · H: buzina · M: mapa · ESC: pausa';
+const CONTROLES_TXT = 'WASD/setas: andar e dirigir · E ou F: entrar/sair/assaltar · mouse ou CTRL/ESPAÇO: atirar · TAB/Q: trocar arma · ESPAÇO no carro: freio de mão · SHIFT: correr · K: skate/patins · R: rádio · H: buzina · M: mapa · ESC: pausa';
 
 // ---------- controles de celular ----------
 function montarToque() {
@@ -396,6 +471,7 @@ function montarToque() {
   bt('.b-arma', () => { PRESS.tab = true; });
   bt('.b-freio', () => { TOQUE.freio = true; }, () => { TOQUE.freio = false; });
   bt('.b-radio', () => { PRESS.r = true; });
+  bt('.b-rodas', () => { PRESS.k = true; });
   bt('.b-mapa', () => { PRESS.m = true; });
   bt('.b-pausa', () => { PRESS.escape = true; });
 }

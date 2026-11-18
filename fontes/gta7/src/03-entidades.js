@@ -6,9 +6,14 @@ const ARMAS = {
   pistola:   { nome: 'Pistola', icone: '🔫', dano: 26, cad: 0.32, alcance: 650, vel: 1100, bala: 1, espalha: 0.04 },
   uzi:       { nome: 'Submetralhadora', icone: '🔫', dano: 13, cad: 0.08, alcance: 600, vel: 1150, bala: 1, espalha: 0.1 },
   escopeta:  { nome: 'Escopeta', icone: '💥', dano: 15, cad: 0.85, alcance: 380, vel: 1000, bala: 7, espalha: 0.28 },
-  foguete:   { nome: 'Lança-foguete', icone: '🚀', dano: 0, cad: 1.2, alcance: 900, vel: 620, bala: 1, espalha: 0, explode: true }
+  foguete:   { nome: 'Lança-foguete', icone: '🚀', dano: 0, cad: 1.2, alcance: 900, vel: 620, bala: 1, espalha: 0, explode: true },
+  taco:      { nome: 'Taco de Beisebol', icone: '🏏', dano: 40, cad: 0.5, alcance: 44, vel: 0, bala: 0, corpo: true },
+  fuzil:     { nome: 'Fuzil', icone: '🔫', dano: 24, cad: 0.11, alcance: 800, vel: 1400, bala: 1, espalha: 0.05 },
+  granada:   { nome: 'Granada', icone: '💣', dano: 0, cad: 0.9, alcance: 420, vel: 520, bala: 1, joga: 'granada' },
+  molotov:   { nome: 'Coquetel Molotov', icone: '🍾', dano: 0, cad: 0.9, alcance: 380, vel: 480, bala: 1, joga: 'molotov' },
+  lancachamas: { nome: 'Lança-chamas', icone: '🔥', dano: 5, cad: 0.04, alcance: 180, vel: 420, bala: 1, chama: true }
 };
-const ORDEM_ARMAS = ['punho', 'pistola', 'uzi', 'escopeta', 'foguete'];
+const ORDEM_ARMAS = ['punho', 'taco', 'pistola', 'uzi', 'fuzil', 'escopeta', 'granada', 'molotov', 'lancachamas', 'foguete'];
 
 const TIPOS_CARRO = {
   popular:  { nome: 'Uno com escada', vmax: 520, acel: 380, curva: 2.6, aderencia: 6, hp: 110, w: 38, l: 74, cores: ['#d0d0d0', '#c0392b', '#2e86c1', '#f4d03f', '#117a65'] },
@@ -18,6 +23,16 @@ const TIPOS_CARRO = {
   caminhao: { nome: 'Caminhão de Carga', vmax: 430, acel: 260, curva: 1.7, aderencia: 5, hp: 260, w: 54, l: 128, cores: ['#d35400', '#2471a3'] },
   policia:  { nome: 'Viatura', vmax: 690, acel: 520, curva: 2.6, aderencia: 7, hp: 160, w: 44, l: 88, cores: ['#f8f9f9'], policia: true },
   gelado:   { nome: 'SUV do Segurança Gelado', vmax: 720, acel: 560, curva: 2.4, aderencia: 7, hp: 320, w: 50, l: 96, cores: ['#0b0b0b'], policia: true, gelado: true },
+  fusca:    { nome: 'Fusca Azul', vmax: 460, acel: 330, curva: 2.7, aderencia: 6, hp: 100, w: 38, l: 70, cores: ['#5dade2', '#f4d03f', '#e74c3c', '#ecf0f1'], fusca: true },
+  gol:      { nome: 'Gol Bola', vmax: 560, acel: 410, curva: 2.6, aderencia: 6.3, hp: 115, w: 40, l: 78, cores: ['#c0392b', '#ecf0f1', '#2c3e50', '#7f8c8d'] },
+  taxi:     { nome: 'Táxi', vmax: 580, acel: 420, curva: 2.5, aderencia: 6.5, hp: 125, w: 42, l: 84, cores: ['#f1c40f'], taxi: true },
+  lambo:    { nome: 'Lamborghini Genérica', vmax: 980, acel: 880, curva: 2.9, aderencia: 8, hp: 110, w: 46, l: 88, cores: ['#a3e635', '#ff6ec7', '#f39c12', '#111'], lambo: true },
+  sw4:      { nome: 'SW4 Blindada', vmax: 650, acel: 470, curva: 2.3, aderencia: 6.8, hp: 280, w: 48, l: 94, cores: ['#111', '#ecf0f1', '#566573'] },
+  onibus:   { nome: 'Ônibus da Linha 171', vmax: 400, acel: 220, curva: 1.5, aderencia: 5, hp: 320, w: 56, l: 150, cores: ['#2471a3', '#c0392b', '#1e8449'], onibus: true },
+  biz:      { nome: 'Biz do Entregador', vmax: 540, acel: 560, curva: 3.6, aderencia: 7.5, hp: 50, w: 18, l: 46, cores: ['#c0392b', '#ecf0f1', '#f39c12'], moto: true },
+  cg:       { nome: 'CG Titan 160', vmax: 640, acel: 650, curva: 3.5, aderencia: 7.5, hp: 60, w: 18, l: 50, cores: ['#111', '#c0392b', '#2471a3'], moto: true },
+  trilha:   { nome: 'Moto de Trilha', vmax: 660, acel: 760, curva: 3.8, aderencia: 6.5, hp: 65, w: 18, l: 50, cores: ['#f39c12', '#27ae60', '#ecf0f1'], moto: true },
+  xj6:      { nome: 'XJ6 do Grau', vmax: 900, acel: 950, curva: 3.4, aderencia: 8, hp: 70, w: 20, l: 54, cores: ['#111', '#ff6ec7', '#2980b9'], moto: true },
   choque:   { nome: 'Choque-Móvel do Ltzin', vmax: 600, acel: 500, curva: 2.2, aderencia: 7, hp: 1800, w: 60, l: 112, cores: ['#d4ac0d'], chefe: true }
 };
 
@@ -27,12 +42,12 @@ const CAMISAS = ['#c0392b', '#2980b9', '#27ae60', '#f39c12', '#8e44ad', '#ecf0f1
 
 // ---------- estado do mundo ----------
 const W = {
-  jog: null, peds: [], carros: [], balas: [], efeitos: [], itens: [], manchas: [], foguetes: [],
+  jog: null, peds: [], carros: [], balas: [], efeitos: [], itens: [], manchas: [], foguetes: [], jogados: [], chamas: [], fogos: [],
   procurado: 0, calor: 0, semVer: 0, tempo: 0, chefes: [], escudos: []
 };
 
 function novoJogador(x, y) {
-  return { tipo: 'jog', x, y, a: 0, vx: 0, vy: 0, hp: 100, colete: 0, carro: null, arma: 'punho', municao: { punho: Infinity, pistola: 0, uzi: 0, escopeta: 0, foguete: 0 },
+  return { tipo: 'jog', x, y, a: 0, vx: 0, vy: 0, hp: 100, colete: 0, carro: null, arma: 'punho', municao: { punho: Infinity, pistola: 0, uzi: 0, escopeta: 0, foguete: 0, taco: 0, fuzil: 0, granada: 0, molotov: 0, lancachamas: 0 },
     tem: { punho: true }, recarga: 0, anda: 0, grana: 200, camisa: '#ff6ec7', calca: '#1a1a2e', chapeu: null, oculos: false, pele: '#c68642', cabelo: '#111', morto: false };
 }
 
@@ -71,10 +86,12 @@ function pontoNaCalcadaPerto(cx, cy, rmin, rmax) {
   return null;
 }
 function modeloDaRegiao(reg) {
-  if (reg === REG.JUAZEIRO) return pick(['pickup', 'pickup', 'popular', 'caminhao']);
-  if (reg === REG.RECIFE) return pick(['caminhao', 'sedan', 'popular', 'pickup']);
-  if (reg === REG.BH) return pick(['popular', 'popular', 'sedan']);
-  return pick(['popular', 'sedan', 'sedan', 'esporte', 'popular', 'pickup']);
+  if (reg === REG.JUAZEIRO) return pick(['pickup', 'pickup', 'popular', 'caminhao', 'trilha', 'cg', 'fusca']);
+  if (reg === REG.RECIFE) return pick(['caminhao', 'sedan', 'popular', 'pickup', 'onibus', 'biz', 'gol', 'taxi']);
+  if (reg === REG.BH) return pick(['popular', 'popular', 'sedan', 'gol', 'cg', 'biz', 'fusca', 'onibus']);
+  if (reg === REG.INDONESIA) return pick(['biz', 'biz', 'cg', 'trilha', 'popular']);
+  if (reg === REG.SERRA) return pick(['pickup', 'trilha', 'sw4', 'fusca']);
+  return pick(['popular', 'sedan', 'sedan', 'esporte', 'popular', 'pickup', 'taxi', 'taxi', 'gol', 'fusca', 'biz', 'cg', 'xj6', 'sw4', 'onibus', 'lambo']);
 }
 
 function povoar(dt, vw, vh) {
@@ -152,12 +169,40 @@ function moverCarro(c, dt) {
     c.x = ox + c.vx * dt; c.y = oy;
     if (bateuPredio(c)) { c.x = ox; c.y = oy + c.vy * dt; if (bateuPredio(c)) { c.x = ox; c.y = oy; c.vx *= -0.3; c.vy *= -0.3; } else c.vx *= -0.3; }
     else c.vy *= -0.3;
-    if (v > 120) { danoCarro(c, v * 0.05); SOM.batida(v / 700); if (v > 300) tremer(4); if (c === W.jog.carro) { W.ultBatida = W.tempo; W.forcaBatida = v; } }
+    if (v > 120) { danoCarro(c, v * 0.05); SOM.batida(v / 700); if (v > 300) tremer(4); if (c === W.jog.carro) { W.ultBatida = W.tempo; W.forcaBatida = v; if (TIPOS_CARRO[c.modelo].moto && v > 360) cairDaMoto(c, v); } }
   }
+  // poste, árvore, hidrante...
+  const alc = c.l * 0.5 + 30;
+  decoNaArea(c.x - alc, c.y - alc, c.x + alc, c.y + alc, d => {
+    if (d.quebrado) return; const cd = COLIDE[d.t]; if (!cd) return;
+    const r = cd.r * (d.t === 'arvore' || d.t === 'pedra' ? (d.s || 1) : 1) + c.w * 0.42, dd = dist(c.x, c.y, d.x, d.y);
+    if (dd >= r) return;
+    const v = Math.hypot(c.vx, c.vy);
+    if (cd.quebra && v > cd.quebra) { quebrarDeco(d, c); c.vx *= 0.8; c.vy *= 0.8; danoCarro(c, 3); return; }
+    const nx = (c.x - d.x) / (dd || 1), ny = (c.y - d.y) / (dd || 1); c.x = d.x + nx * r; c.y = d.y + ny * r;
+    const vn = c.vx * nx + c.vy * ny; if (vn < 0) { c.vx -= 1.5 * vn * nx; c.vy -= 1.5 * vn * ny; }
+    if (v > 180) { danoCarro(c, v * 0.04); SOM.batida(v / 700); if (c === W.jog.carro) { W.ultBatida = W.tempo; W.forcaBatida = v; tremer(5); } }
+  });
   // tá na água? afunda
   if (tileEm(c.x, c.y) === TL.AGUA) danoCarro(c, 999);
 }
 
+function cairDaMoto(c, v) {
+  const j = W.jog; if (j.carro !== c) return;
+  j.carro = null; c.motorista = null; c.ia = null;
+  const a = Math.atan2(c.vy, c.vx); j.x = c.x; j.y = c.y;
+  for (let k = 0; k < 12; k++) { const nx = j.x + Math.cos(a) * 8, ny = j.y + Math.sin(a) * 8; if (solidoEm(nx, ny)) break; j.x = nx; j.y = ny; }
+  ferirJogador(Math.min(40, v * 0.05)); tremer(10); SOM.atualizaMotor(0, false); RADIO.tocar(false);
+  c.vx *= 0.2; c.vy *= 0.2;
+  falar('luketa', pick(['VOOOOU! tomou um tombo da moto', 'capacete é pra quem tem medo né, Nerivan', 'caiu igual o Meco no campinho']), 2.5);
+}
+function quebrarDeco(d, c) {
+  d.quebrado = W.tempo + 0.001; d.aQ = Math.atan2(c.vy, c.vx);
+  SOM.batida(0.35); W.efeitos.push({ t: 'faisca', x: d.x, y: d.y, vida: 0.3, max: 0.3 });
+  if (d.t === 'hidrante') { d.jorra = 10; }
+  if (d.t === 'poste') for (let k = 0; k < 6; k++) W.efeitos.push({ t: 'faisca', x: d.x + rnd(-20, 20), y: d.y + rnd(-20, 20), vida: 0.4, max: 0.4 });
+  if (c === W.jog.carro) { W.stats.quebrou = (W.stats.quebrou || 0) + 1; if (d.t === 'hidrante' && rnd() < 0.3) falar('luketa', pick(['hidrante no chão! a SABESP vai te cobrar isso', 'que chuveirão, hein']), 2.5); }
+}
 function danoCarro(c, d, quem) {
   if (c.hp <= 0) return;
   if (DEUS && c === W.jog.carro) return;
@@ -199,7 +244,7 @@ function feriPed(p, d, quem) {
   if (p.hp <= 0) {
     p.morto = true;
     W.manchas.push({ t: 'sangue', x: p.x, y: p.y, r: rnd(12, 20), a: rnd(6) });
-    if (!p.semGrana && rnd() < 0.5) W.itens.push({ t: 'grana', x: p.x + rnd(-8, 8), y: p.y + rnd(-8, 8), v: rndi(5, 40), vida: 30 });
+    if (!p.semGrana && rnd() < 0.3) W.itens.push({ t: 'grana', x: p.x + rnd(-8, 8), y: p.y + rnd(-8, 8), v: rndi(5, 40), vida: 30 });
     if (quem === W.jog) crime(p.policia ? 2 : (copsPerto(600) || rnd() < 0.25 ? 1 : 0));
     if (p.aoMorrer) p.aoMorrer();
   }
@@ -311,7 +356,7 @@ function colisoes(dt) {
           const quem = (A === W.jog.carro || B === W.jog.carro) ? W.jog : null;
           danoCarro(A, rel * 0.04, quem === W.jog && A !== W.jog.carro ? W.jog : null);
           danoCarro(B, rel * 0.04, quem === W.jog && B !== W.jog.carro ? W.jog : null);
-          SOM.batida(rel / 600); if (quem) { tremer(rel / 80); W.ultBatida = W.tempo; W.forcaBatida = rel * 1.4; }
+          SOM.batida(rel / 600); if (quem) { tremer(rel / 80); W.ultBatida = W.tempo; W.forcaBatida = rel * 1.4; const mc = W.jog.carro; if (mc && TIPOS_CARRO[mc.modelo].moto && rel > 300) cairDaMoto(mc, rel); }
           if (A.ia && A.ia.tipo === 'transito' && quem && A !== W.jog.carro && A.motorista) A.motorista.medo = 4;
           if (B.ia && B.ia.tipo === 'transito' && quem && B !== W.jog.carro && B.motorista) B.motorista.medo = 4;
         }

@@ -1,12 +1,12 @@
 // =========================================================
 // MAPA: tiles, regiões, prédios e lugares importantes
 // =========================================================
-const TL = { AGUA: 0, AREIA: 1, GRAMA: 2, RUA: 3, CALCADA: 4, PREDIO: 5, PRACA: 6, ROCA: 7, TERRA: 8, PISTA: 9, CAIS: 10, ESTAC: 11, BECO: 12 };
+const TL = { AGUA: 0, AREIA: 1, GRAMA: 2, RUA: 3, CALCADA: 4, PREDIO: 5, PRACA: 6, ROCA: 7, TERRA: 8, PISTA: 9, CAIS: 10, ESTAC: 11, BECO: 12, ESTRADA: 13 };
 const SOLIDO = new Set([TL.AGUA, TL.PREDIO]);
 const mapa = new Uint8Array(MW * MH);
 const regiaoTile = new Uint8Array(MW * MH);
-const REG = { CENTRO: 0, JUAZEIRO: 1, RIO: 2, BH: 3, RECIFE: 4, SUBURBIO: 5 };
-const NOME_REG = ['São Simas (centro)', 'Juazeiro', 'Rio de Janeiro', 'BH', 'Recife', 'Subúrbio'];
+const REG = { CENTRO: 0, JUAZEIRO: 1, RIO: 2, BH: 3, RECIFE: 4, SUBURBIO: 5, INDONESIA: 6, SERRA: 7 };
+const NOME_REG = ['São Simas (centro)', 'Juazeiro', 'Rio de Janeiro', 'BH', 'Recife', 'Subúrbio', 'Indonésia', 'Serra do Simas'];
 const predios = [];
 const LUGAR = {};     // lugares importantes: {x, y (mundo), nome}
 const deco = [];      // decoração no chão: árvores, palmeiras, rampas, contêineres
@@ -17,6 +17,7 @@ const tileEm = (wx, wy) => tile(Math.floor(wx / T), Math.floor(wy / T));
 const solidoEm = (wx, wy) => SOLIDO.has(tileEm(wx, wy));
 const regiaoEm = (wx, wy) => { const x = Math.floor(wx / T), y = Math.floor(wy / T); return (x < 0 || y < 0 || x >= MW || y >= MH) ? REG.CENTRO : regiaoTile[y * MW + x]; };
 const ehRua = (x, y) => tile(x, y) === TL.RUA;
+const ehPista = (x, y) => { const t = tile(x, y); return t === TL.RUA || t === TL.ESTRADA; };
 
 function regiaoDoBloco(i, j) {
   if (j <= 3) return REG.JUAZEIRO;
@@ -34,7 +35,7 @@ const portaBloco = (i, j) => ({ x: (GRID * i + 7) * T, y: (GRID * j + 2.5) * T }
 const ESPECIAIS = {
   dudu: [6, 6], garagem: [7, 7], garagemBH: [12, 6], hospital: [5, 7], policia: [8, 5], cas: [3, 4],
   skate: [4, 8], padaria: [5, 5], mercado: [8, 8], yori: [6, 1], nauj: [2, 13], baile: [13, 7],
-  matheus: [9, 10], ltzin: [13, 13], armas: [6, 8], roupas: [7, 5], gelado: [9, 6], desmanche: [12, 12], poli: [8, 6]
+  matheus: [9, 10], ltzin: [13, 13], armas: [6, 8], roupas: [7, 5], gelado: [9, 6], desmanche: [12, 12], poli: [8, 6], fatal: [6, 5], cafe: [11, 14], motors: [8, 4]
 };
 const CORES_PREDIO = ['#5b5f73', '#6e6058', '#4f6670', '#77705f', '#5d566e', '#666', '#5a6b5a', '#7a6a7e'];
 const CORES_BH = ['#c0573e', '#d39b3a', '#5c8fb3', '#7bab5a', '#c46f99', '#e0c25b', '#8a6bc2', '#b5734e'];
@@ -96,11 +97,11 @@ function gerarMapa() {
   decidirRuas(r);
   // terra com litoral irregular
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
-    const esq = 3 + ruido(y, 1) * 7, dir = MW - 4 - ruido(y, 5) * 7, cima = 3 + ruido(x, 9) * 7, baixo = MH - 4 - ruido(x, 13) * 7;
+    const esq = 3 + ruido(y, 1) * 7, dir = CIDADE - 4 - ruido(y, 5) * 7, cima = 3 + ruido(x, 9) * 7, baixo = CIDADE - 4 - ruido(x, 13) * 7;
     const terra = x >= esq && x <= dir && y >= cima && y <= baixo;
     mapa[y * MW + x] = terra ? TL.GRAMA : TL.AGUA;
     const i = Math.floor(x / GRID), j = Math.floor(y / GRID);
-    regiaoTile[y * MW + x] = regiaoDoBloco(clamp(i, 0, 15), clamp(j, 0, 15));
+    regiaoTile[y * MW + x] = x >= CIDADE ? REG.INDONESIA : y >= CIDADE ? REG.SERRA : regiaoDoBloco(clamp(i, 0, 15), clamp(j, 0, 15));
   }
   // chão de cada região perto da água
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
@@ -117,7 +118,7 @@ function gerarMapa() {
   for (let ky = 1; ky <= 15; ky++) for (let kx = 1; kx <= 14; kx++) if (temH(kx, ky)) pinta(GRID * kx, GRID * ky, GRID * kx + 13, GRID * ky + 1);
   for (let ky = 1; ky <= 14; ky++) for (let kx = 1; kx <= 15; kx++) if (temV(kx, ky)) pinta(GRID * kx, GRID * ky, GRID * kx + 1, GRID * ky + 13);
   // rio (Velho Chico) cortando o mapa de norte a sul, com pontes
-  for (let y = 0; y < MH; y++) {
+  for (let y = 0; y < CIDADE; y++) {
     const cx = RIO_X(y);
     for (let x = Math.floor(cx - 4); x <= Math.ceil(cx + 4); x++) {
       const d = Math.abs(x + 0.5 - cx);
@@ -146,9 +147,11 @@ function gerarMapa() {
     if (i === 7 && (j === 9 || j === 10)) { montarParque(x0, y0, x1, y1, j === 9, r); continue; }
     preencherLote(regiaoDoBloco(i, j), x0, y0, x1, y1, r);
   }
-  for (let k = deco.length - 1; k >= 0; k--) { const d = deco[k]; if (['arvore', 'palmeira', 'cacto', 'banco'].includes(d.t) && (tileEm(d.x, d.y) === TL.AGUA || tileEm(d.x, d.y) === TL.PREDIO || tileEm(d.x, d.y) === TL.RUA)) deco.splice(k, 1); }
+  gerarIndonesia(r); gerarSerra(r); mobiliaUrbana(r);
+  for (let k = deco.length - 1; k >= 0; k--) { const d = deco[k]; if (['arvore', 'palmeira', 'cacto', 'banco', 'poste', 'hidrante', 'lixeira', 'pedra', 'placa'].includes(d.t) && (tileEm(d.x, d.y) === TL.AGUA || tileEm(d.x, d.y) === TL.PREDIO || tileEm(d.x, d.y) === TL.RUA)) deco.splice(k, 1); }
   for (let k = 0; k < 50; k++) { const x = rnd(4, 40), y = rnd(130, 188); if (tile(x | 0, y | 0) === TL.AREIA) deco.push({ t: 'palmeira', x: x * T, y: y * T, s: 1 }); }
   for (let k = 0; k < 50; k++) { const x = rnd(10, 80), y = rnd(178, 189); if (tile(x | 0, y | 0) === TL.AREIA) deco.push({ t: 'palmeira', x: x * T, y: y * T, s: 1 }); }
+  indexarDeco();
 }
 
 const livre = (x, y) => { const t = tile(x, y); return t !== TL.RUA && t !== TL.CALCADA && t !== TL.AGUA && t !== TL.PREDIO && !(regiaoTile[y * MW + x] === REG.JUAZEIRO && t === TL.TERRA && vizRua(x, y)); };
@@ -297,6 +300,20 @@ function montarEspecial(nome, i, j, x0, y0, n, r) {
     case 'matheus':
       for (let y = y0 - 1; y < y0 + n + 1; y++) for (let x = x0 - 1; x < x0 + n + 1; x++) setTile(x, y, TL.PISTA);
       LUGAR.matheus = { x: c.x, y: c.y, nome: 'Laboratório do Matheus' }; break;
+    case 'cafe':
+      for (let y = y0; y < y0 + n; y++) for (let x = x0; x < x0 + n; x++) setTile(x, y, TL.PRACA);
+      addPredio(x0 + 1, y0 + 3, 6, 5, 0.45, '#6e4b2a', { teto: '#4a3219', placa: 'CAFÉ DO PORTO', neon: '#f5cba7' });
+      for (let k = 0; k < 4; k++) deco.push({ t: 'mesa', x: (x0 + 1.5 + k * 1.7) * T, y: (y0 + 1.6) * T });
+      LUGAR.cafe = { x: porta.x, y: (y0 + 2.4) * T, nome: 'Café do Porto (Recife)' }; break;
+    case 'motors':
+      for (let y = y0; y < y0 + n; y++) for (let x = x0; x < x0 + n; x++) setTile(x, y, TL.ESTAC);
+      addPredio(x0 + 1, y0 + 4, 6, 4, 0.55, '#d0d3d4', { teto: '#2e4053', placa: 'SIMAS MOTORS', neon: '#3498db' });
+      LUGAR.motors = { x: porta.x, y: (y0 + 2.2) * T, nome: 'Simas Motors' }; break;
+    case 'fatal':
+      addPredio(x0 + 1, y0 + 2, 6, 6, 0.8, '#6b1240', { teto: '#4a0c2c', placa: 'FATAL MODEL', neon: '#ff3d8b' });
+      for (let x = x0; x < x0 + n; x++) for (let y = y0; y < y0 + 2; y++) setTile(x, y, TL.PRACA);
+      deco.push({ t: 'tapete', x: porta.x, y: (y0 + 1.4) * T });
+      LUGAR.fatal = { x: porta.x, y: (y0 + 1) * T, nome: 'Fatal Model' }; break;
     case 'poli':
       addPredio(x0 + 1, y0 + 2, 6, 6, 1.1, '#3c2a6b', { teto: '#2a1d4d', placa: 'RÁDIO POLI FM', neon: '#a29bfe', antena: true });
       for (let x = x0; x < x0 + n; x++) for (let y = y0; y < y0 + 2; y++) setTile(x, y, TL.PRACA);
@@ -313,9 +330,92 @@ function montarEspecial(nome, i, j, x0, y0, n, r) {
   }
 }
 
+// ---------- Indonésia: ilha a leste de Recife, ligada por uma ponte comprida ----------
+function estrada(pts, larg = 1.3) { // pinta estrada curva passando pelos pontos (em tiles)
+  for (let k = 0; k < pts.length - 1; k++) {
+    const [ax, ay] = pts[k], [bx, by] = pts[k + 1], n = Math.ceil(Math.hypot(bx - ax, by - ay) * 3);
+    for (let s = 0; s <= n; s++) {
+      const x = lerp(ax, bx, s / n), y = lerp(ay, by, s / n);
+      for (let yy = Math.floor(y - larg); yy <= Math.ceil(y + larg); yy++) for (let xx = Math.floor(x - larg); xx <= Math.ceil(x + larg); xx++) {
+        if (Math.hypot(xx + 0.5 - x, yy + 0.5 - y) > larg) continue;
+        const t = tile(xx, yy); if (t === TL.RUA) continue;
+        if (t === TL.AGUA) ponte[yy * MW + xx] = 1;
+        if (t !== TL.PREDIO) setTile(xx, yy, TL.ESTRADA);
+      }
+    }
+  }
+}
+function curva(f, a, b, passo = 2) { const pts = []; for (let t = a; t <= b; t += passo) pts.push(f(t)); pts.push(f(b)); return pts; }
+function gerarIndonesia(r) {
+  const cx = 222, cy = 128;
+  for (let y = 50; y < 210; y++) for (let x = CIDADE; x < MW - 2; x++) {
+    const rx = 18 + ruido(y, 21) * 6, ry = 70;
+    const d = Math.hypot((x - cx - Math.sin(y * 0.05) * 4) / rx, (y - cy) / ry);
+    if (d < 1) setTile(x, y, d > 0.88 ? TL.AREIA : TL.GRAMA);
+  }
+  // terraço de arroz
+  for (let y = 70; y < 190; y++) for (let x = 210; x < 236; x++) if (tile(x, y) === TL.GRAMA && Math.sin(y * 0.5) > 0.2 && ruido(x + y, 3) > 0.45) setTile(x, y, TL.ROCA);
+  // ponte comprida de Recife até a ilha (continua a rua da linha 13)
+  for (let x = 182; x < 212; x++) for (const y of [GRID * 13, GRID * 13 + 1]) { if (tile(x, y) === TL.AGUA) ponte[y * MW + x] = 1; setTile(x, y, TL.RUA); }
+  // estrada curva dando a volta na ilha
+  estrada(curva(t => [cx + Math.cos(t) * 13 + Math.sin(t * 3) * 1.5, cy + Math.sin(t) * 58], 0, Math.PI * 2 + 0.1, 0.05));
+  estrada([[211, 157], [212, 157], [214, 160]]);
+  // templo, casinhas e a barraca da Masadakun
+  addPredio(217, 92, 8, 8, 0.9, '#b03a2e', { teto: '#7b241c', placa: 'PURA SIMAS', neon: '#f1c40f', pagode: true });
+  for (const [x, y] of [[214, 140], [226, 146], [216, 168], [228, 112], [214, 118]]) if (retLivre(x, y, 3, 3)) addPredio(x, y, 3, 3, 0.3, pick(['#c8a165', '#a0522d', '#d2b48c']), { teto: '#5d4037', palha: true });
+  LUGAR.masadakun = { x: 221 * T, y: 102 * T, nome: 'Templo (Indonésia)' };
+  LUGAR.indonesia = { x: 214 * T, y: 157 * T };
+  for (let k = 0; k < 140; k++) { const x = 196 + r() * 46, y = 55 + r() * 150; const t = tile(x | 0, y | 0); if (t === TL.GRAMA || t === TL.AREIA) deco.push({ t: t === TL.AREIA ? 'palmeira' : (r() < 0.5 ? 'palmeira' : 'arvore'), x: x * T, y: y * T, s: 0.8 + r() * 0.6, selva: true }); }
+}
+// ---------- Serra do Simas: morro ao sul, estrada cheia de curva ----------
+function gerarSerra(r) {
+  for (let y = CIDADE; y < MH - 2; y++) for (let x = 14; x < 180; x++) {
+    const topo = 196 + ruido(x, 31) * 5, fundo = MH - 4 - ruido(x, 37) * 5, esq = 18 + ruido(y, 41) * 6, dir = 176 - ruido(y, 43) * 6;
+    if (y > topo && y < fundo && x > esq && x < dir) setTile(x, y, ruido(x * 1.7 + y, 7) > 0.62 ? TL.TERRA : TL.GRAMA);
+  }
+  // duas ligações com a cidade (continuação das ruas verticais 7 e 3)
+  for (const kx of [3, 7]) for (let y = 180; y < 204; y++) for (const x of [GRID * kx, GRID * kx + 1]) { if (tile(x, y) === TL.AGUA) ponte[y * MW + x] = 1; setTile(x, y, TL.RUA); }
+  // estrada sinuosa de ponta a ponta + subida pro mirante
+  estrada(curva(t => [t, 214 + Math.sin(t * 0.09) * 9 + Math.sin(t * 0.031) * 4], 26, 168, 0.5));
+  estrada([[GRID * 3 + 1, 203], [GRID * 3 + 1, 205], [37, 214 + Math.sin(37 * 0.09) * 9 + Math.sin(37 * 0.031) * 4]]);
+  estrada([[GRID * 7 + 1, 203], [GRID * 7 + 1, 206], [85, 214 + Math.sin(85 * 0.09) * 9 + Math.sin(85 * 0.031) * 4]]);
+  estrada(curva(t => [120 + Math.sin(t * 0.7) * 8, t], 214, 232, 0.4));
+  LUGAR.mirante = { x: 120 * T, y: 232 * T, nome: 'Mirante da Serra' };
+  for (let y = 230; y < 236; y++) for (let x = 115; x < 126; x++) if (tile(x, y) !== TL.AGUA) setTile(x, y, TL.PRACA);
+  for (let k = 0; k < 260; k++) { const x = 16 + r() * 162, y = 196 + r() * 42, t = tile(x | 0, y | 0); if (t === TL.GRAMA || t === TL.TERRA) deco.push({ t: r() < 0.75 ? 'arvore' : 'pedra', x: x * T, y: y * T, s: 0.9 + r() * 0.7 }); }
+}
+// ---------- poste, hidrante, lixeira e placa nas calçadas (tudo dá pra derrubar de carro) ----------
+function mobiliaUrbana(r) {
+  for (let y = 0; y < CIDADE; y++) for (let x = 0; x < CIDADE; x++) {
+    if (tile(x, y) !== TL.CALCADA) continue;
+    const h = ((x * 92821) ^ (y * 68917)) >>> 0, reg = regiaoTile[y * MW + x];
+    let lado = null;
+    if (ehRua(x, y + 1)) lado = [0.5, 0.85]; else if (ehRua(x, y - 1)) lado = [0.5, 0.15]; else if (ehRua(x + 1, y)) lado = [0.85, 0.5]; else if (ehRua(x - 1, y)) lado = [0.15, 0.5];
+    if (!lado) continue;
+    const px = (x + lado[0]) * T, py = (y + lado[1]) * T;
+    if ((x + y) % 5 === 0 && h % 3 === 0) deco.push({ t: 'poste', x: px, y: py, a: Math.atan2(lado[1] - 0.5, lado[0] - 0.5) });
+    else if (h % 29 === 0) deco.push({ t: 'hidrante', x: px, y: py });
+    else if (h % 23 === 0) deco.push({ t: 'lixeira', x: px, y: py });
+    else if (h % 41 === 0 && reg === REG.CENTRO) deco.push({ t: 'placa', x: px, y: py, txt: pick(['PARE', 'BH →', 'RECIFE →', 'PROIBIDO VAGABUNDAGEM', 'DEVAGAR', 'CUIDADO: IDOSAS AO TELEFONE']) });
+    else if (h % 13 === 0 && reg === REG.CENTRO) deco.push({ t: 'arvore', x: px, y: py, s: 0.6 });
+  }
+}
+
+// ---------- índice espacial da decoração (desenho e batida) ----------
+const DCEL = 4 * T, DGRADE = new Map();
+const COLIDE = { arvore: { r: 13, solido: true }, pedra: { r: 24, solido: true }, palmeira: { r: 9, quebra: 330 }, poste: { r: 6, quebra: 70 }, hidrante: { r: 8, quebra: 50 },
+  lixeira: { r: 10, quebra: 30 }, placa: { r: 6, quebra: 50 }, banco: { r: 16, quebra: 60 }, cacto: { r: 11, quebra: 50 }, guarda_sol: { r: 14, quebra: 40 }, conteiner: { r: 30, solido: true } };
+function indexarDeco() {
+  DGRADE.clear();
+  for (const d of deco) { const k = Math.floor(d.x / DCEL) + ',' + Math.floor(d.y / DCEL); let l = DGRADE.get(k); if (!l) DGRADE.set(k, l = []); l.push(d); }
+}
+function decoNaArea(x0, y0, x1, y1, fn) {
+  for (let cy = Math.floor(y0 / DCEL); cy <= Math.floor(y1 / DCEL); cy++) for (let cx = Math.floor(x0 / DCEL); cx <= Math.floor(x1 / DCEL); cx++) { const l = DGRADE.get(cx + ',' + cy); if (l) for (const d of l) fn(d); }
+}
+
 // mini-mapa pré-desenhado (1 pixel por tile)
 let MINI = null;
-const COR_MINI = { [TL.AGUA]: '#1e4e8c', [TL.AREIA]: '#e8d18f', [TL.GRAMA]: '#356b35', [TL.RUA]: '#9a9aa6', [TL.CALCADA]: '#5c5a66', [TL.PREDIO]: '#2b2934', [TL.PRACA]: '#6f6a78', [TL.ROCA]: '#6b7f2a', [TL.TERRA]: '#9a7a4a', [TL.PISTA]: '#555', [TL.CAIS]: '#6d6d6d', [TL.ESTAC]: '#56565e', [TL.BECO]: '#4d4a55' };
+const COR_MINI = { [TL.AGUA]: '#1e4e8c', [TL.AREIA]: '#e8d18f', [TL.GRAMA]: '#356b35', [TL.RUA]: '#9a9aa6', [TL.CALCADA]: '#5c5a66', [TL.PREDIO]: '#2b2934', [TL.PRACA]: '#6f6a78', [TL.ROCA]: '#6b7f2a', [TL.TERRA]: '#9a7a4a', [TL.PISTA]: '#555', [TL.CAIS]: '#6d6d6d', [TL.ESTAC]: '#56565e', [TL.BECO]: '#4d4a55', [TL.ESTRADA]: '#8a8a94' };
 function gerarMini() {
   MINI = document.createElement('canvas'); MINI.width = MW; MINI.height = MH;
   const c = MINI.getContext('2d'), img = c.createImageData(MW, MH);

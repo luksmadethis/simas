@@ -2,8 +2,8 @@
 // HISTÓRIA E MISSÕES
 // =========================================================
 class Aborta extends Error {}
-const NOMES = { nerivan: 'Nerivan', luketa: 'Luketa', dudu: 'Dudu', cas: 'Tio Cas', ana: 'Ana (patroa do Cas)', alan: 'Alan', yori: 'Yori', nauj: 'Nauj', meco: 'Meco', gelado: 'Segurança Gelado', matt: 'Matheus', ltzin: 'Ltzin, Rei de Recife', poli: 'Poli (Rádio Poli FM)' };
-const COR_NOME = { luketa: '#ff6ec7', dudu: '#00ff9c', cas: '#ffb347', ana: '#ff7675', alan: '#74b9ff', yori: '#a3e635', nauj: '#2ecc71', meco: '#f1c40f', gelado: '#5dade2', matt: '#e17055', ltzin: '#f1c40f', poli: '#a29bfe', nerivan: '#ffd23f' };
+const NOMES = { nerivan: 'Nerivan', luketa: 'Luketa', dudu: 'Dudu', cas: 'Tio Cas', ana: 'Ana (patroa do Cas)', alan: 'Alan', yori: 'Yori', nauj: 'Nauj', meco: 'Meco', gelado: 'Segurança Gelado', matt: 'Matheus', ltzin: 'Ltzin, Rei de Recife', poli: 'Poli (Rádio Poli FM)', sibito: 'Sibito', gabs: 'Gabs', ex: 'Ex Namorado da Gabs', masadakun: 'Masadakun' };
+const COR_NOME = { sibito: '#e67e22', gabs: '#fd79a8', ex: '#95a5a6', masadakun: '#f1c40f', luketa: '#ff6ec7', dudu: '#00ff9c', cas: '#ffb347', ana: '#ff7675', alan: '#74b9ff', yori: '#a3e635', nauj: '#2ecc71', meco: '#f1c40f', gelado: '#5dade2', matt: '#e17055', ltzin: '#f1c40f', poli: '#a29bfe', nerivan: '#ffd23f' };
 
 const MISSAO = {
   ativa: null, esperas: [], alvo: null, marcadores: [], limite: null, objetivo: '', dialogo: null, feitas: 0, barra: null, ger: 0, chapado: 0,
@@ -26,6 +26,7 @@ const MISSAO = {
     W.peds = W.peds.filter(p => !p.missao); W.carros = W.carros.filter(c => !c.missao || c === W.jog.carro);
     if (W.jog.carro && W.jog.carro.missao) { W.jog.carro.missao = false; W.jog.carro.semEntrar = false; }
     W.itens = W.itens.filter(i => !i.missao); W.chefes = []; W.semPolicia = false;
+    if (W.jog) W.jog.skate = false; if (FIXOS.alan) FIXOS.alan.escondido = false;
   },
   falhar(msg) {
     if (!this.ativa) return;
@@ -117,7 +118,7 @@ const MISSOES = [
   { id: 'intro', nome: 'Saidinha', quem: 'luketa', lugar: null, fn: missaoIntro },
   { id: 'dudu', nome: 'Hack no Caixa Eletrônico', quem: 'dudu', lugar: 'dudu', fn: missaoDudu },
   { id: 'cas', nome: 'Vai Buscar o Pão, Cas', quem: 'cas', lugar: 'cas', fn: missaoCas },
-  { id: 'alan', nome: 'Racha do Alan', quem: 'alan', lugar: 'skate', fn: missaoAlan },
+  { id: 'alan', nome: 'Racha de Skate do Alan', quem: 'alan', lugar: 'skate', fn: missaoAlan },
   { id: 'yori', nome: 'Safra Recorde', quem: 'yori', lugar: 'yori', fn: missaoYori },
   { id: 'nauj', nome: 'Rolêzinho com o Nauj', quem: 'nauj', lugar: 'nauj', fn: missaoNauj },
   { id: 'meco', nome: 'Devolve o Grave do Meco', quem: 'meco', lugar: 'baile', fn: missaoMeco },
@@ -128,6 +129,7 @@ const MISSOES = [
 ];
 function proximaMissao() { return MISSOES[MISSAO.feitas] || null; }
 function lugarMissao(m) {
+  if (m && m.pos) return m.pos();
   if (!m || !m.lugar) return null;
   const L = LUGAR[m.lugar]; if (m.lugar === 'cas') return { x: L.x, y: L.y - 40 };
   return { x: L.x, y: L.y };
@@ -136,17 +138,18 @@ function lugarMissao(m) {
 async function iniciarMissao(m) {
   if (MISSAO.ativa) return;
   MISSAO.ativa = m; MISSAO.ger++;
-  AVISO = { titulo: m.nome.toUpperCase(), sub: m.id === 'intro' ? 'GTA 7: SIMAS EDITION' : 'missão ' + MISSOES.indexOf(m), cor: '#ffd23f', t: 0, dur: 3 };
+  AVISO = { titulo: m.nome.toUpperCase(), sub: m.id === 'intro' ? 'GTA 7' : m.extra ? 'missão de moto' : 'missão ' + MISSOES.indexOf(m), cor: '#ffd23f', t: 0, dur: 3 };
   try {
     await m.fn();
     if (MISSAO.ativa !== m) return;
     MISSAO.ativa = null; MISSAO.limpar();
-    MISSAO.feitas = Math.max(MISSAO.feitas, MISSOES.indexOf(m) + 1);
+    if (m.extra) { W.extras = W.extras || {}; W.extras[m.id] = true; }
+    else MISSAO.feitas = Math.max(MISSAO.feitas, MISSOES.indexOf(m) + 1);
     W.stats.missoes = MISSAO.feitas;
     if (m.id !== 'ltzin') { AVISO = { titulo: 'MISSÃO CUMPRIDA', sub: m.premio ? '+' + fmt$(m.premio) : 'respeito +100', cor: '#7CFC00', t: 0, dur: 4 }; SOM.missao(); }
     salvar();
     const prox = proximaMissao();
-    if (prox && m.id !== 'intro') setTimeout(() => { if (!MISSAO.ativa) falar('luketa', `próxima parada: ${NOMES[prox.quem]}. segue a seta amarela`, 4); }, 4200);
+    if (prox && m.id !== 'intro' && !m.extra) setTimeout(() => { if (!MISSAO.ativa) falar('luketa', `próxima parada: ${NOMES[prox.quem]}. segue a seta amarela`, 4); }, 4200);
   } catch (e) {
     if (!(e instanceof Aborta)) { console.error(e); MISSAO.falhar('deu ruim no jogo: ' + e.message); }
   }
@@ -156,7 +159,7 @@ async function iniciarMissao(m) {
 async function missaoIntro() {
   W.semPolicia = true;
   await conversa(
-    ['luketa', 'Fala, fala! Aqui é o Luketa, teu guia, narrador e melhor amigo do Claude. Bem-vindo ao GTA 7: Simas Edition.'],
+    ['luketa', 'Fala, fala! Aqui é o Luketa, teu guia, narrador e melhor amigo do Claude. Bem-vindo ao GTA 7. Grand Theft Auto 7, porra.'],
     ['luketa', 'Esse aí é o NERIVAN. Rei da engenharia social, especialista em ligar pra idosa fingindo ser do banco. Acabou de sair da saidinha de fim de ano.'],
     ['nerivan', 'liberdade, porra. cadê meu celular? tenho 47 vovó pra ligar ainda hoje'],
     ['luketa', `Calma. Primeiro tu vai precisar de um carro. Chega perto de um e ${ehToque() ? 'toca no botão 🚗' : 'aperta E (ou F)'} pra ROUBAR. Se tiver alguém dentro, tu puxa pra fora mesmo, é GTA.`]
@@ -240,39 +243,46 @@ async function missaoCas() {
   premio(900);
 }
 
-// ----- 3: racha do Alan -----
+// ----- 3: racha de skate do Alan -----
 async function missaoAlan() {
   MISSAO.ativa.premio = 1200;
   await conversa(
-    ['alan', 'Fala Nerivan! Desenhei um traçado de racha pela cidade inteira. Ninguém valoriza meu desenho, então vou valorizar no racha.'],
-    ['alan', 'Pega um carro e me encontra na rua aqui do lado. Quem passar por todos os pontos primeiro ganha.']
+    ['alan', 'Fala Nerivan! Desenhei um traçado de racha de SKATE pelas ruas aqui do lado. Ninguém valoriza meu desenho, então vou valorizar no shape.'],
+    ['alan', 'Toma esse skate. Quem passar por todos os pontos primeiro ganha. Carro não vale, hein!'],
+    ['nerivan', 'eu nunca subi num skate'],
+    ['alan', 'é igual engenharia social: tu finge que sabe até saber.']
   );
-  objetivo('pega um carro');
-  await ate(() => noCarro());
-  const largada = pontoRua(4, 8, 'cima');
-  await vai(largada.x, largada.y, { texto: 'vai pra largada', r: 110, carro: true });
-  const cps = [pontoRua(6, 8, 'cima'), pontoRua(8, 7, 'dir'), pontoRua(8, 5, 'cima'), pontoRua(6, 4, 'cima'), pontoRua(4, 6, 'esq'), pontoRua(4, 8, 'cima')];
-  const ac = novoCarro('esporte', largada.x - 120, largada.y, 0, { cor: '#74b9ff', missao: true, semEntrar: true, nome: 'Alan', listra: '#fff' });
-  const alanPed = novoPed(ac.x, ac.y, { rosto: 'alan' }); ac.motorista = alanPed;
-  let cpAlan = 0;
-  ac.ia = { tipo: 'script', fn: (c, dt) => { if (!CORRIDA.foi) return; const alvo = cps[cpAlan]; if (!alvo) { c.vx *= 0.9; c.vy *= 0.9; moverCarro(c, dt); return; } iaPersegue(c, dt, alvo.x, alvo.y); if (dist(c.x, c.y, alvo.x, alvo.y) < 120) cpAlan++; } };
-  TIPOS_CARRO.esporte_alan = { ...TIPOS_CARRO.esporte, vmax: 470, acel: 360 }; ac.modelo = 'esporte_alan';
-  W.carros.push(ac);
-  const CORRIDA = { foi: false };
-  for (const n of ['3', '2', '1']) { AVISO = { titulo: n, sub: 'racha do Alan', cor: '#fff', t: 0, dur: 0.9 }; SOM.bip(440, 0.2, 0.2); await segundos(1); }
-  AVISO = { titulo: 'VAI!!', sub: '', cor: '#7CFC00', t: 0, dur: 1 }; SOM.bip(880, 0.4, 0.2); CORRIDA.foi = true;
-  limiteTempo(160, 'demorou demais, o Alan foi embora');
-  for (let k = 0; k < cps.length; k++) {
-    const cp = cps[k];
-    await vai(cp.x, cp.y, { r: 120, texto: `racha: ponto ${k + 1}/${cps.length}`, cor: '#00e5ff' });
+  const j = W.jog;
+  if (j.carro) entrarSair();
+  j.skate = true;
+  const cruz = (kx, ky) => ({ x: (GRID * kx + 1) * T, y: (GRID * ky + 1) * T });
+  const rota = [[5, 8], [5, 7], [6, 7], [6, 6], [7, 6], [7, 7], [7, 8], [6, 8], [5, 8], [5, 9], [4, 9], [4, 8]].map(([a, b]) => cruz(a, b));
+  const largada = cruz(4, 8);
+  await vai(largada.x, largada.y, { texto: 'vai de skate pra largada', r: 90, aPe: true });
+  FIXOS.alan.escondido = true;
+  const al = novoPed(largada.x - 40, largada.y + 30, { nome: 'Alan', rosto: 'alan', corNome: COR_NOME.alan, camisa: '#0984e3', missao: true, invuln: true, skate: true });
+  let cpAlan = 0, foi = false;
+  al.ia = (p, dt) => {
+    if (!foi) return;
+    const alvo = rota[cpAlan]; if (!alvo) { if (MISSAO.ativa && MISSAO.ativa.id === 'alan') MISSAO.falhar('o Alan chegou primeiro. desvalorizado agora é tu'); return; }
+    const d = dist(p.x, p.y, alvo.x, alvo.y), v = 330;
+    p.a = Math.atan2(alvo.y - p.y, alvo.x - p.x);
+    if (d < v * dt + 4) { p.x = alvo.x; p.y = alvo.y; cpAlan++; } else { p.x += Math.cos(p.a) * v * dt; p.y += Math.sin(p.a) * v * dt; }
+  };
+  W.peds.push(al);
+  for (const n of ['3', '2', '1']) { AVISO = { titulo: n, sub: 'racha de skate', cor: '#fff', t: 0, dur: 0.9 }; SOM.bip(440, 0.2, 0.2); await segundos(1); }
+  AVISO = { titulo: 'VAI!!', sub: 'segura SHIFT pra remar mais forte', cor: '#7CFC00', t: 0, dur: 1.5 }; SOM.bip(880, 0.4, 0.2); foi = true;
+  limiteTempo(120, 'demorou demais, o Alan foi embora');
+  for (let k = 0; k < rota.length; k++) {
+    const cp = rota[k];
+    await vai(cp.x, cp.y, { r: 85, texto: `racha de skate: ponto ${k + 1}/${rota.length}${j.carro ? ' (SAI DO CARRO!)' : ''}`, cor: '#00e5ff', cond: () => !W.jog.carro });
     SOM.pega();
-    if (cpAlan >= cps.length) { MISSAO.falhar('o Alan chegou primeiro. desvalorizado agora é tu'); return new Promise(() => { }); }
+    if (cpAlan >= rota.length) { j.skate = false; FIXOS.alan.escondido = false; MISSAO.falhar('o Alan chegou primeiro. desvalorizado agora é tu'); return new Promise(() => { }); }
   }
-  semLimite();
-  if (cpAlan >= cps.length) { MISSAO.falhar('o Alan chegou primeiro'); return new Promise(() => { }); }
+  semLimite(); j.skate = false; FIXOS.alan.escondido = false;
   await conversa(
-    ['alan', 'Caraca, tu é liso! Toma, esse desenho aqui eu fiz de tu... brincadeira, toma grana.'],
-    ['alan', 'E fica com meu Opala Turbo, tá lá na tua garagem. Eu vou de skate mesmo.'],
+    ['alan', 'Caraca, tu é liso no shape! Toma, esse desenho aqui eu fiz de tu... brincadeira, toma grana.'],
+    ['alan', 'E fica com meu Opala Turbo, tá lá na tua garagem. Eu vou de skate mesmo, óbvio.'],
     ['luketa', 'Opala Turbo na garagem! O Yori, lá em Juazeiro, tá precisando de ajuda com a safra.']
   );
   W.garagem.push({ modelo: 'esporte', cor: '#74b9ff', motor: 1, blind: 0, listra: '#fff' });
@@ -544,12 +554,15 @@ async function missaoLtzin() {
     ['nerivan', 'não quero ser rei não. só quero meu wi-fi e meu Fatal Model de volta.'],
     ['ltzin', '*religa o sistema* pronto. Mas o Luketa continua sendo o amor da minha vida.'],
     ['luketa', 'Ltzin, a gente conversa depois.'],
+    ['nerivan', 'e o FATAL MODEL? voltou?'],
+    ['ltzin', 'voltou. a casa do Fatal Model no centro tá aberta de novo. vai lá, tu merece.'],
     ['dudu', 'WI-FI VOLTOU!!! 📶'],
     ['cas', '*acordando na cadeira* perdi alguma coisa?'],
     ['ana', 'CAS!!!'],
-    ['luketa', 'E assim termina a história do GTA 7: Simas Edition. Mas a cidade é tua, Nerivan. Pode continuar zoando por aí.']
+    ['luketa', 'E assim termina a história do GTA 7. Mas a cidade é tua, Nerivan. Pode continuar zoando por aí.']
   );
   premio(10000);
+  liberarFatal(true);
   CREDITOS = { t: 0 };
 }
 let CREDITOS = null;
@@ -602,9 +615,11 @@ function desenharMarcadores(g) {
       g.restore();
       if ((W.tempo * 2 | 0) % 2) placa(x, y - 44, 'TRIM TRIM ☎', '#ffd23f');
     }
+    for (const m of extrasDisponiveis()) { const p = lugarMissao(m); anel(p.x, p.y, 44, '#00e5ff'); placa(p.x, p.y - 40, '🏍️ ' + m.nome.toUpperCase(), '#00e5ff'); }
     for (const k of ['garagem', 'garagemBH']) { anel(LUGAR[k].x, LUGAR[k].y, 52, '#ff9f1c'); placa(LUGAR[k].x, LUGAR[k].y + 4, 'PINTA & TURBINA', '#ff9f1c'); }
     anel(LUGAR.roupas.x, LUGAR.roupas.y, 40, '#ff6ec7'); placa(LUGAR.roupas.x, LUGAR.roupas.y + 4, 'ROUPAS', '#ff6ec7');
     anel(LUGAR.armas.x, LUGAR.armas.y, 40, '#e74c3c'); placa(LUGAR.armas.x, LUGAR.armas.y + 4, 'ARMAS', '#e74c3c');
+    anel(LUGAR.fatal.x, LUGAR.fatal.y, 40, '#ff3d8b'); placa(LUGAR.fatal.x, LUGAR.fatal.y + 4, FATAL_ABERTO ? 'FATAL MODEL 💋' : 'FECHADO', FATAL_ABERTO ? '#ff3d8b' : '#888');
     anel(LUGAR.desmanche.x, LUGAR.desmanche.y, 56, '#fd79a8'); placa(LUGAR.desmanche.x, LUGAR.desmanche.y + 4, 'VENDE CARRO', '#fd79a8');
   }
   for (const mk of MISSAO.marcadores) anel(mk.x, mk.y, Math.min(mk.r, 80), mk.cor);
@@ -623,3 +638,151 @@ function mostrarRetry(m) {
     iniciarMissao(m);
   };
 }
+
+// ---------- Fatal Model: abre no fim do jogo (o Ltzin tinha derrubado o sistema) ----------
+let FATAL_ABERTO = false, CORTINA = null;
+function liberarFatal(aviso) {
+  if (FATAL_ABERTO) return; FATAL_ABERTO = true;
+  const L = LUGAR.fatal, cores = ['#e84393', '#d63031', '#6c5ce7', '#fdcb6e'];
+  for (let k = 0; k < 3; k++) W.peds.push(novoPed(L.x - 70 + k * 70, L.y + 30, { fixo: true, invuln: true, olhaJog: true, semGrana: true, camisa: cores[k], calca: cores[k], pele: pick(PELES), cabelo: pick(['#111', '#3b2412', '#c9a227', '#7b241c']), cabeloLongo: true }));
+  if (aviso) setTimeout(() => falar('luketa', 'FATAL MODEL LIBERADO! a casa fica no centro, do lado da Simas Store. leva grana', 5), 1500);
+}
+function menuFatal() {
+  const j = W.jog;
+  const cena = (txt, efeito) => () => { CORTINA = { t: 0, txt }; efeito && efeito(); };
+  abrirMenu('💋 FATAL MODEL', [
+    { txt: '🍷 Jantar à luz de velas', preco: 500, fn: cena('jantar chique, vinho caro e o Nerivan contando como engana idosa no telefone... ela riu. ❤️ vida cheia', () => { j.hp = 100; }) },
+    { txt: '💃 Noite de dança no salão', preco: 800, fn: cena('o Nerivan dançou funk de BH até as 5 da manhã. ❤️ vida cheia + 🛡️ colete', () => { j.hp = 100; j.colete = 100; }) },
+    { txt: '📞 Tentar pagar com engenharia social', fn: cena('"oi, aqui é do banco, a senhora pode me atender de graça?"... expulsaram o Nerivan na porrada. 💀', () => { j.hp = Math.max(10, j.hp - 30); }) },
+    { txt: '👑 Pacote REI DO FATAL MODEL (terno dourado)', preco: 5000, off: j.camisa === '#c9a227', fn: cena('trataram o Nerivan como rei. saiu de lá com terno dourado e a moral lá em cima. 👑', () => { j.hp = 100; j.colete = 100; j.camisa = '#c9a227'; j.calca = '#111'; j.oculos = true; }) }
+  ], 'a casa mais famosa do Nerivan. aqui é só com dinheiro, nada de golpe');
+}
+
+// ---------- figuras da cidade: Sibito, Gabs + Ex, Masadakun ----------
+const XINGOS_SIBITO = ['sai daqui, desgraçado', 'tu de novo?? some', 'que cara de golpe, credo', 'vai trabalhar, vagabundo', 'nem o Fatal Model te aceita, Nerivan',
+  'teu carro é roubado e tua cara também', 'não encosta no meu café', 'liga pra tua vó, ela tá te procurando... ah não, tu que liga pra vó dos outro', 'cheiro de pneu queimado, sai',
+  'fala comigo não, abestado', 'vai catar coquinho no Rio', 'eu chamo o Segurança Gelado, hein', 'teu skate é feio', 'que roupa horrorosa', 'arrombado', 'vai lá ver se eu tô no Juazeiro'];
+const FIGURAS = [];
+function criarFiguras() {
+  const C = LUGAR.cafe;
+  const sib = novoPed(C.x - 30, C.y + 10, { nome: 'Sibito', fixo: true, invuln: true, olhaJog: true, semGrana: true, camisa: '#e67e22', calca: '#2c3e50', cabelo: '#111', cabeloLongo: true, corNome: COR_NOME.sibito });
+  sib.figura = 'sibito'; W.peds.push(sib); FIGURAS.push(sib);
+  // Gabs passeando com o ex em volta do quarteirão (11,12)
+  const bx = GRID * 11, by = GRID * 12, cs = [[bx + 2.5, by + 2.5], [bx + 11.5, by + 2.5], [bx + 11.5, by + 11.5], [bx + 2.5, by + 11.5]].map(([x, y]) => ({ x: x * T, y: y * T }));
+  const gabs = novoPed(cs[0].x, cs[0].y, { nome: 'Gabs', fixo: true, invuln: true, semGrana: true, camisa: '#fd79a8', calca: '#2d3436', cabelo: '#3b2412', cabeloLongo: true, corNome: COR_NOME.gabs });
+  const ex = novoPed(cs[0].x - 30, cs[0].y, { nome: 'Ex Namorado', fixo: true, invuln: true, semGrana: true, camisa: '#7f8c8d', calca: '#34495e', corNome: COR_NOME.ex });
+  let wp = 1;
+  gabs.ia = (p, dt) => { const a = cs[wp]; const d = dist(p.x, p.y, a.x, a.y); p.a = Math.atan2(a.y - p.y, a.x - p.x); if (d < 6) wp = (wp + 1) % 4; else { p.x += Math.cos(p.a) * 55 * dt; p.y += Math.sin(p.a) * 55 * dt; p.anda += dt * 7; } };
+  ex.ia = (p, dt) => { const tx = gabs.x - Math.cos(gabs.a) * 30 + Math.cos(gabs.a + Math.PI / 2) * 14, ty = gabs.y - Math.sin(gabs.a) * 30 + Math.sin(gabs.a + Math.PI / 2) * 14; const d = dist(p.x, p.y, tx, ty); p.a = gabs.a; if (d > 3) { p.x = lerp(p.x, tx, Math.min(1, dt * 5)); p.y = lerp(p.y, ty, Math.min(1, dt * 5)); p.anda += dt * 7; } };
+  gabs.figura = 'gabs'; ex.figura = 'ex'; W.peds.push(gabs, ex); FIGURAS.push(gabs, ex);
+  const M = LUGAR.masadakun;
+  const mas = novoPed(M.x, M.y + 40, { nome: 'Masadakun', fixo: true, invuln: true, olhaJog: true, semGrana: true, camisa: '#f1c40f', calca: '#c0392b', chapeu: '#c8a165', corNome: COR_NOME.masadakun });
+  mas.figura = 'masadakun'; W.peds.push(mas); FIGURAS.push(mas);
+}
+const FALAS_FIG = {
+  gabs: ['a gente é só amigo, tá?', 'ele que insistiu em vir passear', 'não começa, Nerivan', 'tô de boa, só caminhando'],
+  ex: ['voltamos? 👀', 'eu mudei, juro', 'tô só fazendo companhia', 'ela ainda me ama, eu sinto'],
+  masadakun: ['Selamat datang, Nerivan! bem-vindo à Indonésia 🇮🇩', 'aqui é a Indonésia, a uma ponte de Recife. geografia do Simas', 'quer arroz? a gente tem MUITO arroz', 'o Ltzin nunca veio aqui. medo de macaco', 'terima kasih, mano!']
+};
+function atualizaFiguras(dt) {
+  const j = W.jog; if (j.morto) return;
+  for (const p of FIGURAS) {
+    const d = dist(p.x, p.y, j.x, j.y);
+    p.cdFala = (p.cdFala || 0) - dt;
+    if (p.figura === 'sibito') {
+      if (d < 230 && p.cdFala <= 0) { p.cdFala = rnd(2, 3.2); const x = pick(XINGOS_SIBITO); falarPed(p, x); if (d < 120) falar('sibito', x, 2.5); }
+    } else if (d < 110 && p.cdFala <= 0) {
+      p.cdFala = rnd(4, 7); const x = pick(FALAS_FIG[p.figura]); falarPed(p, x);
+      if (p.figura === 'masadakun' && !p.falou) { p.falou = true; falar('masadakun', x, 4); }
+    }
+  }
+}
+
+// ---------- missões de moto (extras, fora da história) ----------
+function precisaMoto(modelo, x, y, nome) {
+  const c = novoCarro(modelo, x, y, 0, { missao: true, nome }); W.carros.push(c); return c;
+}
+async function subirNaMoto(c) {
+  await vai(c.x, c.y, { r: 60, texto: 'sobe na ' + TIPOS_CARRO[c.modelo].nome + ' (E)', cond: () => W.jog.carro === c });
+  c.nome = null;
+}
+const MISSOES_EXTRA = [
+  { id: 'motoboy', extra: true, nome: 'Motoboy do Dudu', quem: 'dudu', libera: () => MISSAO.feitas >= 2, pos: () => ({ x: LUGAR.dudu.x + 230, y: LUGAR.dudu.y + 10 }), fn: async () => {
+    MISSAO.ativa.premio = 1500;
+    await conversa(['dudu', 'Nerivan, meus pendrive hackeado tão vendendo igual pão. Pega a Biz e entrega pros cliente. Rápido que eles pagam por minuto.'], ['nerivan', 'e se a polícia parar?'], ['dudu', 'fala que é entrega do iFome.']);
+    const L = LUGAR.dudu, m = precisaMoto('biz', L.x + 260, L.y + 40, 'Biz do Dudu'); await subirNaMoto(m);
+    const ent = [calcada(3, 7), calcada(9, 4), calcada(11, 9), calcada(5, 12)];
+    limiteTempo(170, 'os cliente cancelaram tudo');
+    for (let k = 0; k < ent.length; k++) { await vai(ent[k].x, ent[k].y, { r: 90, texto: `entrega ${k + 1}/4 do pendrive`, cor: '#00e5ff' }); SOM.grana(); falar('dudu', pick(['entregue! 5 estrela pro motoboy', 'cliente satisfeito, mais um hackeado', 'PIX caiu!']), 2); }
+    semLimite(); await diz('dudu', 'Mitou! Toma tua parte. Pode ficar com a Biz.'); m.missao = false; premio(1500);
+  } },
+  { id: 'trilha', extra: true, nome: 'Trilha do Yori', quem: 'yori', libera: () => MISSAO.feitas >= 5, pos: () => ({ x: LUGAR.yori.x + 260, y: LUGAR.yori.y }), fn: async () => {
+    MISSAO.ativa.premio = 1800;
+    await conversa(['yori', 'Ô sô! Aqui em Juazeiro a gente faz trilha no meio da plantação. Pega a moto de trilha e passa por todas as bandeira antes do sol esquentar.'], ['yori', 'Cuidado com os cacto. E não amassa minha safra recorde.']);
+    const L = LUGAR.yori, m = precisaMoto('trilha', L.x + 300, L.y + 30, 'Moto de Trilha'); await subirNaMoto(m);
+    const pts = [[62, 12], [40, 20], [20, 34], [34, 42], [66, 40], [96, 30], [124, 18], [150, 36], [176, 24], [150, 14], [100, 14]].map(([x, y]) => livrePerto(x * T, y * T));
+    limiteTempo(150, 'o sol esquentou e o Yori foi tirar uma soneca');
+    for (let k = 0; k < pts.length; k++) await vai(pts[k].x, pts[k].y, { r: 110, texto: `trilha: bandeira ${k + 1}/${pts.length}`, cor: '#00e5ff' });
+    semLimite(); await diz('yori', 'Nó, tu é bão de trilha demais! Toma, trem bão.'); m.missao = false; premio(1800);
+  } },
+  { id: 'grau', extra: true, nome: 'Grau na Indonésia', quem: 'masadakun', libera: () => MISSAO.feitas >= 3, pos: () => ({ x: LUGAR.masadakun.x + 120, y: LUGAR.masadakun.y + 80 }), fn: async () => {
+    MISSAO.ativa.premio = 2500;
+    await conversa(['masadakun', 'Nerivan! Aqui na Indonésia todo mundo anda de moto. Mostra que tu aguenta dar a volta na ilha na XJ6.'], ['nerivan', 'tem radar?'], ['masadakun', 'tem macaco. é pior.']);
+    const M = LUGAR.masadakun, m = precisaMoto('xj6', M.x + 160, M.y + 130, 'XJ6 do Grau'); await subirNaMoto(m);
+    const cx = 222, cy = 128, pts = [];
+    for (let k = 1; k <= 12; k++) { const t = -Math.PI / 2 + k / 12 * Math.PI * 2; pts.push({ x: (cx + Math.cos(t) * 13 + Math.sin(t * 3) * 1.5) * T, y: (cy + Math.sin(t) * 58) * T }); }
+    limiteTempo(140, 'o Masadakun cansou de esperar');
+    for (let k = 0; k < pts.length; k++) await vai(pts[k].x, pts[k].y, { r: 110, texto: `volta na ilha: ponto ${k + 1}/12`, cor: '#00e5ff' });
+    semLimite(); await diz('masadakun', 'Luar biasa! Tu é o rei do grau da Indonésia. Toma, e leva a XJ6.'); m.missao = false; premio(2500);
+  } }
+];
+function extrasDisponiveis() { return MISSOES_EXTRA.filter(m => m.libera() && !(W.extras || {})[m.id]); }
+
+// ---------- segredos escondidos (easter eggs) ----------
+const SEGREDOS = [
+  ['galado500', 'O pacote de R$500 do Galado', 'paga nada primo, mas esse aqui paga', 20, 20],
+  ['cadeira', 'Duas série de levanta da cadeira', 'treino completo do Tio Cas', null, null, () => ({ x: LUGAR.cas.x + 140, y: LUGAR.cas.y + 230 })],
+  ['constancia', '#constancia: aqui pagou papai', 'o lema do Simas Fitness, no topo da serra', null, null, () => LUGAR.mirante],
+  ['chadebebe', 'Chá de Bebê: quem é o pai?', 'a pergunta que ninguém respondeu', null, null, () => ({ x: LUGAR.parque.x + 200, y: LUGAR.parque.y + 300 })],
+  ['sexo', 'NO DIA 3 VAI SER REVELADO O SEXO DO BEBÊ', 'escondido no fim do mundo (Indonésia)', 222, 196],
+  ['clude', 'cla, ú, dê, eu amo você', 'um bilhete na areia do Rio', 7, 168],
+  ['barriga', 'Que linda barriga', 'num beco de BH', 170, 74],
+  ['djcas', 'Aí é brincadeira, DJ Cas', 'atrás do palco do baile', null, null, () => ({ x: LUGAR.baile.x + 230, y: LUGAR.baile.y - 60 })],
+  ['paganada', 'Paga nada, primo', 'na ponta oeste da serra', 26, 214],
+  ['zensat', 'O disco perdido do Zensat', 'BH lá no fundo', 184, 98],
+  ['pccas', 'O PC do Cas jogando escondido', 'a Ana ainda não achou', 14, 62],
+  ['microfone', 'O microfone de ouro do Poli', 'atrás do templo na Indonésia', 221, 88],
+  ['desenho', 'O desenho valorizado do Alan', 'na ponta do píer de Recife', 188, 168],
+  ['vovos', 'A lista de vovós do Nerivan', 'esquecida perto da delegacia', null, null, () => ({ x: LUGAR.policia.x - 330, y: LUGAR.policia.y + 280 })],
+  ['clauderobo', 'O robozinho de teste do Claude', 'no canto do laboratório do Matheus', null, null, () => ({ x: LUGAR.matheus.x + 300, y: LUGAR.matheus.y + 300 })],
+  ['galinha', 'O Galado em pessoa 🐔', 'uma galinha com a cara do Gelado solta em Juazeiro', null, null, null]
+];
+function criarSegredos() {
+  W.segredos = W.segredos || [];
+  for (const [id, nome, dica, tx, ty, fp] of SEGREDOS) {
+    if (W.segredos.includes(id) || id === 'galinha') continue;
+    let p = fp ? fp() : { x: tx * T, y: ty * T }; if (!p) continue;
+    p = livrePerto(p.x, p.y);
+    W.itens.push({ t: 'segredo', id, nome, x: p.x, y: p.y, fica: false });
+  }
+  if (!W.segredos.includes('galinha')) {
+    const L = LUGAR.yori, g = novoPed(L.x - 400, L.y + 200, { nome: 'Galado 🐔', rosto: 'gelado', fixo: true, invuln: true, semGrana: true, camisa: '#f5f5f5', calca: '#f39c12', galinha: true, corNome: '#f39c12' });
+    g.ia = (p, dt) => { p.troca = (p.troca || 0) - dt; if (p.troca <= 0) { p.troca = rnd(0.6, 2); p.a = rnd(Math.PI * 2); p.parado = rnd() < 0.4; }
+      const d = dist(p.x, p.y, W.jog.x, W.jog.y); let v = p.parado ? 0 : 90; if (d < 160) { p.a = Math.atan2(p.y - W.jog.y, p.x - W.jog.x); v = 230; }
+      const nx = p.x + Math.cos(p.a) * v * dt, ny = p.y + Math.sin(p.a) * v * dt; if (!solidoEm(nx, ny) && regiaoEm(nx, ny) === REG.JUAZEIRO) { p.x = nx; p.y = ny; p.anda += dt * 14; } else p.troca = 0;
+      if (d < 34 && !W.jog.carro) { achouSegredo('galinha'); p.escondido = true; p.ia = null; } };
+    W.peds.push(g);
+  }
+}
+function achouSegredo(id) {
+  W.segredos = W.segredos || []; if (W.segredos.includes(id)) return;
+  W.segredos.push(id); const s = SEGREDOS.find(x => x[0] === id);
+  W.jog.grana += 300; SOM.missao();
+  AVISO = { titulo: `SEGREDO ${W.segredos.length}/${SEGREDOS.length}`, sub: s[1] + ' (+R$ 300)', cor: '#00e5ff', t: 0, dur: 4 };
+  if (W.segredos.length === SEGREDOS.length) setTimeout(() => {
+    AVISO = { titulo: 'PLATINA SIMAS 🏆', sub: 'achou TODOS os segredos! +R$ 10.000 e uma Lamborghini dourada na garagem', cor: '#f1c40f', t: 0, dur: 6 };
+    W.jog.grana += 10000; W.garagem.push({ modelo: 'lambo', cor: '#c9a227', motor: 3, blind: 3, listra: '#111' }); salvar();
+  }, 4200);
+  salvar();
+}
+function atualizaSegredos(dt) { }

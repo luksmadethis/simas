@@ -8,7 +8,9 @@ let RODANDO = false, ultimo = 0, carroAntes = null, lojaAtual = null;
 
 function salvar() {
   const j = W.jog; if (!j) return;
-  const d = { v: 1, grana: j.grana, tem: j.tem, municao: { ...j.municao, punho: 0 }, camisa: j.camisa, calca: j.calca, chapeu: j.chapeu, oculos: j.oculos, feitas: MISSAO.feitas, garagem: W.garagem, stats: W.stats };
+  const d = { v: 1, grana: j.grana, tem: j.tem, municao: { ...j.municao, punho: 0 }, camisa: j.camisa, calca: j.calca, chapeu: j.chapeu, oculos: j.oculos, feitas: MISSAO.feitas, garagem: W.garagem, stats: W.stats,
+    roupa: { estampa: j.estampa, jaqueta: j.jaqueta, mochila: j.mochila, corrente: j.corrente, chapeuTipo: j.chapeuTipo, tenis: j.tenis, tenisCor: j.tenisCor, temTenis: j.temTenis, temRodas: j.temRodas },
+    imoveis: W.imoveis || [], segredos: W.segredos || [], extras: W.extras || {} };
   try { localStorage.setItem('gta7-save', JSON.stringify(d)); } catch (e) { }
 }
 function carregar() { try { const s = localStorage.getItem('gta7-save'); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
@@ -53,8 +55,10 @@ function comecar(save) {
     j.grana = save.grana; Object.assign(j.tem, save.tem); Object.assign(j.municao, save.municao); j.municao.punho = Infinity;
     j.camisa = save.camisa; j.calca = save.calca; j.chapeu = save.chapeu; j.oculos = save.oculos;
     MISSAO.feitas = save.feitas || 0; W.garagem = save.garagem || []; W.stats = { ...W.stats, ...(save.stats || {}) };
+    Object.assign(j, save.roupa || {}); W.imoveis = save.imoveis || []; W.segredos = save.segredos || []; W.extras = save.extras || {};
   }
-  espalharItens(); criarFixos(); estacionados();
+  espalharItens(); criarFixos(); criarFiguras(); estacionados(); criarSegredos();
+  if (MISSAO.feitas >= MISSOES.length) liberarFatal(false);
   cam.x = j.x; cam.y = j.y;
   povoarInicial();
   RODANDO = true; ultimo = performance.now();
@@ -69,10 +73,13 @@ function gatilhos() {
   // lojas e garagem
   let perto = null;
   for (const k of ['garagem', 'garagemBH']) if (dist(j.x, j.y, LUGAR[k].x, LUGAR[k].y) < (j.carro ? 75 : 55)) perto = k;
-  if (!j.carro) { if (dist(j.x, j.y, LUGAR.roupas.x, LUGAR.roupas.y) < 45) perto = 'roupas'; if (dist(j.x, j.y, LUGAR.armas.x, LUGAR.armas.y) < 45) perto = 'armas'; }
+  if (!j.carro) { if (dist(j.x, j.y, LUGAR.fatal.x, LUGAR.fatal.y) < 45) perto = 'fatal'; if (dist(j.x, j.y, LUGAR.motors.x, LUGAR.motors.y) < 50) perto = 'motors'; if (dist(j.x, j.y, LUGAR.padaria.x, LUGAR.padaria.y) < 45 && !MISSAO.ativa) perto = 'padaria'; if (dist(j.x, j.y, LUGAR.roupas.x, LUGAR.roupas.y) < 45) perto = 'roupas'; if (dist(j.x, j.y, LUGAR.armas.x, LUGAR.armas.y) < 45) perto = 'armas'; }
   if (perto && perto !== lojaAtual && !(j.carro && Math.abs(j.carro.vel) > 260)) {
     lojaAtual = perto;
-    if (perto === 'roupas') menuRoupas(); else if (perto === 'armas') menuArmas(); else { MENU_GAR_LUGAR = LUGAR[perto]; menuGaragem(); }
+    if (perto === 'motors') menuMotors();
+    else if (perto === 'padaria') menuPadaria();
+    else if (perto === 'fatal') { if (FATAL_ABERTO) menuFatal(); else falar('luketa', 'tá FECHADO: o Ltzin derrubou o sistema do Fatal Model. derrota ele que reabre', 3.5); }
+    else if (perto === 'roupas') menuRoupas(); else if (perto === 'armas') menuArmas(); else { MENU_GAR_LUGAR = LUGAR[perto]; menuGaragem(); }
     if (j.carro) { j.carro.vx = j.carro.vy = 0; j.carro.vel = 0; }
   }
   if (!perto) lojaAtual = null;
@@ -87,6 +94,7 @@ function gatilhos() {
     salvar();
   }
   // começar missão
+  if (!MISSAO.ativa && W.procurado === 0) for (const m of extrasDisponiveis()) { const p = lugarMissao(m); if (dist(j.x, j.y, p.x, p.y) < 55) { if (j.carro) { j.carro.vx = j.carro.vy = 0; j.carro.vel = 0; } iniciarMissao(m); break; } }
   if (!MISSAO.ativa) {
     const m = proximaMissao(), p = lugarMissao(m);
     if (p && dist(j.x, j.y, p.x, p.y + 50) < (j.carro ? 70 : 55)) {
@@ -99,7 +107,7 @@ function gatilhos() {
 function atualizaCamera(dt) {
   const j = W.jog, c = j.carro;
   const base = clamp(Math.min(VW, VH * 1.7) / 1150, 0.5, 1.05);
-  const zAlvo = c ? base * clamp(0.92 - Math.abs(c.vel) / 2000, 0.6, 0.92) : base;
+  const zAlvo = c ? base * clamp(0.95 - Math.abs(c.vel) / 2000, 0.6, 0.95) : base * 1.3;
   cam.zoom = lerp(cam.zoom, zAlvo, Math.min(1, dt * 1.5));
   let tx = j.x, ty = j.y;
   if (c) { tx += c.vx * 0.45; ty += c.vy * 0.45; }
@@ -123,6 +131,7 @@ function passo(dt) {
   }
   if (apertou('e', 'f')) entrarSair();
   if (apertou('tab', 'q')) trocarArma(1);
+  if (apertou('k')) trocarRodas();
   if (apertou('r') && j.carro) {
     { RADIO.atual = (RADIO.atual + 1) % RADIOS.length; RADIO.tocar(true); RADIO_AVISO = { t: 0 }; }
   }
@@ -134,7 +143,7 @@ function passo(dt) {
   if (!j.carro) SOM.atualizaMotor(0, false);
   atualizaPeds(dt); atualizaCarros(dt); colisoes(dt); atualizaBalas(dt); atualizaItens(dt); atualizaChefes(dt);
   atualizaProcurado(dt); atualizaEfeitos(dt); povoar(dt, VW / cam.zoom, VH / cam.zoom);
-  MISSAO.tick(dt); gatilhos(); atualizaDicas(dt);
+  MISSAO.tick(dt); gatilhos(); atualizaDicas(dt); atualizaFiguras(dt); atualizaRenda(dt); atualizaSegredos(dt);
 }
 
 // som do baile do Meco: uma música do "Malando com Zensat", sem grave até devolver o paredão

@@ -24,7 +24,7 @@ function entrarSair() {
   const j = W.jog;
   if (j.carro) {
     const c = j.carro;
-    if (Math.abs(c.vel) > 140) return;
+    if (Math.abs(c.vel) > (TIPOS_CARRO[c.modelo].moto ? 220 : 140)) return;
     // sai pelo lado esquerdo
     const ang = c.a - Math.PI / 2;
     let sx = c.x + Math.cos(ang) * (c.w / 2 + 18), sy = c.y + Math.sin(ang) * (c.w / 2 + 18);
@@ -35,6 +35,7 @@ function entrarSair() {
   }
   const c = carroMaisPerto(j.x, j.y, 95);
   if (!c) return;
+  if (j.skate) { falar('alan', 'CARRO NÃO VALE, Nerivan! é racha de SKATE', 2); return; }
   if (c.motorista && !c.motorista.morto) {
     // assalto: puxa o motorista pra fora
     const m = c.motorista; m.x = c.x + Math.cos(c.a + Math.PI / 2) * 40; m.y = c.y + Math.sin(c.a + Math.PI / 2) * 40;
@@ -55,17 +56,19 @@ function falarPed(p, txt) { W.efeitos.push({ t: 'texto', x: p.x, y: p.y - 30, tx
 function atirar(dx, dy) {
   const j = W.jog, a = ARMAS[j.arma];
   if (j.recarga > 0 || j.morto) return;
-  if (j.arma !== 'punho' && j.municao[j.arma] <= 0) { trocarArma(-1, true); return; }
+  if (j.arma !== 'punho' && !a.corpo && j.municao[j.arma] <= 0) { trocarArma(-1, true); return; }
   j.recarga = a.cad;
   const ang = Math.atan2(dy, dx); j.a = ang;
   SOM.tiro(j.arma);
-  if (j.arma === 'punho') {
+  if (j.arma === 'punho' || a.corpo) {
     for (const p of W.peds) if (!p.morto && dist(p.x, p.y, j.x + Math.cos(ang) * 22, j.y + Math.sin(ang) * 22) < a.alcance) { feriPed(p, a.dano, j); p.x += Math.cos(ang) * 14; p.y += Math.sin(ang) * 14; }
     for (const ch of W.chefes) if (ch.levaSoco) ch.levaSoco(j.x + Math.cos(ang) * 22, j.y + Math.sin(ang) * 22, a.dano);
     return;
   }
   j.municao[j.arma]--;
   const ox = j.x + Math.cos(ang) * 20, oy = j.y + Math.sin(ang) * 20;
+  if (a.joga) { W.jogados.push({ t: a.joga, x: ox, y: oy, vx: Math.cos(ang) * a.vel, vy: Math.sin(ang) * a.vel, vida: a.joga === 'granada' ? 1.6 : 0.75, dono: j, gira: 0 }); return; }
+  if (a.chama) { for (let k = 0; k < 2; k++) { const aa = ang + rnd(-0.18, 0.18), v = rnd(300, 460); W.chamas.push({ x: ox, y: oy, vx: Math.cos(aa) * v, vy: Math.sin(aa) * v, vida: 0.42, dono: j }); } if (copsPerto(700)) crime(0.1); return; }
   if (a.explode) { W.foguetes.push({ x: ox, y: oy, vx: Math.cos(ang) * a.vel, vy: Math.sin(ang) * a.vel, vida: a.alcance / a.vel, dono: j }); return; }
   for (let k = 0; k < a.bala; k++) {
     const aa = ang + rnd(-a.espalha, a.espalha);
@@ -77,7 +80,7 @@ function atirar(dx, dy) {
   if (copsPerto(700)) crime(0.5);
 }
 function trocarArma(d, silencioso) {
-  const j = W.jog, tem = ORDEM_ARMAS.filter(k => j.tem[k] && (k === 'punho' || j.municao[k] > 0));
+  const j = W.jog, tem = ORDEM_ARMAS.filter(k => j.tem[k] && (k === 'punho' || ARMAS[k].corpo || j.municao[k] > 0));
   let i = tem.indexOf(j.arma); i = (i + d + tem.length) % tem.length; j.arma = tem[i] || 'punho';
 }
 function inimigoAtira(de, alvoX, alvoY, dano, espalha = 0.12, vel = 900) {
@@ -117,6 +120,37 @@ function atualizaBalas(dt) {
     if (bum) { f.vida = -1; explodir(f.x, f.y, 140, 140, f.dono); }
   }
   W.foguetes = W.foguetes.filter(f => f.vida > 0);
+  // granada e molotov
+  for (const o of W.jogados) {
+    o.vx *= Math.pow(0.35, dt); o.vy *= Math.pow(0.35, dt);
+    const nx = o.x + o.vx * dt, ny = o.y + o.vy * dt;
+    if (solidoEm(nx, ny)) { o.vx *= -0.4; o.vy *= -0.4; } else { o.x = nx; o.y = ny; }
+    o.vida -= dt; o.gira += dt * 12;
+    if (o.vida <= 0) {
+      if (o.t === 'granada') explodir(o.x, o.y, 150, 130, o.dono);
+      else { SOM.barulho(0.5, 0.5, 900); W.fogos.push({ x: o.x, y: o.y, r: 80, vida: 6, dono: o.dono }); }
+    }
+  }
+  W.jogados = W.jogados.filter(o => o.vida > 0);
+  // chamas do lança-chamas
+  for (const c of W.chamas) {
+    c.x += c.vx * dt; c.y += c.vy * dt; c.vida -= dt;
+    if (solidoEm(c.x, c.y)) c.vida = 0;
+    for (const p of W.peds) if (!p.morto && !p.escondido && dist(p.x, p.y, c.x, c.y) < 22) { feriPed(p, ARMAS.lancachamas.dano, c.dono); p.pegaFogo = 2.5; }
+    for (const car of W.carros) if (car !== W.jog.carro && car.hp > 0 && dist(car.x, car.y, c.x, c.y) < car.l * 0.45) danoCarro(car, 2.5, c.dono);
+    for (const ch of W.chefes) if (ch.levaTiro && ch.levaTiro(c.x, c.y, 2)) { c.vida = 0; break; }
+  }
+  W.chamas = W.chamas.filter(c => c.vida > 0);
+  // fogo no chão (molotov)
+  for (const f of W.fogos) {
+    f.vida -= dt;
+    if (rnd() < 0.6) W.efeitos.push({ t: 'fumaca', x: f.x + rnd(-f.r, f.r) * 0.7, y: f.y + rnd(-f.r, f.r) * 0.7, r: 10, vida: 0.7, max: 0.7, escura: true });
+    for (const p of W.peds) if (!p.morto && !p.escondido && dist(p.x, p.y, f.x, f.y) < f.r) { feriPed(p, 25 * dt, f.dono); p.pegaFogo = 2; }
+    for (const car of W.carros) if (car.hp > 0 && dist(car.x, car.y, f.x, f.y) < f.r) danoCarro(car, 20 * dt, f.dono);
+    for (const ch of W.chefes) ch.explosao && ch.explosao(f.x, f.y, f.r * 0.6, 12 * dt);
+    const j = W.jog; if (!j.carro && dist(j.x, j.y, f.x, f.y) < f.r * 0.8) ferirJogador(14 * dt);
+  }
+  W.fogos = W.fogos.filter(f => f.vida > 0);
 }
 
 // ---------- jogador a pé ----------
@@ -131,7 +165,9 @@ function atualizaJogadorPe(dt) {
   const j = W.jog;
   const [mx, my] = controleMovimento();
   const corre = segura('shift') || (TOQUE.ativo && Math.hypot(mx, my) > 0.9);
-  const vel = (corre ? 250 : 160) * (W.escorregou > 0 ? 0 : 1);
+  const roda = j.skate ? 'skate' : j.rodaAtiva;
+  const tn = TENIS[j.tenis] || TENIS.chinelo;
+  const vel = roda === 'skate' ? (corre ? 430 : 360) : roda === 'patins' ? (corre ? 500 : 410) : (corre ? 250 : 160) * tn.vel;
   const len = Math.hypot(mx, my);
   if (len > 0.1) {
     const nx = mx / Math.max(1, len), ny = my / Math.max(1, len);
@@ -288,7 +324,7 @@ function atualizaProcurado(dt) {
 }
 
 // ---------- itens no chão ----------
-const ITENS_ARMA = { pistola: 24, uzi: 90, escopeta: 16, foguete: 4 };
+const ITENS_ARMA = { pistola: 24, uzi: 90, escopeta: 16, foguete: 4, taco: 1, fuzil: 60, granada: 5, molotov: 5, lancachamas: 200 };
 function atualizaItens(dt) {
   const j = W.jog;
   for (const it of W.itens) {
@@ -303,6 +339,7 @@ function atualizaItens(dt) {
       else if (it.t === 'estrela') { W.procurado = 0; W.calor = 0; SOM.pega(); falar('luketa', 'suborno pago, a ficha tá limpa', 2); }
       else if (it.t === 'armadilha') { it.fn && it.fn(); }
       else if (it.t === 'pacote') { it.fn && it.fn(); }
+      else if (it.t === 'segredo') { achouSegredo(it.id); }
       if (!it.fica) it.morto = true;
       if (it.respawn) { const copia = { ...it, morto: false, escondido: it.respawn }; it.reaparece = copia; }
     }
@@ -314,16 +351,22 @@ function atualizaItens(dt) {
 }
 function espalharItens() {
   W.itensReaparecer = [];
-  const lista = [['arma', 'pistola', 30], ['arma', 'uzi', 12], ['arma', 'escopeta', 10], ['arma', 'foguete', 4], ['vida', null, 18], ['colete', null, 10], ['estrela', null, 8], ['grana', null, 40]];
+  // distância de cada tile até a rua mais perto: os itens ficam escondidos em beco, quintal e praça
+  const dr = new Uint8Array(MW * MH).fill(255), fila = [];
+  for (let i = 0; i < MW * MH; i++) if (mapa[i] === TL.RUA) { dr[i] = 0; fila.push(i); }
+  for (let q = 0; q < fila.length; q++) { const i = fila[q], x = i % MW, y = (i / MW) | 0; for (const [dx, dy] of DIRS) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= MW || ny >= MH) continue; const n = ny * MW + nx; if (dr[n] > dr[i] + 1) { dr[n] = dr[i] + 1; fila.push(n); } } }
+  const ok = (x, y, esconde) => { const t = tile(x, y); if (SOLIDO.has(t) || t === TL.RUA) return false; const d = dr[y * MW + x]; return t === TL.BECO ? d >= 2 : d >= esconde; };
+  // [tipo, arma, quantidade, quão escondido (tiles longe da rua)]
+  const lista = [['arma', 'pistola', 8, 2], ['arma', 'uzi', 4, 3], ['arma', 'escopeta', 3, 3], ['arma', 'fuzil', 2, 4], ['arma', 'foguete', 2, 4], ['arma', 'taco', 5, 2], ['arma', 'granada', 3, 3], ['arma', 'molotov', 3, 3], ['arma', 'lancachamas', 1, 4],
+    ['vida', null, 7, 3], ['colete', null, 4, 4], ['estrela', null, 3, 4], ['grana', null, 14, 3]];
   const r = seeded(4242);
-  for (const [t, arma, n] of lista) for (let k = 0; k < n; k++) {
-    for (let tent = 0; tent < 40; tent++) {
-      const x = (LAND0 + 2 + r() * (LAND1 - LAND0 - 4)) | 0, y = (LAND0 + 2 + r() * (LAND1 - LAND0 - 4)) | 0;
-      const tt = tile(x, y);
-      if (tt === TL.CALCADA || tt === TL.PRACA || tt === TL.AREIA || tt === TL.TERRA || tt === TL.CAIS || tt === TL.BECO || tt === TL.ESTAC) {
-        W.itens.push({ t, arma, x: (x + 0.5) * T, y: (y + 0.5) * T, v: t === 'grana' ? rndi(50, 300) : 0, respawn: 90 });
-        break;
-      }
+  for (const [t, arma, n, esc] of lista) for (let k = 0; k < n; k++) {
+    for (let tent = 0; tent < 400; tent++) {
+      const x = (8 + r() * (MW - 16)) | 0, y = (8 + r() * (MH - 16)) | 0;
+      if (!ok(x, y, esc)) continue;
+      if (W.itens.some(i => Math.abs(i.x / T - x) < 10 && Math.abs(i.y / T - y) < 10)) continue;
+      W.itens.push({ t, arma, x: (x + 0.5) * T, y: (y + 0.5) * T, v: t === 'grana' ? rndi(100, 400) : 0, respawn: 300 });
+      break;
     }
   }
 }

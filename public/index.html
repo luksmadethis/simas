@@ -118,6 +118,18 @@
 @keyframes rbx{to{--rbx:100%}}
 @media (prefers-reduced-motion:reduce){:root{animation:none}}
 .btn.main{background:var(--rainbow)}
+#lancamento{margin:6px 0 34px}
+.gta7{position:relative;display:block;border-radius:22px;overflow:hidden;aspect-ratio:16/9;max-height:78vh;width:100%;background:#000;text-decoration:none;color:#fff;border:1px solid #2a2733;box-shadow:0 20px 60px rgba(255,61,139,.25)}
+.gta7 video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.gta7::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.72) 0%,rgba(0,0,0,.25) 45%,rgba(0,0,0,0) 70%),linear-gradient(0deg,rgba(0,0,0,.55),rgba(0,0,0,0) 40%)}
+.gta7-info{position:absolute;left:0;bottom:0;z-index:2;padding:clamp(16px,4vw,44px);max-width:560px}
+.gta7-selo{display:inline-block;font:900 12px system-ui;letter-spacing:2px;background:#ff3d8b;padding:6px 12px;border-radius:6px}
+.gta7 h2{margin:10px 0 0;font:italic 900 clamp(54px,10vw,128px)/.9 system-ui;letter-spacing:-3px;background:linear-gradient(180deg,#fff 0%,#ffd23f 45%,#ff3d8b 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(5px 5px 0 rgba(0,0,0,.6))}
+.gta7-nome{margin:6px 0 0;font:italic 900 clamp(13px,2vw,20px) system-ui;letter-spacing:6px}
+.gta7-desc{margin:12px 0 18px;color:#e6e2ee;font-size:clamp(13px,1.6vw,16px);line-height:1.45}
+.gta7-btn{display:inline-block;font:900 clamp(14px,1.8vw,18px) system-ui;background:linear-gradient(90deg,#ff8c00,#ff3d8b);padding:13px 26px;border-radius:12px;box-shadow:0 8px 24px rgba(255,61,139,.45);transition:transform .15s}
+.gta7:hover .gta7-btn{transform:scale(1.06)}
+@media(max-width:600px){.gta7{aspect-ratio:4/5;max-height:none}.gta7 video{object-position:60% 50%}.gta7-desc{display:none}}
 </style>
 </head>
 <body>
@@ -135,12 +147,25 @@
     <p id="tagline">o puteiro oficial da galera. live, treino, zoeira e as merda q a gente inventa, tudo aqui</p>
   </header>
 
+  <section id="lancamento">
+    <a class="gta7" href="/jogos/gta7/">
+      <video src="/jogos/gta7/trailer.mp4?v=1" poster="/jogos/gta7/capa.jpg?v=3" autoplay muted loop playsinline preload="auto"></video>
+      <div class="gta7-info">
+        <span class="gta7-selo">🔥 LANÇAMENTO MUNDIAL</span>
+        <h2>GTA 7</h2>
+        <p class="gta7-nome">GRAND THEFT AUTO 7</p>
+        <p class="gta7-desc">o maior lançamento da história dos video game. mundo aberto, Recife, BH, Rio, Juazeiro e até a Indonésia. a Rockstar chorou.</p>
+        <span class="gta7-btn">▶ JOGAR AGORA</span>
+      </div>
+    </a>
+  </section>
+
   <section id="apps">
     <div class="hub">
       <a class="tile" href="/simastelas/"><span class="ti">📺</span><b>SimasTelas</b><small>live de tela e camera em 1080p</small></a>
       <a class="tile" href="/simastok/"><span class="ti">🎬</span><b>SimasTok</b><small>o tiktok da quadrilha</small></a>
       <a class="tile" href="/simastv/"><span class="ti">📡</span><b>SimasTV</b><small>cola o link e assiste aqui</small></a>
-      <a class="tile" href="/jogos/"><span class="ti">🎮</span><b>Jogos</b><small>Galado Pula, Patroa e Malando</small></a>
+      <a class="tile" href="/jogos/"><span class="ti">🎮</span><b>Jogos</b><small>GTA 7, Galado Pula, Patroa e Malando</small></a>
       <a class="tile" href="/simasfitness/"><span class="ti">💪</span><b>Simas Fitness</b><small>30 dia de treino e ranking</small></a>
       <a class="tile" href="/conversimas/"><span class="ti">🔄</span><b>ConverSimas</b><small>tiktok e insta em MP4 ou MP3</small></a>
       <a class="tile" href="/sugestoes/"><span class="ti">💡</span><b>Sugestões</b><small>manda tua ideia pro site</small></a>
