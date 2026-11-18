@@ -159,6 +159,14 @@ service cloud.firestore {
         && request.resource.data.pts >= resource.data.pts;
       allow delete: if aprovador();
     }
+    // Ranking do Malandro Hero: um TOP por música (hero/{musica}/pts/{uid}).
+    match /hero/{m}/pts/{uid} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.auth.uid == uid && m.matches('^[a-z0-9-]{1,30}$') && galadoOk();
+      allow update: if signedIn() && request.auth.uid == uid && galadoOk()
+        && request.resource.data.pts >= resource.data.pts;
+      allow delete: if aprovador();
+    }
     // Ranking do "Dorme que a Patroa tá Chegando": mesmas regras do Galado.
     match /patroa/{uid} {
       allow read: if signedIn();

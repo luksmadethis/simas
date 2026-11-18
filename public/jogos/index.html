@@ -82,6 +82,15 @@ h1{margin:6px 0 4px;font-size:38px;font-weight:900}
         <span class="btn">jogar essa porra →</span>
       </div>
     </a>
+    <a class="jogo" href="/jogos/malandro-hero/">
+      <canvas id="prev3" width="560" height="220"></canvas>
+      <div class="info">
+        <h3>🎧 Malandro Hero com o Zensat</h3>
+        <p>o guitar hero do funk na favela de BH. 3 pista, as bolinha vem no ritmo das braba do Zensat. errou? corta o som. acerta as 5 ⭐ e ganha bônus. BH é quem? BH É NÓIS</p>
+        <div class="rec">🎵 Kika pra Bandido · Meu Erro · MTG Tem que Ser no Sigilo</div>
+        <span class="btn">jogar essa porra →</span>
+      </div>
+    </a>
     <div class="jogo breve"><div style="font-size:28px">🎮</div><div>mais jogo vindo ai</div><div>manda ideia na <a href="/sugestoes/" style="color:#ff8c00">caixinha</a></div></div>
   </div>
 </div>
@@ -117,7 +126,7 @@ try { const r = localStorage.getItem('patroa-recorde'); if (r) document.getEleme
     });
   });
 })();
-const c2 = document.getElementById('prev2');
+const c2 = document.getElementById('prev2'), c3 = document.getElementById('prev3');
 const c = document.getElementById('prev'), x = c.getContext('2d');
 let off = 0;
 function loop(t) {
@@ -134,6 +143,21 @@ function loop(t) {
   drawCas(x2, dorme ? 'dormindo' : 'jogando', t);
   if (dorme && ciclo > 4.6) drawAna(x2, 'deboa', t);
   x2.restore();
+  // prévia do Malandro Hero: 3 pistas de neon com bolinhas descendo
+  const x3 = c3.getContext('2d'), CR = ['#2a7bff', '#21e05a', '#ff3030'];
+  x3.fillStyle = '#120a22'; x3.fillRect(0, 0, 560, 220);
+  for (let l = 0; l < 3; l++) {
+    const tx = 255 + l * 25, bx = 140 + l * 140;
+    x3.save(); x3.shadowColor = CR[l]; x3.shadowBlur = 12; x3.strokeStyle = CR[l]; x3.lineWidth = 2.5;
+    x3.beginPath(); x3.moveTo(tx - 8, 10); x3.lineTo(bx - 46, 190); x3.moveTo(tx + 8, 10); x3.lineTo(bx + 46, 190); x3.stroke();
+    x3.beginPath(); x3.ellipse(bx, 190, 42, 14, 0, 0, 7); x3.stroke(); x3.restore();
+    for (let i = 0; i < 2; i++) {
+      const p = ((t / 1400) + i / 2 + l * .31) % 1, k = Math.pow(p, 1.7), nx = tx + (bx - tx) * k, ny = 10 + 180 * k, s = .2 + .8 * k;
+      x3.save(); x3.shadowColor = CR[l]; x3.shadowBlur = 14; x3.fillStyle = CR[l];
+      x3.beginPath(); x3.ellipse(nx, ny, 38 * s, 13 * s, 0, 0, 7); x3.fill(); x3.restore();
+    }
+  }
+  x3.fillStyle = '#ffed00'; x3.font = '900 22px Impact,system-ui'; x3.fillText('BH É NÓIS', 16, 34);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);

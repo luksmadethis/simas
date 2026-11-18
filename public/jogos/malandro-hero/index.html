@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Malandro Hero com o Zensat · Simas</title>
+<meta name="description" content="guitar hero de funk do Zensat na favela de BH. BH é quem? BH é nóis">
+<meta property="og:title" content="Malandro Hero com o Zensat 🎧">
+<meta property="og:description" content="acerta as bolinha no ritmo do Zensat. BH é quem? BH é nóis">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+html,body{margin:0;min-height:100%;background:#0d0c12;color:#f3f1f7;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{display:flex;flex-direction:column;overscroll-behavior:none}
+.snav{flex:none;position:relative;z-index:70;display:flex;align-items:center;gap:14px;height:44px;padding:0 14px;background:#0d0c12;border-bottom:1px solid #2a2733;font:600 14px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#f3f1f7;box-sizing:border-box}
+.snav *{box-sizing:border-box;margin:0}
+.snav a{color:inherit;text-decoration:none}
+.snav-logo{font-weight:900;font-size:20px;letter-spacing:-.3px}
+.snav-logo b{font-weight:900}
+.snav-links{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+.snav-links a{padding:7px 11px;border-radius:9px;color:#9a95a8;white-space:nowrap}
+.snav-links a:hover{background:#17151f;color:#f3f1f7}
+.snav-links a.on{background:#1e1b28;color:#f3f1f7;box-shadow:inset 0 -2px 0 #9b2bc2}
+@media(max-width:520px){.snav{gap:8px;padding:0 8px}.snav-logo{font-size:18px}.snav-links a{padding:7px 8px;font-size:13px}}
+
+main{flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px;box-sizing:border-box}
+.topo{width:100%;max-width:960px}
+.voltar{display:inline-block;background:#17151f;border:1px solid #2a2733;color:#f3f1f7;text-decoration:none;font-weight:700;font-size:14px;padding:9px 14px;border-radius:11px}
+.voltar:hover{border-color:#9b2bc2;background:#1e1b28}
+h1{margin:0;font-size:24px;font-weight:900;text-align:center}
+h1 small{display:block;font-size:14px;font-weight:700;color:#9a95a8;margin-top:2px}
+#palco{position:relative;width:100%;max-width:480px}
+canvas{display:block;width:100%;height:auto;border-radius:16px;background:#120a22;touch-action:none;-webkit-tap-highlight-color:transparent;user-select:none}
+#botoes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:480px}
+#botoes button{height:64px;border-radius:14px;border:2px solid;font-size:26px;font-weight:900;color:#fff;background:#120a22;touch-action:none;-webkit-tap-highlight-color:transparent;user-select:none}
+#botoes button:nth-child(1){border-color:#2a7bff;box-shadow:0 0 14px #2a7bff66}
+#botoes button:nth-child(2){border-color:#21e05a;box-shadow:0 0 14px #21e05a66}
+#botoes button:nth-child(3){border-color:#ff3030;box-shadow:0 0 14px #ff303066}
+#botoes button.on{filter:brightness(1.8)}
+@media(hover:hover) and (pointer:fine){#botoes{display:none}}
+.dica{opacity:.65;font-size:13.5px;text-align:center;margin:0;max-width:520px}
+.camada{position:absolute;inset:0;border-radius:16px;background:rgba(10,6,20,.86);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;padding:16px;box-sizing:border-box;z-index:5}
+.camada[hidden]{display:none}
+.camada h2{margin:4px 0 2px;font-size:22px;font-weight:900;text-align:center}
+.sub{color:#b5b0c2;font-size:13px;margin:0 0 12px;text-align:center}
+.musica{width:100%;background:#17151f;border:1px solid #2a2733;border-radius:14px;padding:12px;margin-bottom:10px;box-sizing:border-box}
+.musica .lin{display:flex;align-items:center;gap:10px}
+.musica .info{flex:1;min-width:0}
+.musica b{display:block;font-size:16px}
+.musica span{display:block;font-size:12.5px;color:#9a95a8}
+.musica .rec{color:#ffd27a;margin-top:3px}
+.tocar{border:0;border-radius:11px;padding:11px 14px;font-weight:900;font-size:15px;color:#fff;background:linear-gradient(90deg,#2a7bff,#21e05a,#ff3030);cursor:pointer;white-space:nowrap}
+.top5{list-style:none;margin:8px 0 0;padding:6px 8px;background:#0f0d16;border-radius:10px;font-size:13px}
+.top5 li{display:flex;justify-content:space-between;padding:2px 0}
+.top5 li.meu{color:#ffd27a}
+.top5 li span:last-child{font-family:ui-monospace,Consolas,monospace;font-weight:700}
+.linha{display:flex;align-items:center;gap:8px;font-size:13px;color:#b5b0c2;width:100%;justify-content:space-between;margin:2px 0 10px}
+.linha input[type=range]{flex:1}
+.bt2{background:#262236;border:1px solid #3a3450;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer;font-size:13px}
+.cartao{background:#17151f;border:1px solid #2a2733;border-radius:16px;padding:18px 20px;width:min(340px,92%);text-align:center;margin-top:20%}
+.cartao h2{margin:0 0 4px;font-size:20px}
+.cartao p{margin:0 0 12px;color:#9a95a8;font-size:13.5px}
+.cartao input{width:100%;box-sizing:border-box;background:#0d0c12;border:1px solid #3a3450;color:#fff;border-radius:11px;padding:11px 12px;font-size:17px;text-align:center;outline:none}
+.cartao input:focus{border-color:#21e05a}
+.cartao .bts{display:flex;gap:8px;margin-top:12px}
+.cartao button{flex:1;border:0;border-radius:11px;padding:11px;font-weight:800;font-size:15px;cursor:pointer}
+#nomeOk{background:linear-gradient(90deg,#2a7bff,#21e05a);color:#fff}
+#nomePula{background:#262236;color:#bbb}
+.res{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.res div{background:#17151f;border:1px solid #2a2733;border-radius:12px;padding:10px;text-align:center}
+.res b{display:block;font-size:22px;font-family:ui-monospace,Consolas,monospace}
+.res span{font-size:12px;color:#9a95a8}
+.nota{font-size:64px;font-weight:900;line-height:1;margin:6px 0}
+.acoes{display:flex;gap:8px;width:100%}
+.acoes button{flex:1}
+
+/* ===== cores LGBT animadas (o arco-íris anda devagar em tudo que usa --rainbow) ===== */
+@property --rbx{syntax:'<percentage>';inherits:true;initial-value:0%}
+:root{--rainbow:repeating-linear-gradient(90deg,#e40303 calc(var(--rbx,0%) - 100%),#ff8c00 calc(var(--rbx,0%) - 83.33%),#ffed00 calc(var(--rbx,0%) - 66.67%),#00a83a calc(var(--rbx,0%) - 50%),#2a6bff calc(var(--rbx,0%) - 33.33%),#9b2bc2 calc(var(--rbx,0%) - 16.67%),#e40303 var(--rbx,0%));animation:rbx 9s steps(90) infinite}
+@keyframes rbx{to{--rbx:100%}}
+@media (prefers-reduced-motion:reduce){:root{animation:none}}
+.flag{height:6px;background:var(--rainbow)}
+.grad{background:var(--rainbow);-webkit-background-clip:text;background-clip:text;color:transparent}
+</style>
+</head>
+<body>
+<div class="flag"></div>
+<nav class="snav"><a class="snav-logo" href="/" aria-label="Simas, voltar pra home"><b style="color:#e40303">S</b><b style="color:#ff8c00">i</b><b style="color:#ffed00">m</b><b style="color:#00c13a">a</b><b style="color:#2a6bff">s</b></a><div class="snav-links"><a href="/">🏠 Home</a><a href="/simastelas/">📺 SimasTelas</a><a href="/simasfitness/">💪 Fitness</a><a href="/simastok/">🎬 SimasTok</a><a href="/jogos/" class="on">🎮 Jogos</a><a href="/conversimas/">🔄 ConverSimas</a><a href="/sugestoes/">💡 Sugestões</a></div></nav>
+
+<main>
+  <div class="topo"><a class="voltar" href="/jogos/">← Voltar a lista de Jogos</a></div>
+  <h1><span class="grad">MALANDRO HERO</span> 🎧<small>com o Zensat · BH é quem? BH é nóis</small></h1>
+  <div id="palco">
+    <canvas id="c" width="600" height="820"></canvas>
+
+    <!-- nome -->
+    <div class="camada" id="nomeBox" hidden>
+      <form class="cartao" id="nomeForm">
+        <h2>qual teu nome, malandro? 🎧</h2>
+        <p>vai pro TOP 5 de cada musica</p>
+        <input id="nomeIn" maxlength="20" autocomplete="nickname" placeholder="teu nome aqui porra">
+        <div class="bts"><button type="button" id="nomePula">jogar sem nome</button><button type="submit" id="nomeOk">BORA</button></div>
+      </form>
+    </div>
+
+    <!-- menu -->
+    <div class="camada" id="menu" hidden>
+      <h2>escolhe a braba 🔥</h2>
+      <p class="sub" id="euTxt"></p>
+      <div id="lista" style="width:100%"></div>
+      <div class="linha"><span>⏱ sincronia</span><input type="range" id="atraso" min="-200" max="200" step="10"><span id="atrasoTxt">0 ms</span></div>
+      <p class="sub" style="margin-top:-6px">se as bolinha chegar ANTES do som, puxa pra direita. se chegar DEPOIS, pra esquerda</p>
+      <div class="acoes"><button class="bt2" id="trocar">✏️ trocar nome</button><button class="bt2" id="somBt">🔊 som ligado</button></div>
+    </div>
+
+    <!-- resultado -->
+    <div class="camada" id="fim" hidden>
+      <h2 id="fimTit">ACABOU, SÔ</h2>
+      <p class="sub" id="fimMus"></p>
+      <div class="nota grad" id="fimNota">A</div>
+      <div class="res">
+        <div><b id="rPts">0</b><span>pontos</span></div>
+        <div><b id="rAc">0%</b><span>acertos</span></div>
+        <div><b id="rSeq">0</b><span>maior sequência</span></div>
+        <div><b id="rBon">0/0</b><span>bônus completos</span></div>
+        <div><b id="rPerf">0</b><span>bão demais (perfeito)</span></div>
+        <div><b id="rErr">0</b><span>errou</span></div>
+      </div>
+      <div class="acoes"><button class="bt2" id="denovo">🔁 de novo</button><button class="tocar" id="voltaMenu">🎵 outra musica</button></div>
+    </div>
+
+    <!-- pausa -->
+    <div class="camada" id="pausa" hidden style="justify-content:center">
+      <h2>PAUSADO ⏸</h2>
+      <p class="sub">ESC ou o botão pra voltar</p>
+      <div class="acoes" style="max-width:320px"><button class="bt2" id="sair">🎵 menu</button><button class="tocar" id="continuar">▶ continuar</button></div>
+    </div>
+  </div>
+  <div id="botoes"><button data-l="0">◀</button><button data-l="1">▲</button><button data-l="2">▶</button></div>
+  <p class="dica">PC: ← pista azul · ↑ pista verde · → pista vermelha · ESC pausa · celular: toca nos botão ou na pista. as bolinha ⭐ são BÔNUS: acerta as 5 seguidas e ganha +1000</p>
+</main>
+
+<script>
+// ===================================== CONFIG =====================================
+// pontos: perfeito 100, bom 50, vezes o multiplicador (1x, 2x com 10 de sequência, 3x com 20, 4x com 30).
+// bônus: grupo de 5 notas ⭐; acertou as 5 = +1000.
+const MUSICAS = ['kika', 'meuerro', 'sigilo'];
+const JANELA_PERF = 0.055, JANELA_BOM = 0.11;   // segundos
+const ANTEC = 1.7;                               // quanto tempo a bolinha leva do topo até o alvo
+const BONUS_PTS = 1000;
+const MODO_FOGO = 100;                           // a partir de 100 em sequência: brilho especial
+const W = 600, H = 820, YT = 150, YH = 720;
+const TOPX = [268, 300, 332], BOTX = [150, 300, 450], TOPW = 11, BOTW = 60;
+const COR = ['#2a7bff', '#21e05a', '#ff3030'], COR2 = ['#9cc4ff', '#a6ffbf', '#ffa3a3'];
+const GIRIA_PERF = ['BÃO DEMAIS!', 'NÓ!', 'TREM BÃO!', 'UAI SÔ!', 'CABULOSO!'];
+const GIRIA_SEQ = { 10: 'UAI SÔ! 🔥', 20: 'TREM BÃO DEMAIS!', 30: 'CÊ É DOIDO! 4x', 50: 'BH É QUEM? BH É NÓIS!', 75: 'NÓ, CABULOSO!', 100: 'Ó PROCÊ VÊ! 100 🔥', 150: 'NÓ, CÊ É BRABO!', 200: 'BH É NÓIS 200!' };
+
+const ls = { get(k){ try { return localStorage.getItem(k) } catch(e){ return null } }, set(k,v){ try { localStorage.setItem(k,v) } catch(e){} } };
+const $ = id => document.getElementById(id);
+const esc = t => String(t).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+const c = $('c'), x = c.getContext('2d');
+let CHARTS = null;
+const recordes = {}; MUSICAS.forEach(m => recordes[m] = +(ls.get('hero-rec-' + m) || 0));
+let atrasoUser = +(ls.get('hero-atraso') || 0);
+let somOn = ls.get('hero-som') !== '0';
+
+// ===================================== RANKING =====================================
+// Firestore: hero/{musica}/pts/{uid} = {nome, pts, t}
+const temFB = typeof firebase !== 'undefined';
+if (temFB) firebase.initializeApp({
+  apiKey: "AIzaSyA0G_qSK5eEVzGnLskGS8leXCwC7XNzK0A",
+  authDomain: "simasfitness2.firebaseapp.com",
+  projectId: "simasfitness2",
+  storageBucket: "simasfitness2.firebasestorage.app",
+  messagingSenderId: "1068623437415",
+  appId: "1:1068623437415:web:63ccdb065e991452563ec2"
+});
+const auth = temFB ? firebase.auth() : null, db = temFB ? firebase.firestore() : null;
+let uid = null, nome = (ls.get('galado-nome') || '').trim();
+const melhorNuvem = {}, top5 = {};
+function salvaPontos(m, p, forcar) {
+  if (!uid || !nome) return;
+  p = Math.floor(p);
+  const ant = melhorNuvem[m] || 0;
+  if (!forcar && p <= ant) return;
+  const novo = Math.max(p, ant);
+  db.collection('hero').doc(m).collection('pts').doc(uid).set({ nome, pts: novo, t: firebase.firestore.FieldValue.serverTimestamp() })
+    .then(() => { melhorNuvem[m] = novo; montaMenu(); }).catch(e => console.warn('ranking:', e));
+}
+if (temFB) auth.onAuthStateChanged(async u => {
+  if (!u) { try { await auth.signInAnonymously(); } catch (e) {} return; }
+  uid = u.uid;
+  for (const m of MUSICAS) {
+    try {
+      const d = await db.collection('hero').doc(m).collection('pts').doc(uid).get();
+      if (d.exists) { melhorNuvem[m] = d.data().pts || 0; if (melhorNuvem[m] > recordes[m]) { recordes[m] = melhorNuvem[m]; ls.set('hero-rec-' + m, recordes[m]); } }
+    } catch (e) {}
+    if (nome && recordes[m] > (melhorNuvem[m] || 0)) salvaPontos(m, recordes[m]);
+    db.collection('hero').doc(m).collection('pts').orderBy('pts', 'desc').limit(5).onSnapshot(q => {
+      top5[m] = []; q.forEach(d => top5[m].push({ id: d.id, ...d.data() })); montaMenu();
+    }, () => {});
+  }
+  montaMenu();
+});
+
+// ===================================== NOME / MENU =====================================
+const camadas = ['nomeBox', 'menu', 'fim', 'pausa'];
+function mostra(id) { camadas.forEach(k => $(k).hidden = k !== id); }
+function abreNome() { $('nomeIn').value = nome; mostra('nomeBox'); setTimeout(() => $('nomeIn').focus(), 50); }
+$('nomeForm').onsubmit = e => {
+  e.preventDefault();
+  const n = $('nomeIn').value.replace(/\s+/g, ' ').trim().slice(0, 20);
+  if (!n) return;
+  const mudou = n !== nome; nome = n; ls.set('galado-nome', nome);
+  if (mudou && uid) MUSICAS.forEach(m => { if (melhorNuvem[m]) salvaPontos(m, melhorNuvem[m], true); });
+  abreMenu();
+};
+$('nomePula').onclick = () => { nome = ''; ls.set('galado-nome', ''); abreMenu(); };
+$('trocar').onclick = abreNome;
+$('somBt').onclick = () => { somOn = !somOn; ls.set('hero-som', somOn ? '1' : '0'); $('somBt').textContent = somOn ? '🔊 som ligado' : '🔇 sem som'; };
+$('somBt').textContent = somOn ? '🔊 som ligado' : '🔇 sem som';
+$('atraso').value = atrasoUser; $('atrasoTxt').textContent = atrasoUser + ' ms';
+$('atraso').oninput = e => { atrasoUser = +e.target.value; ls.set('hero-atraso', atrasoUser); $('atrasoTxt').textContent = atrasoUser + ' ms'; };
+const mmss = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+function montaMenu() {
+  if (!CHARTS) { $('lista').innerHTML = '<p class="sub">carregando as musica...</p>'; return; }
+  $('euTxt').innerHTML = nome ? 'jogando como <b>' + esc(nome) + '</b>' : 'jogando sem nome (nao entra no ranking)';
+  $('lista').innerHTML = MUSICAS.map(m => {
+    const ch = CHARTS[m], t = top5[m];
+    const tops = t ? (t.length ? t.map((r, i) => '<li class="' + (r.id === uid ? 'meu' : '') + '"><span>' + ['🥇','🥈','🥉','4º','5º'][i] + ' ' + esc(r.nome) + '</span><span>' + r.pts + '</span></li>').join('') : '<li>ninguem jogou ainda</li>') : (temFB ? '<li>carregando...</li>' : '<li>ranking fora do ar</li>');
+    return '<div class="musica"><div class="lin"><div class="info"><b>' + esc(ch.titulo) + '</b><span>' + esc(ch.artista) + '</span><span>⏱ ' + mmss(ch.dur) + ' · 🎵 ' + ch.notas.length + ' notas · ' + Math.round(ch.bpm) + ' BPM</span>' +
+      '<span class="rec">🏆 teu recorde: ' + (recordes[m] || 0) + '</span></div><button class="tocar" data-m="' + m + '">▶ TOCAR</button></div><ol class="top5">' + tops + '</ol></div>';
+  }).join('');
+  $('lista').querySelectorAll('.tocar').forEach(b => b.onclick = () => comeca(b.dataset.m));
+}
+function abreMenu() { estado = 'menu'; montaMenu(); mostra('menu'); }
+
+// ===================================== ÁUDIO =====================================
+let ac = null, ganho = null, fonte = null, buffers = {};
+function ctxAudio() {
+  if (!ac) { ac = new (window.AudioContext || window.webkitAudioContext)(); ganho = ac.createGain(); ganho.connect(ac.destination); }
+  if (ac.state === 'suspended') ac.resume();
+  return ac;
+}
+async function carrega(m) {
+  if (buffers[m]) return buffers[m];
+  const r = await fetch('/jogos/malandro-hero/musicas/' + m + '.mp3');
+  const ab = await r.arrayBuffer();
+  buffers[m] = await new Promise((ok, err) => ctxAudio().decodeAudioData(ab, ok, err));
+  return buffers[m];
+}
+function cortaSom() {   // errou: corta o som por um instante
+  if (!ganho || !somOn) return;
+  const t = ac.currentTime;
+  ganho.gain.cancelScheduledValues(t);
+  ganho.gain.setValueAtTime(0.0001, t);
+  ganho.gain.setValueAtTime(0.0001, t + 0.22);
+  ganho.gain.linearRampToValueAtTime(1, t + 0.36);
+}
+function bipErro() {
+  if (!ac || !somOn) return;
+  const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+  o.type = 'sawtooth'; o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(70, t + .12);
+  g.gain.setValueAtTime(.05, t); g.gain.exponentialRampToValueAtTime(.0001, t + .14);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + .15);
+}
+
+// ===================================== JOGO =====================================
+let estado = 'carregando';   // carregando | menu | contagem | tocando | pausa | fim
+let musica, ch, notas, inicio, pts, seq, maxSeq, perf, bom, err, bonusOk, bonusGrupos, grupos, efeitos, giria, aperto = [0, 0, 0], brilho = [0, 0, 0], tocandoAte, pausaEm = 0;
+function tAgora() {
+  if (!ac) return 0;
+  const lat = (ac.outputLatency || ac.baseLatency || 0);
+  return ac.currentTime - inicio - lat - atrasoUser / 1000;
+}
+async function comeca(m) {
+  musica = m; ch = CHARTS[m];
+  mostra(null); estado = 'carregando';
+  try { await carrega(m); } catch (e) { alert('nao deu pra carregar a musica, tenta de novo'); abreMenu(); return; }
+  ctxAudio();
+  notas = ch.notas.map(([t, l, g]) => ({ t, l, g, feito: 0 }));   // feito: 0 = falta, 1 = acertou, -1 = errou
+  pts = 0; seq = 0; maxSeq = 0; perf = 0; bom = 0; err = 0; bonusOk = 0; efeitos = []; giria = null;
+  grupos = {};
+  notas.forEach(n => { if (!n.g) return; grupos[n.g] = grupos[n.g] || { acertos: 0, falhou: false, total: 0 }; grupos[n.g].total++; });
+  bonusGrupos = Object.keys(grupos).length;
+  if (fonte) { try { fonte.stop(); } catch (e) {} }
+  fonte = ac.createBufferSource(); fonte.buffer = buffers[m]; fonte.connect(ganho);
+  ganho.gain.cancelScheduledValues(ac.currentTime); ganho.gain.setValueAtTime(somOn ? 1 : 0, ac.currentTime);
+  inicio = ac.currentTime + 2.2;
+  fonte.start(inicio);
+  tocandoAte = Math.min(ch.dur, notas[notas.length - 1].t + 2.5);
+  estado = 'contagem';
+}
+function mult() { return seq >= 30 ? 4 : seq >= 20 ? 3 : seq >= 10 ? 2 : 1; }
+function mostraGiria(txt, cor = '#ffed00') { giria = { txt, cor, t0: performance.now() }; }
+function aperta(l) {
+  aperto[l] = performance.now();
+  if (estado !== 'tocando' && estado !== 'contagem') return;
+  const t = tAgora();
+  let alvo = null;
+  for (const n of notas) {
+    if (n.feito || n.l !== l) continue;
+    if (n.t - t > JANELA_BOM) break;
+    if (Math.abs(n.t - t) <= JANELA_BOM) { alvo = n; break; }
+  }
+  if (!alvo) { erra(null, l); return; }
+  const d = Math.abs(alvo.t - t), ehPerf = d <= JANELA_PERF;
+  alvo.feito = 1; seq++; maxSeq = Math.max(maxSeq, seq);
+  if (ehPerf) perf++; else bom++;
+  const ganhou = (ehPerf ? 100 : 50) * mult(); pts += ganhou;
+  brilho[l] = performance.now();
+  efeitos.push({ txt: ehPerf ? GIRIA_PERF[Math.floor(Math.random() * GIRIA_PERF.length)] : 'BOM', x: BOTX[l], y: YH - 70, t0: performance.now(), cor: ehPerf ? '#ffed00' : '#fff' });
+  if (GIRIA_SEQ[seq]) mostraGiria(GIRIA_SEQ[seq]);
+  if (alvo.g) {
+    const g = grupos[alvo.g]; g.acertos++;
+    if (!g.falhou && g.acertos === g.total) { pts += BONUS_PTS; bonusOk++; mostraGiria('⭐ BÔNUS DO ZENSAT +' + BONUS_PTS, '#ffd27a'); }
+  }
+}
+function erra(n, l) {
+  if (n) { n.feito = -1; if (n.g) grupos[n.g].falhou = true; }
+  err++; seq = 0; cortaSom(); bipErro();
+  efeitos.push({ txt: 'ERROU, SÔ!', x: BOTX[l], y: YH - 70, t0: performance.now(), cor: '#ff4d4d' });
+}
+function atualiza() {
+  if (estado !== 'tocando' && estado !== 'contagem') return;
+  const t = tAgora();
+  if (estado === 'contagem' && t >= 0) estado = 'tocando';
+  for (const n of notas) {
+    if (n.feito) continue;
+    if (t - n.t > JANELA_BOM) erra(n, n.l);
+    else break;
+  }
+  if (t >= tocandoAte) termina();
+}
+function termina() {
+  estado = 'fim';
+  try { fonte.stop(); } catch (e) {}
+  const total = notas.length, acc = (perf + bom * .6) / total;
+  const nota = acc >= .95 ? 'S' : acc >= .85 ? 'A' : acc >= .7 ? 'B' : acc >= .5 ? 'C' : 'D';
+  const p = Math.floor(pts), novo = p > (recordes[musica] || 0);
+  if (novo) { recordes[musica] = p; ls.set('hero-rec-' + musica, p); }
+  salvaPontos(musica, p);
+  $('fimTit').textContent = novo ? 'RECORDE NOVO, NÓ! 🏆' : (nota === 'S' || nota === 'A' ? 'BH É NÓIS! 🔥' : nota === 'D' ? 'CÊ É DOIDO, SÔ? 💀' : 'ACABOU, SÔ');
+  $('fimMus').textContent = ch.titulo + ' · ' + ch.artista;
+  $('fimNota').textContent = nota;
+  $('rPts').textContent = p; $('rAc').textContent = Math.round((perf + bom) / total * 100) + '%';
+  $('rSeq').textContent = maxSeq; $('rBon').textContent = bonusOk + '/' + bonusGrupos;
+  $('rPerf').textContent = perf; $('rErr').textContent = err;
+  mostra('fim');
+}
+function pausa() {
+  if (estado !== 'tocando' && estado !== 'contagem') return;
+  estado = 'pausa'; ac.suspend(); mostra('pausa');
+}
+function continua() { if (estado !== 'pausa') return; mostra(null); ac.resume(); estado = tAgora() < 0 ? 'contagem' : 'tocando'; }
+function sair() { try { fonte.stop(); } catch (e) {} if (ac.state === 'suspended') ac.resume(); abreMenu(); }
+$('continuar').onclick = continua; $('sair').onclick = sair;
+$('denovo').onclick = () => comeca(musica); $('voltaMenu').onclick = abreMenu;
+document.addEventListener('visibilitychange', () => { if (document.hidden) pausa(); });
+
+// controles
+const TECLAS = { ArrowLeft: 0, ArrowUp: 1, ArrowRight: 2, KeyA: 0, KeyW: 1, KeyD: 2, KeyJ: 0, KeyK: 1, KeyL: 2 };
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.code === 'Escape' || e.code === 'KeyP') { estado === 'pausa' ? continua() : pausa(); return; }
+  if (e.code in TECLAS) { e.preventDefault(); if (!e.repeat) aperta(TECLAS[e.code]); }
+});
+c.addEventListener('pointerdown', e => {
+  if (estado !== 'tocando' && estado !== 'contagem') return;
+  e.preventDefault();
+  const r = c.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * W;
+  aperta(px < 225 ? 0 : px < 375 ? 1 : 2);
+});
+document.querySelectorAll('#botoes button').forEach(b => {
+  b.addEventListener('pointerdown', e => { e.preventDefault(); b.classList.add('on'); aperta(+b.dataset.l); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, () => b.classList.remove('on')));
+});
+
+// ===================================== FUNDO: FAVELA DE BH =====================================
+const fundo = document.createElement('canvas'); fundo.width = W; fundo.height = H;
+(function pintaFavela() {
+  const f = fundo.getContext('2d');
+  let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  // céu de noite
+  const ceu = f.createLinearGradient(0, 0, 0, 420);
+  ceu.addColorStop(0, '#0e0624'); ceu.addColorStop(.55, '#3b1453'); ceu.addColorStop(1, '#a8406a');
+  f.fillStyle = ceu; f.fillRect(0, 0, W, H);
+  f.fillStyle = '#fff';
+  for (let i = 0; i < 70; i++) { f.globalAlpha = rnd() * .8 + .2; f.fillRect(rnd() * W, rnd() * 230, 1.6, 1.6); }
+  f.globalAlpha = 1;
+  f.fillStyle = '#fff3c9'; f.beginPath(); f.arc(300, 92, 22, 0, 7); f.fill();
+  f.fillStyle = 'rgba(255,243,201,.12)'; f.beginPath(); f.arc(300, 92, 40, 0, 7); f.fill();
+  // Serra do Curral lá atrás
+  f.fillStyle = '#26143d';
+  f.beginPath(); f.moveTo(0, 300);
+  const serra = [[0, 270], [40, 250], [80, 262], [120, 236], [160, 248], [200, 228], [250, 242], [300, 222], [350, 240], [400, 226], [450, 246], [500, 232], [550, 252], [600, 240]];
+  serra.forEach(([sx, sy]) => f.lineTo(sx, sy)); f.lineTo(W, 330); f.lineTo(0, 330); f.fill();
+  // prédios do centro de BH bem longe
+  f.fillStyle = '#1c0f2f';
+  for (let i = 0; i < 26; i++) { const bw = 10 + rnd() * 18, bh = 20 + rnd() * 50, bx = rnd() * W; f.fillRect(bx, 330 - bh, bw, bh); }
+  f.fillStyle = '#ffd86b';
+  for (let i = 0; i < 120; i++) { f.globalAlpha = .4 + rnd() * .6; f.fillRect(rnd() * W, 285 + rnd() * 45, 1.5, 1.5); }
+  f.globalAlpha = 1;
+  // morro da favela (sobe dos dois lados)
+  const morro = xx => 300 + 70 * Math.cos((xx / W) * Math.PI * 2) + 30 * Math.sin(xx / 47);
+  f.fillStyle = '#3a1e1a';
+  f.beginPath(); f.moveTo(0, H); for (let xx = 0; xx <= W; xx += 10) f.lineTo(xx, morro(xx)); f.lineTo(W, H); f.fill();
+  // casinhas
+  const cores = ['#b5562f', '#c8693b', '#a54a2a', '#e8d7b5', '#f2b84b', '#5fa8d3', '#e8829b', '#7cc47f', '#d9d9d9', '#c43f3f', '#9b6bc9', '#b5562f', '#b5562f'];
+  for (let y = 250; y < H + 30; y += 22 + rnd() * 6) {
+    let xx = -20 + rnd() * 20;
+    while (xx < W + 20) {
+      const w = 26 + rnd() * 34, h = 22 + rnd() * 20;
+      if (y - h > morro(xx + w / 2) - 6) {
+        const cor = cores[Math.floor(rnd() * cores.length)];
+        const tijolo = cor === '#b5562f' || cor === '#a54a2a' || cor === '#c8693b';
+        f.fillStyle = cor; f.fillRect(xx, y - h, w, h);
+        if (tijolo) { f.strokeStyle = 'rgba(0,0,0,.18)'; f.lineWidth = .7; for (let yy = y - h + 4; yy < y; yy += 4) { f.beginPath(); f.moveTo(xx, yy); f.lineTo(xx + w, yy); f.stroke(); } }
+        f.fillStyle = 'rgba(0,0,0,.25)'; f.fillRect(xx, y - h, w, 3);   // laje
+        // janelas e porta
+        const nj = Math.max(1, Math.floor(w / 15));
+        for (let j = 0; j < nj; j++) {
+          const acesa = rnd() < .45;
+          f.fillStyle = acesa ? (rnd() < .5 ? '#ffd86b' : '#ffeaa0') : '#1d1220';
+          f.fillRect(xx + 4 + j * (w - 8) / nj, y - h + 7, Math.min(9, (w - 8) / nj - 3), 7);
+        }
+        if (rnd() < .35) { f.fillStyle = '#3b2418'; f.fillRect(xx + w - 10, y - 12, 6, 12); }
+        // caixa d'água azul
+        if (rnd() < .3) { f.fillStyle = '#2f7fd1'; f.fillRect(xx + 5, y - h - 9, 12, 9); f.fillStyle = '#5aa6f0'; f.fillRect(xx + 4, y - h - 10, 14, 3); }
+        // vergalhão pra cima
+        if (rnd() < .25) { f.strokeStyle = '#555'; f.lineWidth = 1; for (let k = 0; k < 3; k++) { f.beginPath(); f.moveTo(xx + w - 4 - k * 4, y - h); f.lineTo(xx + w - 4 - k * 4, y - h - 7); f.stroke(); } }
+        // antena
+        if (rnd() < .12) { f.strokeStyle = '#999'; f.beginPath(); f.moveTo(xx + w / 2, y - h); f.lineTo(xx + w / 2, y - h - 14); f.moveTo(xx + w / 2 - 6, y - h - 11); f.lineTo(xx + w / 2 + 6, y - h - 11); f.stroke(); }
+      }
+      xx += w + rnd() * 3;
+    }
+  }
+  // postes e fios
+  f.strokeStyle = 'rgba(10,10,10,.75)'; f.lineWidth = 1.2;
+  const postes = [[40, 420], [150, 380], [460, 380], [570, 430], [30, 610], [570, 600]];
+  postes.forEach(([px, py]) => { f.fillStyle = '#222'; f.fillRect(px - 2, py - 50, 4, 50); f.fillStyle = '#ffde7a'; f.beginPath(); f.arc(px, py - 52, 3, 0, 7); f.fill(); });
+  [[0, 1], [2, 3], [4, 0], [5, 3], [1, 2]].forEach(([a, b]) => {
+    const [ax, ay] = postes[a], [bx, by] = postes[b];
+    for (let k = 0; k < 3; k++) { f.beginPath(); f.moveTo(ax, ay - 48 + k * 3); f.quadraticCurveTo((ax + bx) / 2, Math.max(ay, by) - 20 + k * 3, bx, by - 48 + k * 3); f.stroke(); }
+  });
+  // muro pichado
+  f.fillStyle = '#d8d0c0'; f.fillRect(0, 470, 120, 46);
+  f.fillStyle = 'rgba(0,0,0,.12)'; for (let i = 0; i < 6; i++) f.fillRect(i * 20, 470, 1, 46);
+  f.save(); f.translate(8, 490); f.rotate(-.05);
+  f.fillStyle = '#e8203a'; f.font = '900 14px Impact,system-ui'; f.fillText('BH É QUEM?', 0, 0);
+  f.fillStyle = '#1b1bd9'; f.font = '900 17px Impact,system-ui'; f.fillText('BH É NÓIS', 4, 20); f.restore();
+  f.fillStyle = '#d8d0c0'; f.fillRect(486, 500, 114, 40);
+  f.save(); f.translate(494, 526); f.rotate(.04); f.fillStyle = '#111'; f.font = '900 15px Impact,system-ui'; f.fillText('UAI SÔ  ⚡', 0, 0); f.restore();
+  f.save(); f.translate(470, 340); f.rotate(-.06); f.fillStyle = '#ffed00'; f.font = '900 13px Impact,system-ui'; f.fillText('TREM BÃO', 0, 0); f.restore();
+  // escurece o meio de baixo pra pista aparecer bem
+  f.fillStyle = 'rgba(8,4,18,.3)'; f.fillRect(0, 0, W, H);
+  const sombra = f.createLinearGradient(0, 0, W, 0);
+  sombra.addColorStop(0, 'rgba(8,4,18,.05)'); sombra.addColorStop(.2, 'rgba(8,4,18,.55)'); sombra.addColorStop(.5, 'rgba(8,4,18,.8)');
+  sombra.addColorStop(.8, 'rgba(8,4,18,.55)'); sombra.addColorStop(1, 'rgba(8,4,18,.05)');
+  f.fillStyle = sombra; f.fillRect(0, 140, W, H - 140);
+})();
+
+// ===================================== DESENHO =====================================
+const prof = p => Math.pow(Math.max(0, p), 1.7);        // 0 = lá no fundo, 1 = no alvo
+const lerp = (a, b, k) => a + (b - a) * k;
+function pistaX(l, k) { return lerp(TOPX[l], BOTX[l], k); }
+function pistaY(k) { return lerp(YT, YH, k); }
+function pistaW(k) { return lerp(TOPW, BOTW, k); }
+function desenhaPistas(t) {
+  for (let l = 0; l < 3; l++) {
+    const k2 = 1.12;
+    // corpo da pista
+    const g = x.createLinearGradient(0, YT, 0, H);
+    g.addColorStop(0, COR[l] + '10'); g.addColorStop(1, COR[l] + '55');
+    x.fillStyle = g;
+    x.beginPath();
+    x.moveTo(pistaX(l, 0) - pistaW(0), YT); x.lineTo(pistaX(l, 0) + pistaW(0), YT);
+    x.lineTo(pistaX(l, k2) + pistaW(k2), pistaY(k2)); x.lineTo(pistaX(l, k2) - pistaW(k2), pistaY(k2)); x.fill();
+    // bordas de neon
+    const fogo = notas && seq >= MODO_FOGO;
+    const corBorda = fogo ? `hsl(${(t * 220 + l * 120) % 360},100%,65%)` : COR2[l];
+    x.save(); x.shadowColor = fogo ? corBorda : COR[l]; x.shadowBlur = fogo ? 30 : 16; x.strokeStyle = corBorda; x.lineWidth = fogo ? 4.5 : 3;
+    [-1, 1].forEach(s => { x.beginPath(); x.moveTo(pistaX(l, 0) + s * pistaW(0), YT); x.lineTo(pistaX(l, k2) + s * pistaW(k2), pistaY(k2)); x.stroke(); });
+    x.restore();
+    // setinhas descendo
+    x.strokeStyle = 'rgba(255,255,255,.22)'; x.lineWidth = 2.5;
+    for (let i = 0; i < 6; i++) {
+      const p = ((t * .55) + i / 6) % 1, k = prof(p), cx = pistaX(l, k), cy = pistaY(k), w = pistaW(k) * .45;
+      x.beginPath(); x.moveTo(cx - w, cy + w * .35); x.lineTo(cx, cy - w * .1); x.lineTo(cx + w, cy + w * .35); x.stroke();
+    }
+  }
+}
+function disco(cx, cy, s, l, bonus, alpha = 1) {
+  const rx = 46 * s, ry = 19 * s;
+  x.save(); x.globalAlpha = alpha;
+  x.shadowColor = bonus ? '#ffe9a0' : COR[l]; x.shadowBlur = 18 * s + 4;
+  x.fillStyle = bonus ? '#ffd24a' : COR[l];
+  x.beginPath(); x.ellipse(cx, cy, rx, ry, 0, 0, 7); x.fill();
+  x.shadowBlur = 0;
+  x.fillStyle = bonus ? '#fff6cf' : COR2[l];
+  x.beginPath(); x.ellipse(cx, cy - ry * .12, rx * .62, ry * .55, 0, 0, 7); x.fill();
+  x.fillStyle = 'rgba(255,255,255,.75)';
+  x.beginPath(); x.ellipse(cx, cy - ry * .2, rx * .28, ry * .22, 0, 0, 7); x.fill();
+  if (bonus) { x.fillStyle = '#b8860b'; x.font = `900 ${Math.max(8, 20 * s)}px system-ui`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('★', cx, cy - ry * .1); x.textAlign = 'left'; x.textBaseline = 'alphabetic'; }
+  x.restore();
+}
+function desenhaAlvos(now) {
+  for (let l = 0; l < 3; l++) {
+    const cx = BOTX[l], ap = now - aperto[l] < 110, br = now - brilho[l];
+    x.save();
+    x.shadowColor = COR[l]; x.shadowBlur = ap ? 34 : 18;
+    x.strokeStyle = ap ? '#fff' : COR2[l]; x.lineWidth = 6;
+    x.beginPath(); x.ellipse(cx, YH, 58, 24, 0, 0, 7); x.stroke();
+    x.fillStyle = ap ? COR[l] : COR[l] + '33';
+    x.beginPath(); x.ellipse(cx, YH, 46, 18, 0, 0, 7); x.fill();
+    x.restore();
+    if (br < 260) {   // estouro de acerto
+      const k = br / 260;
+      x.save(); x.globalAlpha = 1 - k; x.strokeStyle = '#fff'; x.lineWidth = 4 * (1 - k) + 1;
+      x.beginPath(); x.ellipse(cx, YH, 58 + 40 * k, 24 + 16 * k, 0, 0, 7); x.stroke();
+      const gg = x.createLinearGradient(0, YH, 0, YH - 160);
+      gg.addColorStop(0, COR[l] + 'cc'); gg.addColorStop(1, COR[l] + '00');
+      x.fillStyle = gg; x.fillRect(cx - 40, YH - 160, 80, 160);
+      x.restore();
+    }
+  }
+}
+function desenhaNotas(t) {
+  // de trás pra frente pra as de perto ficarem por cima
+  for (let i = notas.length - 1; i >= 0; i--) {
+    const n = notas[i];
+    if (n.feito === 1) continue;
+    const dt = n.t - t;
+    if (dt > ANTEC || dt < -.35) continue;
+    const p = 1 - dt / ANTEC, k = prof(p);
+    disco(pistaX(n.l, k), pistaY(k), lerp(.2, 1, Math.min(k, 1.15)), n.l, !!n.g, n.feito === -1 ? .35 : 1);
+  }
+}
+function hud(t, now) {
+  // progresso
+  x.fillStyle = 'rgba(255,255,255,.12)'; x.fillRect(0, 0, W, 5);
+  x.fillStyle = '#21e05a'; x.fillRect(0, 0, W * Math.max(0, Math.min(1, t / ch.dur)), 5);
+  x.fillStyle = 'rgba(10,6,20,.7)'; x.beginPath(); x.roundRect ? x.roundRect(12, 16, 200, 62, 12) : x.rect(12, 16, 200, 62); x.fill();
+  x.fillStyle = '#fff'; x.font = '900 30px ui-monospace,Consolas,monospace'; x.fillText(String(Math.floor(pts)).padStart(6, '0'), 24, 54);
+  x.fillStyle = '#9a95a8'; x.font = '700 13px system-ui'; x.fillText('🏆 ' + (recordes[musica] || 0), 26, 71);
+  // sequência + multiplicador
+  const m = mult();
+  x.textAlign = 'right';
+  x.fillStyle = ['#fff', '#2a7bff', '#21e05a', '#ff3030'][m - 1]; x.font = '900 34px system-ui'; x.fillText(m + 'x', W - 18, 52);
+  x.fillStyle = '#fff'; x.font = '800 15px system-ui'; x.fillText(seq + ' em sequência', W - 18, 72);
+  x.textAlign = 'left';
+  // bônus em andamento
+  const prox = notas.find(n => !n.feito);
+  if (prox && prox.g && !grupos[prox.g].falhou) {
+    const g = grupos[prox.g];
+    x.textAlign = 'center'; x.fillStyle = '#ffd24a'; x.font = '900 18px system-ui';
+    x.fillText('BÔNUS ' + '★'.repeat(g.acertos) + '☆'.repeat(g.total - g.acertos), W / 2, 108);
+    x.textAlign = 'left';
+  }
+}
+function desenhaEfeitos(now) {
+  efeitos = efeitos.filter(e => now - e.t0 < 600);
+  x.textAlign = 'center';
+  efeitos.forEach(e => {
+    const k = (now - e.t0) / 600;
+    x.globalAlpha = 1 - k; x.fillStyle = e.cor; x.font = '900 20px system-ui';
+    x.strokeStyle = 'rgba(0,0,0,.6)'; x.lineWidth = 4;
+    x.strokeText(e.txt, e.x, e.y - k * 40); x.fillText(e.txt, e.x, e.y - k * 40);
+  });
+  x.globalAlpha = 1;
+  if (giria) {
+    const k = (now - giria.t0) / 1400;
+    if (k > 1) giria = null;
+    else {
+      const esc2 = k < .15 ? .6 + k / .15 * .5 : 1.1 - Math.min(.1, (k - .15));
+      x.save(); x.translate(W / 2, 330); x.scale(esc2, esc2); x.globalAlpha = k > .75 ? (1 - k) / .25 : 1;
+      x.font = '900 34px Impact,system-ui'; x.lineWidth = 7; x.strokeStyle = '#120a22'; x.strokeText(giria.txt, 0, 0);
+      x.fillStyle = giria.cor; x.fillText(giria.txt, 0, 0); x.restore();
+    }
+  }
+  x.textAlign = 'left';
+}
+function luzes(t) {
+  // luzes de baile piscando no ritmo
+  if (!ch) return;
+  const batida = 60 / ch.bpm, fase = ((t - ch.beat0) / batida) % 1, forca = Math.max(0, 1 - (fase < 0 ? fase + 1 : fase) * 3);
+  if (estado !== 'tocando') return;
+  x.save(); x.globalCompositeOperation = 'lighter';
+  [[0, '#2a7bff'], [W, '#ff3030']].forEach(([lx, cor], i) => {
+    const g = x.createRadialGradient(lx, 0, 10, lx, 0, 380);
+    g.addColorStop(0, cor + Math.round(forca * 90).toString(16).padStart(2, '0')); g.addColorStop(1, cor + '00');
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+  });
+  x.restore();
+}
+let faiscas = [];
+function modoFogo(t, now) {
+  if (seq < MODO_FOGO) { faiscas = []; return; }
+  // borda da tela brilhando
+  const h = (t * 120) % 360;
+  x.save(); x.lineWidth = 10; x.strokeStyle = `hsla(${h},100%,60%,.85)`; x.shadowColor = `hsl(${h},100%,60%)`; x.shadowBlur = 30;
+  x.strokeRect(5, 5, W - 10, H - 10); x.restore();
+  // faíscas douradas subindo dos alvos
+  if (Math.random() < .7) { const l = Math.floor(Math.random() * 3); faiscas.push({ x: BOTX[l] + (Math.random() - .5) * 90, y: YH, vy: -2 - Math.random() * 3, vx: (Math.random() - .5) * 1.2, v: 1 }); }
+  faiscas.forEach(f => { f.x += f.vx; f.y += f.vy; f.v -= .016; });
+  faiscas = faiscas.filter(f => f.v > 0);
+  x.save(); x.globalCompositeOperation = 'lighter';
+  faiscas.forEach(f => { x.fillStyle = `rgba(255,${190 + Math.floor(f.v * 60)},80,${f.v})`; x.beginPath(); x.arc(f.x, f.y, 2.4 * f.v + .6, 0, 7); x.fill(); });
+  x.restore();
+  // aviso
+  x.textAlign = 'center'; x.font = '900 20px Impact,system-ui';
+  x.lineWidth = 5; x.strokeStyle = '#120a22'; x.strokeText('🔥 MODO BH É NÓIS 🔥', W / 2, 138);
+  x.fillStyle = `hsl(${h},100%,65%)`; x.fillText('🔥 MODO BH É NÓIS 🔥', W / 2, 138); x.textAlign = 'left';
+}
+function loop() {
+  const now = performance.now();
+  atualiza();
+  x.drawImage(fundo, 0, 0);
+  if (ch && notas && (estado === 'tocando' || estado === 'contagem' || estado === 'pausa')) {
+    const t = tAgora();
+    luzes(t);
+    desenhaPistas(t);
+    desenhaAlvos(now);
+    desenhaNotas(t);
+    modoFogo(t, now);
+    hud(t, now);
+    desenhaEfeitos(now);
+    if (estado === 'contagem') {
+      const falta = -t, txt = falta > 1.5 ? 'BH É QUEM?' : falta > .7 ? 'BH É NÓIS!' : 'VAI!';
+      x.textAlign = 'center'; x.font = '900 46px Impact,system-ui'; x.lineWidth = 8; x.strokeStyle = '#120a22';
+      x.strokeText(txt, W / 2, 330); x.fillStyle = '#ffed00'; x.fillText(txt, W / 2, 330); x.textAlign = 'left';
+    }
+  } else {
+    desenhaPistas(now / 1000);
+    desenhaAlvos(now);
+    if (estado === 'carregando') {
+      x.textAlign = 'center'; x.font = '900 26px system-ui'; x.fillStyle = '#fff'; x.fillText('carregando a braba...', W / 2, 330); x.textAlign = 'left';
+    }
+  }
+  requestAnimationFrame(loop);
+}
+
+// ===================================== INÍCIO =====================================
+fetch('/jogos/malandro-hero/charts.json?v=1').then(r => r.json()).then(d => { CHARTS = d; if (estado === 'menu') montaMenu(); }).catch(() => { $('lista').innerHTML = '<p class="sub">deu pau pra carregar as musica, recarrega a pagina</p>'; });
+estado = 'menu';
+abreNome();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
