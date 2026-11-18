@@ -10,6 +10,7 @@ Site do grupo de amigos **Simas** em **https://ofisimas.web.app**, hospedado no 
 - `/simasfitness/`: Simas Fitness 2.0, desafio fitness de 30 dias com ranking e fórum
 - `/sugestoes/`: caixinha de sugestões da galera
 - `/simastok/`: SimasTok, vídeos verticais tipo TikTok
+- `/simastv/`: SimasTV, player onde cola um link (m3u8, mp4/webm/mp3 ou YouTube) e assiste direto no site
 - `/conversimas/`: ConverSimas, baixa vídeo do TikTok/Instagram/X em MP4 (até 1080p) ou MP3
 - `/jogos/`: aba de joguinhos (hoje: `/jogos/galado-pula/`, `/jogos/dorme-patroa/` e `/jogos/malandro-hero/`)
 
@@ -30,6 +31,7 @@ O site é interno da galera. O tom dos textos é **escrachado de propósito**: p
   - `public/jogos/index.html`: página da aba Jogos (lista os jogos)
   - `public/jogos/galado-pula/`: jogo Galado Pula (`index.html`, `galado.js` = desenho do personagem, `cabeca.webp` = rosto do Gelado recortado)
   - `public/jogos/dorme-patroa/`: jogo Dorme que a Patroa tá Chegando (`index.html`, `cena.js` = quarto + Cas + Ana + rostos 2D desenhados)
+  - `public/simastv/index.html`: SimasTV. TV retrô desenhada (antena, botões, chuvisco quando sem sinal). Cola o link → m3u8 toca com hls.js (carregado do jsdelivr só quando precisa; Safari toca nativo), mp4/webm/mp3 direto no `<video>`, YouTube vira embed. Link `http://` é barrado com aviso (site é https). Canais salvos e último link ficam SÓ no navegador (localStorage `simastv-canais`/`simastv-ultimo`), nada no Firestore; ao abrir volta a tocar o último link. Botão de cima da TV = próximo canal salvo, o de baixo = tela cheia. **Não colocar link de IPTV pirata fixo no site** (tipo `/live/usuario/senha/canal.m3u8`): o Dudu pediu um e foi recusado; a ideia é ele colar link oficial quando achar.
   - `public/conversimas/index.html`: página do ConverSimas (constante `API` = URL do servidor no Render)
   - `conversimas/`: o SERVIDOR do ConverSimas (Python FastAPI + yt-dlp + ffmpeg + deno, `Dockerfile`), hospedado no **Render grátis** pelo `render.yaml` (Blueprint). Dorme depois de 15 min parado (~1 min pra acordar), banda grátis ~5 GB/mês. Limites: `MAX_SEG` (15 min de vídeo) e `POR_DIA` (25 por IP). Fluxo: `POST /job` → `GET /job/<id>` (progresso) → `GET /job/<id>/arquivo`. O workflow `conversimas-atualiza.yml` muda `conversimas/versao.txt` toda segunda pra o Render reconstruir com o yt-dlp novo. **YouTube NÃO funciona**: o Render é bloqueado pelo YouTube (429/403 já na página; testado com token PO do bgutil, que tá instalado e rodando, e não resolveu). A página avisa "youtube por enquanto não rola" e barra o link antes de mandar. Só resolveria com cookies de conta Google ou internet residencial. Endpoint `/diag` mostra o estado.
   - `public/jogos/malandro-hero/`: jogo Malando com Zensat (`index.html`, `charts.json` = notas de cada música, `musicas/<slug>.mp3`)

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SimasTV</title>
+<meta name="theme-color" content="#9b2bc2">
+<meta property="og:title" content="SimasTV 📡">
+<meta property="og:description" content="cola o link e assiste direto no site: m3u8, mp4, youtube">
+<meta property="og:image" content="https://ofisimas.web.app/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+<style>
+  :root{--r:#e40303;--o:#ff8c00;--y:#ffed00;--g:#00a83a;--b:#2a6bff;--v:#9b2bc2;
+    --bg:#0d0c12;--card:#17151f;--card2:#1e1b28;--line:#2a2733;--txt:#f3f1f7;--mut:#9a95a8}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+  .grad{background:var(--rainbow);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .wrap{max-width:900px;margin:0 auto;padding:26px 16px 60px}
+  h1{font-size:clamp(34px,7vw,52px);letter-spacing:-1px;line-height:1.05}
+  .sub{color:var(--mut);margin-top:6px}
+
+  /* ===== a TV desenhada ===== */
+  .tv{position:relative;margin:96px auto 0;max-width:820px}
+  .antena{position:absolute;left:50%;top:-52px;width:0;height:0}
+  .antena i{position:absolute;bottom:0;left:0;width:4px;height:70px;background:linear-gradient(#ccc,#777);border-radius:3px;transform-origin:bottom center}
+  .antena i:nth-child(1){transform:rotate(-32deg)}
+  .antena i:nth-child(2){transform:rotate(28deg)}
+  .antena i::after{content:"";position:absolute;top:-7px;left:-4px;width:12px;height:12px;border-radius:50%;background:var(--r);box-shadow:0 0 10px var(--r)}
+  .antena i:nth-child(2)::after{background:var(--b);box-shadow:0 0 10px var(--b)}
+  .antena b{position:absolute;left:-22px;top:-8px;width:44px;height:18px;border-radius:22px 22px 6px 6px;background:#3a2c22}
+  .caixa{display:flex;gap:14px;background:linear-gradient(160deg,#6b4428,#3f2716);border-radius:28px;padding:18px;box-shadow:0 18px 40px rgba(0,0,0,.6),inset 0 2px 0 rgba(255,255,255,.12),inset 0 -6px 0 rgba(0,0,0,.25)}
+  .moldura{flex:1;background:#111;border-radius:22px;padding:12px;box-shadow:inset 0 0 0 3px #2a2a2a,inset 0 0 30px #000}
+  .tela{position:relative;aspect-ratio:16/9;border-radius:18px/26px;overflow:hidden;background:#000;box-shadow:inset 0 0 40px rgba(0,0,0,.9)}
+  .tela video,.tela iframe,.tela canvas{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+  .tela canvas{image-rendering:pixelated;z-index:2}
+  .tela .vidro{position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.10),transparent 45%),repeating-linear-gradient(rgba(0,0,0,.08) 0 2px,transparent 2px 4px);border-radius:inherit}
+  .tela .msg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;font-weight:900;font-size:clamp(16px,3vw,26px);text-align:center;text-shadow:0 2px 8px #000;padding:8px 14px;background:rgba(0,0,0,.55);border-radius:10px;max-width:86%}
+  .tela .msg[hidden]{display:none}
+  .tela .canal{position:absolute;top:12px;right:16px;z-index:4;font:900 22px/1 ui-monospace,Consolas,monospace;color:#5dff8a;text-shadow:0 0 8px #5dff8a;opacity:0;transition:opacity .3s}
+  .tela .canal.on{opacity:1}
+  .painel{width:86px;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:8px}
+  .botao{width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#c9c2b8,#7a7168);box-shadow:0 3px 0 #2a1a10,inset 0 -3px 6px rgba(0,0,0,.35);position:relative;cursor:pointer;border:0}
+  .botao::after{content:"";position:absolute;left:50%;top:6px;width:4px;height:16px;margin-left:-2px;background:#3a2c22;border-radius:2px;transform-origin:50% 21px;transform:rotate(var(--g,0deg));transition:transform .25s}
+  .grade{width:60px;display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:4px}
+  .grade i{height:4px;border-radius:2px;background:#24170e}
+  .led{width:10px;height:10px;border-radius:50%;background:#4a1010;box-shadow:inset 0 0 2px #000}
+  .led.on{background:#3cff6b;box-shadow:0 0 10px #3cff6b}
+  .marca{font:900 13px/1 system-ui;letter-spacing:1px;color:#e9d3b5;opacity:.85}
+  .pes{display:flex;justify-content:space-between;padding:0 60px}
+  .pes i{width:18px;height:22px;background:#2a1a10;border-radius:0 0 6px 6px}
+  @media(max-width:560px){.caixa{flex-direction:column;padding:12px;border-radius:22px}.painel{width:auto;flex-direction:row;justify-content:center;padding:0}.botao{width:40px;height:40px}.botao::after{height:12px;transform-origin:50% 14px}.grade{display:none}.pes{padding:0 40px}}
+
+  .box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:22px;position:relative;overflow:hidden}
+  .box::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:var(--rainbow)}
+  .linha{display:flex;gap:8px;flex-wrap:wrap}
+  input{flex:1;min-width:200px;background:var(--bg);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:13px 14px;font:inherit;font-size:16px;outline:none}
+  input:focus{border-color:#6b4fa0}
+  .bt{font:inherit;font-weight:900;border-radius:12px;padding:12px 16px;cursor:pointer;color:#fff;border:0;background:linear-gradient(90deg,var(--r),var(--o) 25%,var(--g) 55%,var(--b) 80%,var(--v))}
+  .bt2{font:inherit;font-weight:800;border-radius:11px;padding:9px 13px;cursor:pointer;color:var(--txt);background:var(--card2);border:1px solid var(--line)}
+  .bt2:hover{border-color:#6b4fa0}
+  .acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .dica{color:var(--mut);font-size:13.5px;margin-top:10px}
+  h2{font-size:18px;margin-bottom:10px}
+  #canais{display:flex;flex-direction:column;gap:8px}
+  .ch{display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+  .ch .n{font:900 15px ui-monospace,Consolas,monospace;color:#5dff8a;min-width:42px}
+  .ch .t{flex:1;min-width:0}
+  .ch .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ch .t small{display:block;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+  .ch button{font:inherit;border-radius:9px;padding:7px 10px;cursor:pointer;border:1px solid var(--line);background:var(--bg);color:var(--txt)}
+  .ch.on{border-color:#5dff8a}
+  .vazio{color:var(--mut);font-size:14px}
+  .salvarBox{display:none;gap:8px;margin-top:10px}
+  .salvarBox.on{display:flex}
+
+/* ===== cores LGBT animadas (o arco-íris anda devagar em tudo que usa --rainbow) ===== */
+@property --rbx{syntax:'<percentage>';inherits:true;initial-value:0%}
+:root{--rainbow:repeating-linear-gradient(90deg,#e40303 calc(var(--rbx,0%) - 100%),#ff8c00 calc(var(--rbx,0%) - 83.33%),#ffed00 calc(var(--rbx,0%) - 66.67%),#00a83a calc(var(--rbx,0%) - 50%),#2a6bff calc(var(--rbx,0%) - 33.33%),#9b2bc2 calc(var(--rbx,0%) - 16.67%),#e40303 var(--rbx,0%));animation:rbx 9s steps(90) infinite}
+@keyframes rbx{to{--rbx:100%}}
+@media (prefers-reduced-motion:reduce){:root{animation:none}}
+</style>
+</head>
+<body>
+<!--SNAV: menu padrão de todas as páginas. NÃO editar aqui na página: edita scripts/nav.html e roda python3 scripts/aplicar-nav.py -->
+<style>
+@view-transition{navigation:auto}
+::view-transition-old(root),::view-transition-new(root){animation-duration:.22s}
+.sbar{position:sticky;top:0;z-index:70;flex:none;height:58px;display:flex;align-items:center;gap:10px;padding:0 14px;background:rgba(13,12,18,.88);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid #2a2733;font:700 14.5px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#f3f1f7;box-sizing:border-box}
+.sbar *,.sb-gaveta *{box-sizing:border-box;margin:0}
+.sbar a,.sb-gaveta a{color:inherit;text-decoration:none;-webkit-tap-highlight-color:transparent}
+.sbar::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--rainbow,linear-gradient(90deg,#e40303,#ff8c00,#ffed00,#00a83a,#2a6bff,#9b2bc2));opacity:.85}
+.sb-logo{display:flex;align-items:center;height:42px;padding:0 8px;border-radius:12px;font-weight:900;font-size:23px;letter-spacing:-.4px;transition:transform .15s}
+.sb-logo:hover{transform:scale(1.05)}
+.sb-logo b{font-weight:900}
+.sb-links{display:flex;gap:4px;margin-left:auto}
+.sb-links a{display:flex;align-items:center;gap:7px;height:42px;padding:0 14px;border-radius:12px;color:#b5b0c4;white-space:nowrap;transition:background .15s,color .15s,transform .15s;position:relative}
+.sb-links a .i{font-size:17px;line-height:1}
+.sb-links a:hover{background:#1e1b28;color:#fff;transform:translateY(-1px)}
+.sb-links a.on{background:#241f33;color:#fff;box-shadow:inset 0 0 0 1px #4d3d72}
+.sb-links a.on::after{content:"";position:absolute;left:14px;right:14px;bottom:5px;height:3px;border-radius:3px;background:var(--rainbow,linear-gradient(90deg,#e40303,#ff8c00,#ffed00,#00a83a,#2a6bff,#9b2bc2))}
+.sb-cur,.sb-btn{display:none}
+.sb-gaveta{position:fixed;inset:58px 0 0 0;z-index:69;display:none}
+.sb-gaveta .fundo{position:absolute;inset:0;background:rgba(0,0,0,.55);opacity:0;transition:opacity .2s}
+.sb-gaveta .grade{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px;background:#0f0e15;border-bottom:1px solid #2a2733;transform:translateY(-12px);opacity:0;transition:transform .22s,opacity .22s;font:700 15px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#f3f1f7}
+.sb-gaveta .grade a{display:flex;flex-direction:column;gap:8px;padding:16px 14px;border-radius:16px;background:#17151f;border:1px solid #2a2733;min-height:84px;transition:background .15s}
+.sb-gaveta .grade a .i{font-size:26px;line-height:1}
+.sb-gaveta .grade a.on{background:#241f33;border-color:#6b4fa0}
+.sb-gaveta .grade a:active{background:#241f33}
+.sb-gaveta.aberta{display:block}
+.sb-gaveta.mostra .fundo{opacity:1}
+.sb-gaveta.mostra .grade{transform:none;opacity:1}
+@media(max-width:940px){
+  .sb-links{display:none}
+  .sb-cur{display:flex;align-items:center;gap:7px;margin-left:4px;color:#b5b0c4;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sb-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin-left:auto;height:42px;padding:0 14px;border-radius:12px;border:1px solid #2a2733;background:#17151f;color:#fff;font:800 14.5px/1 system-ui,sans-serif;cursor:pointer}
+  .sb-btn .ham{width:18px;height:12px;position:relative}
+  .sb-btn .ham i{position:absolute;left:0;right:0;height:2px;border-radius:2px;background:#fff;transition:transform .2s,opacity .2s}
+  .sb-btn .ham i:nth-child(1){top:0}.sb-btn .ham i:nth-child(2){top:5px}.sb-btn .ham i:nth-child(3){top:10px}
+  .sb-btn.x .ham i:nth-child(1){transform:translateY(5px) rotate(45deg)}
+  .sb-btn.x .ham i:nth-child(2){opacity:0}
+  .sb-btn.x .ham i:nth-child(3){transform:translateY(-5px) rotate(-45deg)}
+}
+@media(max-width:380px){.sb-cur{display:none}}
+@media (prefers-reduced-motion:reduce){.sb-gaveta .grade,.sb-gaveta .fundo{transition:none}::view-transition-old(root),::view-transition-new(root){animation:none}}
+</style>
+<nav class="sbar" aria-label="Menu do Simas">
+  <a class="sb-logo" href="/" aria-label="Simas, voltar pra home"><b style="color:#e40303">S</b><b style="color:#ff8c00">i</b><b style="color:#ffed00">m</b><b style="color:#00c13a">a</b><b style="color:#2a6bff">s</b></a>
+  <span class="sb-cur" id="sbCur"></span>
+  <div class="sb-links" id="sbLinks">
+    <a href="/"><span class="i">🏠</span>Home</a>
+    <a href="/simastelas/"><span class="i">📺</span>SimasTelas</a>
+    <a href="/simastok/"><span class="i">🎬</span>SimasTok</a>
+    <a href="/simastv/"><span class="i">📡</span>SimasTV</a>
+    <a href="/jogos/"><span class="i">🎮</span>Jogos</a>
+    <a href="/simasfitness/"><span class="i">💪</span>Fitness</a>
+    <a href="/conversimas/"><span class="i">🔄</span>ConverSimas</a>
+    <a href="/sugestoes/"><span class="i">💡</span>Sugestões</a>
+  </div>
+  <button class="sb-btn" id="sbBtn" aria-expanded="false" aria-controls="sbGaveta"><span class="ham"><i></i><i></i><i></i></span>menu</button>
+</nav>
+<div class="sb-gaveta" id="sbGaveta"><div class="fundo"></div><div class="grade" id="sbGrade"></div></div>
+<script>
+(() => {
+  const links = [...document.querySelectorAll('#sbLinks a')], p = location.pathname.replace(/^\/v\//, '/simastok/');
+  let atual = null;
+  for (const a of links) { const h = a.getAttribute('href'); if (h === '/' ? p === '/' : p.startsWith(h)) { a.classList.add('on'); atual = a; } }
+  if (atual) document.getElementById('sbCur').innerHTML = atual.innerHTML;
+  const grade = document.getElementById('sbGrade');
+  for (const a of links) { const c = a.cloneNode(true); grade.appendChild(c); }
+  const gav = document.getElementById('sbGaveta'), btn = document.getElementById('sbBtn');
+  const abre = sim => {
+    btn.classList.toggle('x', sim); btn.setAttribute('aria-expanded', sim);
+    if (sim) { gav.classList.add('aberta'); requestAnimationFrame(() => requestAnimationFrame(() => gav.classList.add('mostra'))); }
+    else { gav.classList.remove('mostra'); setTimeout(() => { if (!gav.classList.contains('mostra')) gav.classList.remove('aberta'); }, 230); }
+  };
+  btn.onclick = () => abre(!gav.classList.contains('aberta'));
+  gav.querySelector('.fundo').onclick = () => abre(false);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') abre(false); });
+  // carrega a página antes do clique (navegação mais rápida)
+  const feitos = new Set();
+  const pre = e => { const a = e.target.closest && e.target.closest('a[href^="/"]'); if (!a || feitos.has(a.href)) return; feitos.add(a.href); const l = document.createElement('link'); l.rel = 'prefetch'; l.href = a.href; document.head.appendChild(l); };
+  document.querySelectorAll('.sbar, .sb-gaveta').forEach(el => { el.addEventListener('pointerenter', pre, true); el.addEventListener('touchstart', pre, { passive: true, capture: true }); });
+})();
+</script>
+<!--/SNAV-->
+
+<div class="wrap">
+  <h1><span class="grad">SimasTV</span> 📡</h1>
+  <p class="sub">cola o link e assiste direto aqui. funciona com transmissão ao vivo (.m3u8), video (.mp4, .webm), audio (.mp3) e youtube</p>
+
+  <div class="tv">
+    <div class="antena"><i></i><i></i><b></b></div>
+    <div class="caixa">
+      <div class="moldura">
+        <div class="tela" id="tela">
+          <canvas id="chuvisco" width="160" height="90"></canvas>
+          <video id="video" playsinline controls hidden></video>
+          <div class="vidro"></div>
+          <div class="canal" id="canalTxt">CH 1</div>
+          <div class="msg" id="msg">SEM SINAL 📡<br><small style="font-size:.6em;font-weight:700">cola um link aí embaixo</small></div>
+        </div>
+      </div>
+      <div class="painel">
+        <span class="marca">SIMAS</span>
+        <button class="botao" id="btCanal" title="próximo canal salvo" aria-label="próximo canal"></button>
+        <button class="botao" id="btTela" title="tela cheia" aria-label="tela cheia"></button>
+        <div class="grade"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <span class="led" id="led"></span>
+      </div>
+    </div>
+    <div class="pes"><i></i><i></i></div>
+  </div>
+
+  <div class="box">
+    <form class="linha" id="form">
+      <input id="link" type="url" inputmode="url" autocomplete="off" placeholder="cola o link aqui (https://...m3u8, .mp4, youtube...)">
+      <button class="bt" type="submit">▶ ASSISTIR</button>
+    </form>
+    <div class="acoes">
+      <button class="bt2" id="btSalvar" type="button">💾 salvar canal</button>
+      <button class="bt2" id="btFull" type="button">⛶ tela cheia</button>
+      <button class="bt2" id="btDesliga" type="button">⏻ desligar</button>
+    </div>
+    <form class="salvarBox" id="salvarBox">
+      <input id="nomeCanal" maxlength="40" placeholder="nome do canal (ex: TV Cultura)">
+      <button class="bt2" type="submit">salvar</button>
+    </form>
+    <p class="dica">o link precisa ser <b>https</b> e o site de origem tem que deixar tocar em outros sites. se der erro, não é a TV que tá quebrada, é o link que não deixa. os canais salvos ficam só no TEU navegador.</p>
+  </div>
+
+  <div class="box">
+    <h2>📺 canais salvos</h2>
+    <div id="canais"></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const ls = { get(k){ try { return localStorage.getItem(k) } catch(e){ return null } }, set(k,v){ try { localStorage.setItem(k,v) } catch(e){} } };
+const esc = t => String(t).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+const video = $('video'), tela = $('tela'), msgEl = $('msg');
+let canais = []; try { canais = JSON.parse(ls.get('simastv-canais') || '[]'); } catch (e) {}
+let atual = '', hls = null, iframe = null, girando = 0;
+
+// ---------- chuvisco (quando tá sem sinal / carregando) ----------
+const cv = $('chuvisco'), cx = cv.getContext('2d'), img = cx.createImageData(160, 90);
+let chuviscoOn = true;
+function chuvisco() {
+  if (chuviscoOn) {
+    const d = img.data;
+    for (let i = 0; i < d.length; i += 4) { const v = Math.random() * 255 | 0; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; }
+    cx.putImageData(img, 0, 0);
+  }
+  requestAnimationFrame(chuvisco);
+}
+requestAnimationFrame(chuvisco);
+function mostraChuvisco(sim) { chuviscoOn = sim; cv.hidden = !sim; }
+function msg(html) { if (html) { msgEl.innerHTML = html; msgEl.hidden = false; } else msgEl.hidden = true; }
+function led(sim) { $('led').classList.toggle('on', sim); }
+function mostraCanal(txt) { const c = $('canalTxt'); c.textContent = txt; c.classList.add('on'); clearTimeout(mostraCanal.t); mostraCanal.t = setTimeout(() => c.classList.remove('on'), 2500); }
+
+// ---------- tipo do link ----------
+function idYoutube(u) {
+  const m = u.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|live\/|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+function tipo(u) {
+  if (idYoutube(u)) return 'youtube';
+  if (/\.m3u8(\?|#|$)/i.test(u) || /m3u8/i.test(u)) return 'hls';
+  return 'arquivo';
+}
+
+// ---------- tocar ----------
+function para() {
+  if (hls) { try { hls.destroy(); } catch (e) {} hls = null; }
+  if (iframe) { iframe.remove(); iframe = null; }
+  video.pause(); video.removeAttribute('src'); video.load(); video.hidden = true;
+}
+function erro(txt) {
+  para(); mostraChuvisco(true); led(false);
+  msg('📡 SEM SINAL<br><small style="font-size:.55em;font-weight:700">' + txt + '</small>');
+}
+async function carregaHlsJs() {
+  if (window.Hls) return window.Hls;
+  await new Promise((ok, falha) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js'; s.onload = ok; s.onerror = falha; document.head.appendChild(s); });
+  return window.Hls;
+}
+function tocaVideo() {
+  video.hidden = false;
+  const p = video.play();
+  if (p && p.catch) p.catch(() => { video.muted = true; video.play().then(() => msg('🔇 toca no video pra ligar o som')).catch(() => msg('▶ aperta o play')); setTimeout(() => msg(''), 3500); });
+}
+async function assistir(u, nomeCanal) {
+  u = (u || '').trim();
+  if (!u) return;
+  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+  if (/^http:\/\//i.test(u)) { erro('esse link é http (sem o S). o navegador bloqueia http dentro de site https. procura a versão https do link'); return; }
+  atual = u; ls.set('simastv-ultimo', u); $('link').value = u;
+  para(); mostraChuvisco(true); msg('sintonizando... 📡'); led(false);
+  girando += 45; $('btCanal').style.setProperty('--g', girando + 'deg');
+  const i = canais.findIndex(c => c.url === u);
+  mostraCanal(i >= 0 ? 'CH ' + (i + 1) + (nomeCanal || canais[i].nome ? ' · ' + (nomeCanal || canais[i].nome) : '') : 'AV');
+  marcaCanais();
+  const t = tipo(u);
+  if (t === 'youtube') {
+    iframe = document.createElement('iframe');
+    iframe.src = 'https://www.youtube.com/embed/' + idYoutube(u) + '?autoplay=1&playsinline=1&rel=0';
+    iframe.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+    iframe.allowFullscreen = true;
+    iframe.onload = () => { mostraChuvisco(false); msg(''); led(true); };
+    tela.insertBefore(iframe, tela.querySelector('.vidro'));
+    return;
+  }
+  video.muted = false;
+  video.onplaying = () => { mostraChuvisco(false); msg(''); led(true); };
+  video.onwaiting = () => msg('carregando... ⏳');
+  video.onerror = () => erro('não deu pra tocar esse link. pode estar fora do ar ou não deixa tocar em outro site');
+  if (t === 'hls' && !video.canPlayType('application/vnd.apple.mpegurl')) {
+    let Hls;
+    try { Hls = await carregaHlsJs(); } catch (e) { erro('não carregou o tocador de m3u8, tenta de novo'); return; }
+    if (atual !== u) return;
+    if (!Hls.isSupported()) { erro('esse navegador não toca m3u8'); return; }
+    hls = new Hls({ lowLatencyMode: true });
+    hls.on(Hls.Events.ERROR, (ev, d) => {
+      if (!d.fatal) return;
+      if (d.type === Hls.ErrorTypes.MEDIA_ERROR) { hls.recoverMediaError(); return; }
+      erro(d.type === Hls.ErrorTypes.NETWORK_ERROR ? 'o link não respondeu ou não deixa tocar fora do site dele (bloqueio CORS)' : 'deu pau no sinal desse link');
+    });
+    hls.loadSource(u); hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, tocaVideo);
+  } else {
+    video.src = u; tocaVideo();
+  }
+}
+function desliga() {
+  atual = ''; para(); mostraChuvisco(true); led(false); marcaCanais();
+  msg('SEM SINAL 📡<br><small style="font-size:.6em;font-weight:700">cola um link aí embaixo</small>');
+}
+
+// ---------- canais salvos (só no navegador) ----------
+function salvaLista() { ls.set('simastv-canais', JSON.stringify(canais)); montaCanais(); }
+function montaCanais() {
+  const el = $('canais');
+  if (!canais.length) { el.innerHTML = '<p class="vazio">nenhum canal salvo ainda. assiste um link e aperta 💾 salvar canal</p>'; return; }
+  el.innerHTML = canais.map((c, i) => '<div class="ch" data-i="' + i + '"><span class="n">CH ' + (i + 1) + '</span><span class="t"><b>' + esc(c.nome) + '</b><small>' + esc(c.url) + '</small></span><button data-a="ver" title="assistir">▶</button><button data-a="sobe" title="subir">↑</button><button data-a="tira" title="apagar">✕</button></div>').join('');
+  el.querySelectorAll('.ch button').forEach(b => b.onclick = () => {
+    const i = +b.closest('.ch').dataset.i;
+    if (b.dataset.a === 'ver') { assistir(canais[i].url, canais[i].nome); scrollTo({ top: 0, behavior: 'smooth' }); }
+    if (b.dataset.a === 'sobe' && i > 0) { [canais[i - 1], canais[i]] = [canais[i], canais[i - 1]]; salvaLista(); }
+    if (b.dataset.a === 'tira' && confirmaTira(i)) { canais.splice(i, 1); salvaLista(); }
+  });
+  marcaCanais();
+}
+function confirmaTira(i) { const b = document.querySelector('.ch[data-i="' + i + '"] [data-a="tira"]'); if (b.dataset.ok) return true; b.dataset.ok = 1; b.textContent = 'apagar?'; setTimeout(() => { if (b.isConnected) { delete b.dataset.ok; b.textContent = '✕'; } }, 2500); return false; }
+function marcaCanais() { document.querySelectorAll('.ch').forEach(d => d.classList.toggle('on', canais[+d.dataset.i] && canais[+d.dataset.i].url === atual)); }
+
+// ---------- botões ----------
+$('form').onsubmit = e => { e.preventDefault(); assistir($('link').value); };
+$('btSalvar').onclick = () => {
+  const u = atual || $('link').value.trim();
+  if (!u) { $('link').focus(); return; }
+  $('salvarBox').classList.add('on'); $('nomeCanal').value = ''; $('nomeCanal').focus();
+};
+$('salvarBox').onsubmit = e => {
+  e.preventDefault();
+  let u = atual || $('link').value.trim(); if (!u) return;
+  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+  const nome = $('nomeCanal').value.trim() || ('canal ' + (canais.length + 1));
+  const i = canais.findIndex(c => c.url === u);
+  if (i >= 0) canais[i].nome = nome; else canais.push({ nome, url: u });
+  $('salvarBox').classList.remove('on'); salvaLista();
+};
+function telaCheia() {
+  const alvo = tela;
+  if (document.fullscreenElement) document.exitFullscreen();
+  else if (alvo.requestFullscreen) alvo.requestFullscreen().catch(() => {});
+  else if (video.webkitEnterFullscreen && !video.hidden) video.webkitEnterFullscreen();   // iPhone
+}
+$('btFull').onclick = telaCheia; $('btTela').onclick = telaCheia;
+$('btDesliga').onclick = desliga;
+$('btCanal').onclick = () => {
+  if (!canais.length) { mostraCanal('sem canal salvo'); return; }
+  const i = canais.findIndex(c => c.url === atual), prox = canais[(i + 1) % canais.length];
+  assistir(prox.url, prox.nome);
+};
+
+// ---------- ao abrir: volta pro último link que tava passando ----------
+montaCanais();
+const ultimo = ls.get('simastv-ultimo');
+if (ultimo) assistir(ultimo);
+</script>
+</body>
+</html>
