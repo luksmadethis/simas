@@ -10,6 +10,7 @@ Site do grupo de amigos **Simas** em **https://ofisimas.web.app**, hospedado no 
 - `/simasfitness/`: Simas Fitness 2.0, desafio fitness de 30 dias com ranking e fórum
 - `/sugestoes/`: caixinha de sugestões da galera
 - `/simastok/`: SimasTok, vídeos verticais tipo TikTok
+- `/conversimas/`: ConverSimas, baixa vídeo do YouTube/TikTok/Instagram em MP4 (até 1080p) ou MP3
 - `/jogos/`: aba de joguinhos (hoje: `/jogos/galado-pula/` e `/jogos/dorme-patroa/`)
 
 O site é interno da galera. O tom dos textos é **escrachado de propósito**: palavrão, português chucro, minúsculo com erros e CAPS em palavras de destaque, e piada interna.
@@ -27,6 +28,8 @@ O site é interno da galera. O tom dos textos é **escrachado de propósito**: p
   - `public/jogos/index.html`: página da aba Jogos (lista os jogos)
   - `public/jogos/galado-pula/`: jogo Galado Pula (`index.html`, `galado.js` = desenho do personagem, `cabeca.webp` = rosto do Gelado recortado)
   - `public/jogos/dorme-patroa/`: jogo Dorme que a Patroa tá Chegando (`index.html`, `cena.js` = quarto + Cas + Ana + rostos 2D desenhados)
+  - `public/conversimas/index.html`: página do ConverSimas (constante `API` = URL do servidor no Render)
+  - `conversimas/`: o SERVIDOR do ConverSimas (Python FastAPI + yt-dlp + ffmpeg + deno, `Dockerfile`), hospedado no **Render grátis** pelo `render.yaml` (Blueprint). Dorme depois de 15 min parado (~1 min pra acordar), banda grátis ~5 GB/mês. Limites: `MAX_SEG` (15 min de vídeo) e `POR_DIA` (25 por IP). Fluxo: `POST /job` → `GET /job/<id>` (progresso) → `GET /job/<id>/arquivo`. O workflow `conversimas-atualiza.yml` muda `conversimas/versao.txt` toda segunda pra o Render reconstruir com o yt-dlp novo. YouTube às vezes bloqueia servidor de nuvem.
   - `firestore.rules`: regras de segurança do banco (Firestore) do projeto
   - `firebase.json`: config da hospedagem (site `ofisimas`, cleanUrls, trailingSlash, HTML sem cache)
 - luksmadethis/simastelas e luksmadethis/simasfitness2: **antigos**. Hoje só redirecionam (GitHub Pages) pro endereço novo. Não mexer.
@@ -82,7 +85,7 @@ Piadas internas já usadas: "aqui pagou papai #constancia", "duas serie de levan
 - Ranking igual ao do Galado: Firestore `patroa/{uid}` (mesma regra `galadoOk()`), TOP 5 embaixo do jogo e no card. Os dois jogos usam o MESMO nome salvo (localStorage `galado-nome`); recorde local `patroa-recorde`.
 
 ## Visual
-Fundo escuro (#0d0c12), cores do arco-íris LGBT, **animadas** em todas as páginas: `--rainbow` é um repeating-gradient que anda com a variável registrada `--rbx` (bloco "cores LGBT animadas" no fim do <style> de cada página; steps(90) em 9s pra não pesar). O cabeçalho (`.snav`) é igual em todas as páginas: logo Simas + Home, SimasTelas, Fitness, SimasTok, Jogos e Sugestões. Página nova precisa ganhar o link em TODOS os cabeçalhos.
+Fundo escuro (#0d0c12), cores do arco-íris LGBT, **animadas** em todas as páginas: `--rainbow` é um repeating-gradient que anda com a variável registrada `--rbx` (bloco "cores LGBT animadas" no fim do <style> de cada página; steps(90) em 9s pra não pesar). O cabeçalho (`.snav`) é igual em todas as páginas: logo Simas + Home, SimasTelas, Fitness, SimasTok, Jogos, ConverSimas e Sugestões. Página nova precisa ganhar o link em TODOS os cabeçalhos.
 Home: arco-íris que desce serpenteando conforme o scroll e barra de progresso arco-íris no topo. O mouse é o normal: a varinha e o brilho foram removidos porque deixavam o site lento.
 
 ## Pendências

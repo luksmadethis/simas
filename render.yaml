@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: conversimas
+    runtime: docker
+    plan: free
+    rootDir: conversimas
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: MAX_SEG
+        value: "900"
+      - key: POR_DIA
+        value: "25"

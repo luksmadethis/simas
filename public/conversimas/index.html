@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ConverSimas</title>
+<meta name="theme-color" content="#9b2bc2">
+<meta property="og:title" content="ConverSimas 🔄">
+<meta property="og:description" content="cola o link do youtube, tiktok ou insta e baixa em mp4 ou mp3">
+<meta property="og:image" content="https://ofisimas.web.app/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 6'><rect y='0' width='6' height='1' fill='%23e40303'/><rect y='1' width='6' height='1' fill='%23ff8c00'/><rect y='2' width='6' height='1' fill='%23ffed00'/><rect y='3' width='6' height='1' fill='%23008026'/><rect y='4' width='6' height='1' fill='%23004dff'/><rect y='5' width='6' height='1' fill='%23750787'/></svg>">
+<style>
+  :root{--r:#e40303;--o:#ff8c00;--y:#ffed00;--g:#00a83a;--b:#2a6bff;--v:#9b2bc2;
+    --bg:#0d0c12;--card:#17151f;--card2:#1e1b28;--line:#2a2733;--txt:#f3f1f7;--mut:#9a95a8}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+  .flag{height:6px;background:var(--rainbow)}
+  .grad{background:var(--rainbow);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .wrap{max-width:720px;margin:0 auto;padding:30px 18px 60px}
+  h1{font-size:clamp(34px,7vw,52px);letter-spacing:-1px;line-height:1.05}
+  .sub{color:var(--mut);margin-top:8px}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-top:22px;position:relative;overflow:hidden}
+  .box::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:var(--rainbow)}
+  input{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:14px;font:inherit;font-size:16px;outline:none}
+  input:focus{border-color:#6b4fa0}
+  .tipos{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .tipos button,.qs button{font:inherit;font-weight:800;border-radius:11px;padding:10px 16px;cursor:pointer;color:var(--mut);background:var(--card2);border:1px solid var(--line)}
+  .tipos button.on,.qs button.on{color:#fff;background:#2a2340;border-color:#6b4fa0}
+  .qs{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  .qs button{padding:7px 12px;font-size:14px}
+  .go{width:100%;margin-top:16px;border:0;border-radius:12px;padding:15px;font:inherit;font-weight:900;font-size:17px;color:#fff;background:var(--rainbow);cursor:pointer}
+  .go:disabled{opacity:.5;cursor:default}
+  .status{margin-top:14px;font-size:14px;color:var(--mut);display:flex;align-items:center;gap:8px}
+  .dot{width:9px;height:9px;border-radius:50%;background:#777}
+  .dot.on{background:#2ecc71;box-shadow:0 0 8px #2ecc71}.dot.acorda{background:#f1c40f;animation:pis 1s infinite}
+  @keyframes pis{50%{opacity:.3}}
+  .res{display:flex;gap:14px;align-items:center;margin-top:18px}
+  .res img{width:120px;aspect-ratio:16/9;object-fit:cover;border-radius:10px;background:#000;flex:none}
+  .res .t{font-weight:800;overflow-wrap:anywhere}
+  .res .m{font-size:13px;color:var(--mut)}
+  .bar{height:10px;border-radius:99px;background:var(--bg);overflow:hidden;margin-top:12px}
+  .bar i{display:block;height:100%;width:0;background:var(--rainbow);transition:width .4s}
+  .fase{font-size:14px;color:var(--mut);margin-top:6px}
+  .err{color:#ff6b6b;font-size:14px;margin-top:10px;min-height:20px}
+  .dl{display:inline-block;margin-top:14px;text-decoration:none;color:#fff;font-weight:900;border-radius:12px;padding:13px 20px;background:var(--rainbow)}
+  .dica{font-size:13px;color:var(--mut);margin-top:22px;line-height:1.6}
+  [hidden]{display:none!important}
+
+/* ===== cores LGBT animadas (o arco-íris anda devagar em tudo que usa --rainbow) ===== */
+@property --rbx{syntax:'<percentage>';inherits:true;initial-value:0%}
+:root{--rainbow:repeating-linear-gradient(90deg,#e40303 calc(var(--rbx,0%) - 100%),#ff8c00 calc(var(--rbx,0%) - 83.33%),#ffed00 calc(var(--rbx,0%) - 66.67%),#00a83a calc(var(--rbx,0%) - 50%),#2a6bff calc(var(--rbx,0%) - 33.33%),#9b2bc2 calc(var(--rbx,0%) - 16.67%),#e40303 var(--rbx,0%));animation:rbx 9s steps(90) infinite}
+@keyframes rbx{to{--rbx:100%}}
+@media (prefers-reduced-motion:reduce){:root{animation:none}}
+</style>
+</head>
+<body>
+<div class="flag"></div>
+<nav class="snav"><a class="snav-logo" href="/" aria-label="Simas, voltar pra home"><b style="color:#e40303">S</b><b style="color:#ff8c00">i</b><b style="color:#ffed00">m</b><b style="color:#00c13a">a</b><b style="color:#2a6bff">s</b></a><div class="snav-links"><a href="/">🏠 Home</a><a href="/simastelas/">📺 SimasTelas</a><a href="/simasfitness/">💪 Fitness</a><a href="/simastok/">🎬 SimasTok</a><a href="/jogos/">🎮 Jogos</a><a href="/conversimas/" class="on">🔄 ConverSimas</a><a href="/sugestoes/">💡 Sugestões</a></div></nav>
+<style>
+.snav{flex:none;position:relative;z-index:70;display:flex;align-items:center;gap:14px;height:44px;padding:0 14px;background:#0d0c12;border-bottom:1px solid #2a2733;font:600 14px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#f3f1f7;box-sizing:border-box}
+.snav *{box-sizing:border-box;margin:0}
+.snav a{color:inherit;text-decoration:none}
+.snav-logo{font-weight:900;font-size:20px;letter-spacing:-.3px}
+.snav-logo b{font-weight:900}
+.snav-links{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+.snav-links a{padding:7px 11px;border-radius:9px;color:#9a95a8;white-space:nowrap}
+.snav-links a:hover{background:#17151f;color:#f3f1f7}
+.snav-links a.on{background:#1e1b28;color:#f3f1f7;box-shadow:inset 0 -2px 0 #9b2bc2}
+@media(max-width:520px){.snav{gap:8px;padding:0 8px}.snav-logo{font-size:18px}.snav-links a{padding:7px 8px;font-size:13px}}
+</style>
+<div class="wrap">
+  <h1><span class="grad">ConverSimas</span></h1>
+  <p class="sub">cola o link do youtube, tiktok ou insta e baixa em MP4 ou MP3. simples assim porra</p>
+
+  <div class="box">
+    <input id="url" type="url" inputmode="url" placeholder="cola o link aqui" autocomplete="off">
+    <div class="tipos" id="tipos"><button data-t="mp4" class="on">🎬 MP4 (vídeo)</button><button data-t="mp3">🎵 MP3 (só o áudio)</button></div>
+    <div class="qs" id="qs"><button data-q="1080" class="on">1080p</button><button data-q="720">720p</button><button data-q="480">480p</button><button data-q="360">360p</button></div>
+    <button class="go" id="go">converter</button>
+    <div class="status"><span class="dot" id="dot"></span><span id="stTxt">vendo se o servidor ta acordado…</span></div>
+    <div id="job" hidden>
+      <div class="res"><img id="thumb" alt=""><div><div class="t" id="titulo">…</div><div class="m" id="meta"></div></div></div>
+      <div class="bar"><i id="barra"></i></div>
+      <div class="fase" id="fase"></div>
+      <a class="dl" id="dl" hidden>⬇️ baixar</a>
+    </div>
+    <div class="err" id="err"></div>
+  </div>
+
+  <p class="dica">• o servidor é de graça e dorme quando ninguem usa: a 1ª conversao pode demorar ~1 min pra ele acordar<br>
+  • video de ate 15 min, 25 conversoes por pessoa por dia<br>
+  • youtube às vezes bloqueia o servidor (acha que é robo). se der erro, tenta de novo depois<br>
+  • insta privado e story nao vai</p>
+</div>
+
+<script>
+const API = 'https://conversimas.onrender.com';
+const $ = id => document.getElementById(id);
+let tipo = 'mp4', q = 1080, acordado = false;
+document.querySelectorAll('#tipos button').forEach(b => b.onclick = () => { tipo = b.dataset.t; document.querySelectorAll('#tipos button').forEach(x => x.classList.toggle('on', x === b)); $('qs').hidden = tipo === 'mp3'; });
+document.querySelectorAll('#qs button').forEach(b => b.onclick = () => { q = +b.dataset.q; document.querySelectorAll('#qs button').forEach(x => x.classList.toggle('on', x === b)); });
+const st = (cls, t) => { $('dot').className = 'dot ' + cls; $('stTxt').textContent = t; };
+const mb = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.round(n / 1024) + ' KB';
+const tempo = s => s ? Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0') : '';
+
+// acorda o servidor assim que a página abre
+async function acorda() {
+  st('acorda', 'acordando o servidor (ate 1 min na primeira vez)…');
+  for (let i = 0; i < 30 && !acordado; i++) {
+    try { const r = await fetch(API + '/health', { cache: 'no-store' }); if (r.ok) { acordado = true; st('on', 'servidor acordado ✔'); return; } } catch (e) {}
+    await new Promise(r => setTimeout(r, 4000));
+  }
+  if (!acordado) st('', 'o servidor nao respondeu. tenta recarregar a pagina');
+}
+acorda();
+
+$('url').addEventListener('keydown', e => { if (e.key === 'Enter') $('go').click(); });
+$('go').onclick = async () => {
+  const url = $('url').value.trim(); $('err').textContent = '';
+  if (!/^https?:\/\//.test(url)) { $('err').textContent = 'cola um link de verdade porra'; return; }
+  $('go').disabled = true; $('job').hidden = false; $('dl').hidden = true; $('barra').style.width = '0';
+  $('titulo').textContent = 'pegando as info…'; $('meta').textContent = ''; $('thumb').removeAttribute('src'); $('fase').textContent = acordado ? '' : 'esperando o servidor acordar…';
+  try {
+    while (!acordado) await new Promise(r => setTimeout(r, 1000));
+    const r = await fetch(API + '/job', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, tipo, q }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.detail || 'deu ruim (' + r.status + ')');
+    await acompanha(d.id);
+  } catch (e) { $('err').textContent = e.message; $('fase').textContent = ''; }
+  $('go').disabled = false;
+};
+async function acompanha(id) {
+  const fases = { fila: 'na fila…', baixando: 'baixando…', convertendo: 'convertendo…', pronto: 'pronto 🔥' };
+  for (;;) {
+    await new Promise(r => setTimeout(r, 1200));
+    const r = await fetch(API + '/job/' + id, { cache: 'no-store' });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.detail || 'perdi a conversao, tenta de novo');
+    if (j.titulo) $('titulo').textContent = j.titulo;
+    if (j.thumb && !$('thumb').src) $('thumb').src = j.thumb;
+    $('meta').textContent = [tempo(j.dur), tipo.toUpperCase() + (tipo === 'mp4' ? ' ' + q + 'p' : ''), j.tamanho ? mb(j.tamanho) : ''].filter(Boolean).join(' · ');
+    $('barra').style.width = (j.pct || 0) + '%';
+    $('fase').textContent = (fases[j.fase] || j.fase) + (j.fase === 'baixando' ? ' ' + Math.round(j.pct || 0) + '%' : '');
+    if (j.fase === 'erro') throw new Error(j.erro || 'deu erro');
+    if (j.fase === 'pronto') {
+      const a = $('dl'); a.href = API + '/job/' + id + '/arquivo'; a.download = j.nome || ''; a.hidden = false;
+      a.textContent = '⬇️ baixar ' + (j.nome || '');
+      a.click();
+      return;
+    }
+  }
+}
+</script>
+</body>
+</html>
