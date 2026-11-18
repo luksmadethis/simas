@@ -226,6 +226,11 @@ $('muteBtn').onclick = () => { mudo = !mudo; try { localStorage.setItem('simasto
 updMute();
 // navegador não deixa começar com som; no primeiro toque na tela o som liga sozinho (se a pessoa não tiver mutado de propósito)
 let mutouDeProposito = false; try { mutouDeProposito = localStorage.getItem('simastok-som') === '0'; } catch (e) {}
+// teclado de PC com tecla de volume: aumentou o volume, liga o som (no celular o navegador não avisa o site)
+document.addEventListener('keydown', e => {
+  if (e.key === 'AudioVolumeUp' && mudo) { mudo = false; try { localStorage.setItem('simastok-som', '1'); } catch (er) {} updMute(); if (atual) atual.video.play().catch(() => {}); }
+  if (e.key === 'AudioVolumeMute') { mudo = !mudo; updMute(); }
+});
 document.addEventListener('pointerdown', function primeiro(e) {
   document.removeEventListener('pointerdown', primeiro, true);
   if (mudo && !mutouDeProposito && !e.target.closest('#muteBtn')) { mudo = false; updMute(); if (atual) atual.video.play().catch(() => {}); }
