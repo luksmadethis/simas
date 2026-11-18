@@ -55,19 +55,87 @@
 </head>
 <body>
 <div class="flag"></div>
-<nav class="snav"><a class="snav-logo" href="/" aria-label="Simas, voltar pra home"><b style="color:#e40303">S</b><b style="color:#ff8c00">i</b><b style="color:#ffed00">m</b><b style="color:#00c13a">a</b><b style="color:#2a6bff">s</b></a><div class="snav-links"><a href="/">🏠 Home</a><a href="/simastelas/">📺 SimasTelas</a><a href="/simasfitness/">💪 Fitness</a><a href="/simastok/">🎬 SimasTok</a><a href="/jogos/">🎮 Jogos</a><a href="/conversimas/" class="on">🔄 ConverSimas</a><a href="/sugestoes/">💡 Sugestões</a></div></nav>
+<!--SNAV: menu padrão de todas as páginas. NÃO editar aqui na página: edita scripts/nav.html e roda python3 scripts/aplicar-nav.py -->
 <style>
-.snav{flex:none;position:relative;z-index:70;display:flex;align-items:center;gap:14px;height:44px;padding:0 14px;background:#0d0c12;border-bottom:1px solid #2a2733;font:600 14px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#f3f1f7;box-sizing:border-box}
-.snav *{box-sizing:border-box;margin:0}
-.snav a{color:inherit;text-decoration:none}
-.snav-logo{font-weight:900;font-size:20px;letter-spacing:-.3px}
-.snav-logo b{font-weight:900}
-.snav-links{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
-.snav-links a{padding:7px 11px;border-radius:9px;color:#9a95a8;white-space:nowrap}
-.snav-links a:hover{background:#17151f;color:#f3f1f7}
-.snav-links a.on{background:#1e1b28;color:#f3f1f7;box-shadow:inset 0 -2px 0 #9b2bc2}
-@media(max-width:520px){.snav{gap:8px;padding:0 8px}.snav-logo{font-size:18px}.snav-links a{padding:7px 8px;font-size:13px}}
+@view-transition{navigation:auto}
+::view-transition-old(root),::view-transition-new(root){animation-duration:.22s}
+.sbar{position:sticky;top:0;z-index:70;flex:none;height:58px;display:flex;align-items:center;gap:10px;padding:0 14px;background:rgba(13,12,18,.88);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid #2a2733;font:700 14.5px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#f3f1f7;box-sizing:border-box}
+.sbar *,.sb-gaveta *{box-sizing:border-box;margin:0}
+.sbar a,.sb-gaveta a{color:inherit;text-decoration:none;-webkit-tap-highlight-color:transparent}
+.sbar::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--rainbow,linear-gradient(90deg,#e40303,#ff8c00,#ffed00,#00a83a,#2a6bff,#9b2bc2));opacity:.85}
+.sb-logo{display:flex;align-items:center;height:42px;padding:0 8px;border-radius:12px;font-weight:900;font-size:23px;letter-spacing:-.4px;transition:transform .15s}
+.sb-logo:hover{transform:scale(1.05)}
+.sb-logo b{font-weight:900}
+.sb-links{display:flex;gap:4px;margin-left:auto}
+.sb-links a{display:flex;align-items:center;gap:7px;height:42px;padding:0 14px;border-radius:12px;color:#b5b0c4;white-space:nowrap;transition:background .15s,color .15s,transform .15s;position:relative}
+.sb-links a .i{font-size:17px;line-height:1}
+.sb-links a:hover{background:#1e1b28;color:#fff;transform:translateY(-1px)}
+.sb-links a.on{background:#241f33;color:#fff;box-shadow:inset 0 0 0 1px #4d3d72}
+.sb-links a.on::after{content:"";position:absolute;left:14px;right:14px;bottom:5px;height:3px;border-radius:3px;background:var(--rainbow,linear-gradient(90deg,#e40303,#ff8c00,#ffed00,#00a83a,#2a6bff,#9b2bc2))}
+.sb-cur,.sb-btn{display:none}
+.sb-gaveta{position:fixed;inset:58px 0 0 0;z-index:69;display:none}
+.sb-gaveta .fundo{position:absolute;inset:0;background:rgba(0,0,0,.55);opacity:0;transition:opacity .2s}
+.sb-gaveta .grade{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px;background:#0f0e15;border-bottom:1px solid #2a2733;transform:translateY(-12px);opacity:0;transition:transform .22s,opacity .22s;font:700 15px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#f3f1f7}
+.sb-gaveta .grade a{display:flex;flex-direction:column;gap:8px;padding:16px 14px;border-radius:16px;background:#17151f;border:1px solid #2a2733;min-height:84px;transition:background .15s}
+.sb-gaveta .grade a .i{font-size:26px;line-height:1}
+.sb-gaveta .grade a.on{background:#241f33;border-color:#6b4fa0}
+.sb-gaveta .grade a:active{background:#241f33}
+.sb-gaveta.aberta{display:block}
+.sb-gaveta.mostra .fundo{opacity:1}
+.sb-gaveta.mostra .grade{transform:none;opacity:1}
+@media(max-width:940px){
+  .sb-links{display:none}
+  .sb-cur{display:flex;align-items:center;gap:7px;margin-left:4px;color:#b5b0c4;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sb-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin-left:auto;height:42px;padding:0 14px;border-radius:12px;border:1px solid #2a2733;background:#17151f;color:#fff;font:800 14.5px/1 system-ui,sans-serif;cursor:pointer}
+  .sb-btn .ham{width:18px;height:12px;position:relative}
+  .sb-btn .ham i{position:absolute;left:0;right:0;height:2px;border-radius:2px;background:#fff;transition:transform .2s,opacity .2s}
+  .sb-btn .ham i:nth-child(1){top:0}.sb-btn .ham i:nth-child(2){top:5px}.sb-btn .ham i:nth-child(3){top:10px}
+  .sb-btn.x .ham i:nth-child(1){transform:translateY(5px) rotate(45deg)}
+  .sb-btn.x .ham i:nth-child(2){opacity:0}
+  .sb-btn.x .ham i:nth-child(3){transform:translateY(-5px) rotate(-45deg)}
+}
+@media(max-width:380px){.sb-cur{display:none}}
+@media (prefers-reduced-motion:reduce){.sb-gaveta .grade,.sb-gaveta .fundo{transition:none}::view-transition-old(root),::view-transition-new(root){animation:none}}
 </style>
+<nav class="sbar" aria-label="Menu do Simas">
+  <a class="sb-logo" href="/" aria-label="Simas, voltar pra home"><b style="color:#e40303">S</b><b style="color:#ff8c00">i</b><b style="color:#ffed00">m</b><b style="color:#00c13a">a</b><b style="color:#2a6bff">s</b></a>
+  <span class="sb-cur" id="sbCur"></span>
+  <div class="sb-links" id="sbLinks">
+    <a href="/"><span class="i">🏠</span>Home</a>
+    <a href="/simastelas/"><span class="i">📺</span>SimasTelas</a>
+    <a href="/simastok/"><span class="i">🎬</span>SimasTok</a>
+    <a href="/jogos/"><span class="i">🎮</span>Jogos</a>
+    <a href="/simasfitness/"><span class="i">💪</span>Fitness</a>
+    <a href="/conversimas/"><span class="i">🔄</span>ConverSimas</a>
+    <a href="/sugestoes/"><span class="i">💡</span>Sugestões</a>
+  </div>
+  <button class="sb-btn" id="sbBtn" aria-expanded="false" aria-controls="sbGaveta"><span class="ham"><i></i><i></i><i></i></span>menu</button>
+</nav>
+<div class="sb-gaveta" id="sbGaveta"><div class="fundo"></div><div class="grade" id="sbGrade"></div></div>
+<script>
+(() => {
+  const links = [...document.querySelectorAll('#sbLinks a')], p = location.pathname.replace(/^\/v\//, '/simastok/');
+  let atual = null;
+  for (const a of links) { const h = a.getAttribute('href'); if (h === '/' ? p === '/' : p.startsWith(h)) { a.classList.add('on'); atual = a; } }
+  if (atual) document.getElementById('sbCur').innerHTML = atual.innerHTML;
+  const grade = document.getElementById('sbGrade');
+  for (const a of links) { const c = a.cloneNode(true); grade.appendChild(c); }
+  const gav = document.getElementById('sbGaveta'), btn = document.getElementById('sbBtn');
+  const abre = sim => {
+    btn.classList.toggle('x', sim); btn.setAttribute('aria-expanded', sim);
+    if (sim) { gav.classList.add('aberta'); requestAnimationFrame(() => requestAnimationFrame(() => gav.classList.add('mostra'))); }
+    else { gav.classList.remove('mostra'); setTimeout(() => { if (!gav.classList.contains('mostra')) gav.classList.remove('aberta'); }, 230); }
+  };
+  btn.onclick = () => abre(!gav.classList.contains('aberta'));
+  gav.querySelector('.fundo').onclick = () => abre(false);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') abre(false); });
+  // carrega a página antes do clique (navegação mais rápida)
+  const feitos = new Set();
+  const pre = e => { const a = e.target.closest && e.target.closest('a[href^="/"]'); if (!a || feitos.has(a.href)) return; feitos.add(a.href); const l = document.createElement('link'); l.rel = 'prefetch'; l.href = a.href; document.head.appendChild(l); };
+  document.querySelectorAll('.sbar, .sb-gaveta').forEach(el => { el.addEventListener('pointerenter', pre, true); el.addEventListener('touchstart', pre, { passive: true, capture: true }); });
+})();
+</script>
+<!--/SNAV-->
 <div class="wrap">
   <h1><span class="grad">ConverSimas</span></h1>
   <p class="sub">cola o link do tiktok, insta ou X e baixa em MP4 ou MP3. simples assim porra</p>
