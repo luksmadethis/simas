@@ -285,6 +285,21 @@ const avatar = (nome, cls = 'av') => { const a = document.createElement('div'); 
 const toast = t => { const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 2200); };
 const quando = ts => { if (!ts || !ts.toDate) return 'agora'; const s = (Date.now() - ts.toDate()) / 1000; if (s < 60) return 'agora'; if (s < 3600) return Math.floor(s / 60) + ' min'; if (s < 86400) return Math.floor(s / 3600) + ' h'; return ts.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }); };
 const vurl = v => `https://res.cloudinary.com/${v.cloud}/video/upload/q_auto,vc_auto,w_720,c_limit/${v.pid}.mp4`;
+// vídeo pra baixar: o vídeo + o final do SimasTok colado no fim (igual o tiktok faz). O Cloudinary monta sozinho na 1ª vez que pedem.
+const OUTRO = 'simastok:outro-simastok';
+const outroUrl = v => `https://res.cloudinary.com/${v.cloud}/video/upload/w_720,h_1280,c_pad,b_black/l_video:${OUTRO},w_720,h_1280,c_pad,b_black,fl_splice/fl_layer_apply/q_auto,vc_h264,fl_attachment/${v.pid}.mp4`;
+const aquece = v => { try { fetch(outroUrl(v)).then(r => r.body && r.body.cancel()).catch(() => {}); } catch (e) {} };
+const duracao = src => new Promise(res => { const x = document.createElement('video'); x.preload = 'metadata'; x.muted = true; const t = setTimeout(() => res(0), 15000); x.onloadedmetadata = () => { clearTimeout(t); res(x.duration || 0); }; x.onerror = () => { clearTimeout(t); res(0); }; x.src = src + (src.includes('?') ? '&' : '?') + 'c=' + Date.now(); });
+async function baixarComFinal(v) {
+  const url = outroUrl(v), precisa = (v.dur || 0) + 2.5;
+  toast('preparando o video com o final do SimasTok…');
+  for (let i = 0; i < 20; i++) {
+    const d = await duracao(url);
+    if (d >= Math.max(3, precisa - 1)) { const a = document.createElement('a'); a.href = url; a.download = ''; document.body.appendChild(a); a.click(); a.remove(); toast('baixando ⬇️'); return; }
+    await new Promise(r => setTimeout(r, 4000));
+  }
+  toast('demorou demais pra montar, tenta de novo daqui a pouco');
+}
 const purl = v => `https://res.cloudinary.com/${v.cloud}/video/upload/so_0,w_480,c_limit/${v.pid}.jpg`;
 
 let uid = null, admin = false, aprovadores = [], vids = [], items = new Map(), atual = null;
@@ -429,7 +444,7 @@ function criar(v) {
   mais.onclick = () => {
     const old = el.querySelector('.menu'); if (old) { old.remove(); return; }
     const m = document.createElement('div'); m.className = 'menu';
-    const b1 = document.createElement('button'); b1.textContent = '⬇️ baixar'; b1.onclick = () => { window.open(`https://res.cloudinary.com/${it.v.cloud}/video/upload/fl_attachment/${it.v.pid}.mp4`, '_blank'); m.remove(); };
+    const b1 = document.createElement('button'); b1.textContent = '⬇️ baixar'; b1.onclick = () => { m.remove(); baixarComFinal(it.v); };
     m.appendChild(b1);
     if (podeApagar(it.v)) { const b2 = document.createElement('button'); b2.textContent = '🗑️ apagar'; b2.onclick = () => { m.remove(); if (confirm('apagar esse video?')) db.doc('tok/' + it.v.id).delete().then(() => toast('apagado')).catch(() => toast('sem permissao')); }; m.appendChild(b2); }
     el.appendChild(m); setTimeout(() => document.addEventListener('click', function f(e) { if (!m.contains(e.target)) { m.remove(); document.removeEventListener('click', f); } }), 0);
@@ -498,6 +513,7 @@ function ativar(it) {
   it.video.muted = mudo; it.video.currentTime = 0;
   it.video.play().catch(() => { it.video.muted = true; mudo = true; updMute(); it.video.play().catch(() => it.el.classList.add('paused')); });
   carregarPerto();
+  aquece(it.v);   // já deixa o vídeo com final pronto caso alguém baixe
   history.replaceState(null, '', '/v/' + it.v.id + '/');
 }
 // só baixa o vídeo atual e o próximo (economiza internet e a cota grátis)
@@ -556,6 +572,7 @@ $('sendBtn').onclick = () => {
     let r = {}; try { r = JSON.parse(xhr.responseText); } catch (e) {}
     if (xhr.status !== 200 || !r.public_id) { fim('o upload deu ruim: ' + ((r.error && r.error.message) || xhr.status)); return; }
     try {
+      aquece({ cloud: CLOUD, pid: r.public_id });
       await db.collection('tok').add({ autor: uid, nome, legenda, cloud: CLOUD, pid: r.public_id, dur: Math.round(r.duration || 0), w: r.width || 0, h: r.height || 0, likes: [], coms: 0, t: FV.serverTimestamp() });
       $('mUp').hidden = true; $('cap').value = ''; $('file').value = ''; arquivo = null; $('pickTxt').textContent = '📹 escolhe o video (ate 100 MB)'; $('bar').hidden = true; $('bar').firstChild.style.width = '0';
       fim(); toast('postado 🔥'); $('feed').scrollTo({ top: 0 });
