@@ -7,6 +7,9 @@
 <meta name="description" content="pula os galho, desvia dos missil e pega o dinheiro. o jogo do Galado.">
 <meta property="og:title" content="Galado Pula 🐔">
 <meta property="og:description" content="pula os galho, desvia dos missil e pega o dinheiro">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
 html,body{margin:0;height:100%;background:#0d0c12;color:#f3f1f7;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 body{display:flex;flex-direction:column;overscroll-behavior:none}
@@ -26,6 +29,31 @@ h1{margin:0;font-size:26px;font-weight:900;background:linear-gradient(90deg,#e40
 #palco{position:relative;width:100%;max-width:960px}
 canvas{display:block;width:100%;height:auto;border-radius:16px;background:#14121c;touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .dica{opacity:.6;font-size:14px;text-align:center;margin:0}
+#nomeBox{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(13,12,18,.82);border-radius:16px;z-index:5}
+#nomeBox[hidden]{display:none}
+.cartao{background:#17151f;border:1px solid #2a2733;border-radius:16px;padding:18px 20px;width:min(340px,86%);text-align:center}
+.cartao h2{margin:0 0 4px;font-size:20px}
+.cartao p{margin:0 0 12px;color:#9a95a8;font-size:13.5px}
+.cartao input{width:100%;box-sizing:border-box;background:#0d0c12;border:1px solid #3a3450;color:#fff;border-radius:11px;padding:11px 12px;font-size:17px;text-align:center;outline:none}
+.cartao input:focus{border-color:#ff8c00}
+.cartao .bts{display:flex;gap:8px;margin-top:12px}
+.cartao button{flex:1;border:0;border-radius:11px;padding:11px;font-weight:800;font-size:15px;cursor:pointer}
+#nomeOk{background:linear-gradient(90deg,#ff8c00,#e40303);color:#fff}
+#nomePula{background:#262236;color:#bbb}
+#baixo{width:100%;max-width:960px;display:grid;grid-template-columns:1fr 1.3fr;gap:12px}
+@media(max-width:640px){#baixo{grid-template-columns:1fr}}
+.painel{background:#17151f;border:1px solid #2a2733;border-radius:14px;padding:12px 14px}
+.painel h3{margin:0 0 8px;font-size:15px;letter-spacing:.5px}
+#eu{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;color:#b5b0c2}
+#eu b{color:#fff}
+#trocar{background:#262236;border:1px solid #3a3450;color:#fff;border-radius:9px;padding:6px 10px;cursor:pointer;font-size:13px}
+#top{list-style:none;margin:0;padding:0;counter-reset:n}
+#top li{display:flex;justify-content:space-between;padding:6px 8px;border-radius:9px;font-size:15px}
+#top li:nth-child(odd){background:#1c1a26}
+#top li.meu{outline:1px solid #ff8c00}
+#top .pos{width:26px;display:inline-block}
+#top .p{font-family:ui-monospace,Consolas,monospace;font-weight:700}
+#top .vazio{color:#777;justify-content:center}
 #som{position:absolute;top:10px;left:10px;background:#0d0c12aa;border:1px solid #2a2733;color:#fff;border-radius:10px;padding:6px 9px;font-size:16px;cursor:pointer}
 /* ===== cores LGBT animadas (o arco-íris anda devagar em tudo que usa --rainbow) ===== */
 @property --rbx{syntax:'<percentage>';inherits:true;initial-value:0%}
@@ -45,6 +73,24 @@ canvas{display:block;width:100%;height:auto;border-radius:16px;background:#14121
   <div id="palco">
     <canvas id="c" width="900" height="300"></canvas>
     <button id="som" title="som">🔊</button>
+    <div id="nomeBox" hidden>
+      <form class="cartao" id="nomeForm">
+        <h2>qual teu nome, galado? 🐔</h2>
+        <p>vai aparecer no TOP 5 se tu prestar pra alguma coisa</p>
+        <input id="nomeIn" maxlength="20" autocomplete="nickname" placeholder="teu nome aqui porra">
+        <div class="bts"><button type="button" id="nomePula">jogar sem nome</button><button type="submit" id="nomeOk">BORA</button></div>
+      </form>
+    </div>
+  </div>
+  <div id="baixo">
+    <div class="painel">
+      <h3>🐔 TU</h3>
+      <div id="eu"><span id="euTxt">jogando sem nome (nao entra no ranking)</span><button id="trocar">✏️ nome</button></div>
+    </div>
+    <div class="painel">
+      <h3>🏆 TOP 5 DA GALERA</h3>
+      <ol id="top"><li class="vazio">carregando...</li></ol>
+    </div>
   </div>
   <p class="dica">ESPAÇO / ↑ / clique / toque pra pular · pula os GALHO, fica no chão quando vier MISSIL · pega os R$500</p>
 </main>
@@ -65,6 +111,69 @@ const DINHEIRO_1O = 30;                          // primeiro pacote não antes d
 const c = document.getElementById('c'), x = c.getContext('2d');
 const ls = { get(k){ try { return localStorage.getItem(k) } catch(e){ return null } },
              set(k,v){ try { localStorage.setItem(k,v) } catch(e){} } };
+
+// ================== NOME + RANKING (Firestore, coleção galado/{uid}) ==================
+const temFB = typeof firebase !== 'undefined';   // se o firebase não carregar, o jogo roda igual, só sem ranking
+if (temFB) firebase.initializeApp({
+  apiKey: "AIzaSyA0G_qSK5eEVzGnLskGS8leXCwC7XNzK0A",
+  authDomain: "simasfitness2.firebaseapp.com",
+  projectId: "simasfitness2",
+  storageBucket: "simasfitness2.firebasestorage.app",
+  messagingSenderId: "1068623437415",
+  appId: "1:1068623437415:web:63ccdb065e991452563ec2"
+});
+const auth = temFB ? firebase.auth() : null, db = temFB ? firebase.firestore() : null;
+let uid = null, nome = (ls.get('galado-nome') || '').trim(), melhorNuvem = 0;
+const $ = id => document.getElementById(id);
+const esc = t => String(t).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+const nomeBox = $('nomeBox'), nomeIn = $('nomeIn');
+const modalAberto = () => !nomeBox.hidden;
+
+function abreNome() { nomeIn.value = nome; nomeBox.hidden = false; setTimeout(() => nomeIn.focus(), 50); }
+function fechaNome() { nomeBox.hidden = true; mostraEu(); }
+$('nomeForm').onsubmit = e => {
+  e.preventDefault();
+  const n = nomeIn.value.replace(/\s+/g, ' ').trim().slice(0, 20);
+  if (!n) { nomeIn.focus(); return; }
+  const mudou = n !== nome;
+  nome = n; ls.set('galado-nome', nome); fechaNome();
+  if (mudou && uid && melhorNuvem > 0) salvaPontos(melhorNuvem, true);   // atualiza o nome no ranking
+};
+$('nomePula').onclick = () => { nome = ''; ls.set('galado-nome', ''); fechaNome(); };
+$('trocar').onclick = e => { e.stopPropagation(); if (estado !== 'jogando') abreNome(); };
+function mostraEu() {
+  $('euTxt').innerHTML = nome
+    ? 'jogando como <b>' + esc(nome) + '</b>' + (melhorNuvem ? ' · teu melhor no ranking: <b>' + melhorNuvem + '</b>' : '')
+    : 'jogando sem nome (nao entra no ranking)';
+}
+
+function salvaPontos(p, forcar) {
+  if (!uid || !nome) return;
+  p = Math.floor(p);
+  if (!forcar && p <= melhorNuvem) return;
+  const novo = Math.max(p, melhorNuvem);
+  db.collection('galado').doc(uid).set({ nome, pts: novo, t: firebase.firestore.FieldValue.serverTimestamp() })
+    .then(() => { melhorNuvem = novo; mostraEu(); })
+    .catch(e => console.warn('ranking:', e));
+}
+
+if (!temFB) setTimeout(() => { $('top').innerHTML = '<li class="vazio">ranking fora do ar agora</li>'; });
+else auth.onAuthStateChanged(async u => {
+  if (!u) { try { await auth.signInAnonymously(); } catch (e) { $('top').innerHTML = '<li class="vazio">deu pau pra conectar no ranking</li>'; } return; }
+  uid = u.uid;
+  try {
+    const d = await db.collection('galado').doc(uid).get();
+    if (d.exists) { melhorNuvem = d.data().pts || 0; if (melhorNuvem > recorde) { recorde = melhorNuvem; ls.set('galado-recorde', recorde); } }
+  } catch (e) {}
+  // se já tinha recorde local com nome, manda pro ranking
+  if (nome && recorde > melhorNuvem) salvaPontos(recorde);
+  mostraEu();
+  db.collection('galado').orderBy('pts', 'desc').limit(5).onSnapshot(q => {
+    const li = [];
+    q.forEach(d => { const r = d.data(); li.push('<li class="' + (d.id === uid ? 'meu' : '') + '"><span><span class="pos">' + ['🥇','🥈','🥉','4º','5º'][li.length] + '</span>' + esc(r.nome) + '</span><span class="p">' + r.pts + '</span></li>'); });
+    $('top').innerHTML = li.join('') || '<li class="vazio">ninguem jogou ainda, bora ser o primeiro</li>';
+  }, () => { $('top').innerHTML = '<li class="vazio">nao deu pra carregar o ranking</li>'; });
+});
 
 // ================== SOM ==================
 let somOn = ls.get('galado-som') !== '0', ac = null;
@@ -102,12 +211,14 @@ zera();
 
 // ================== CONTROLE ==================
 function apertou() {
+  if (modalAberto()) return;
   if (estado === 'inicio') { estado = 'jogando'; zera(); pular(); return; }
   if (estado === 'morto') { if (performance.now() - mortoEm > 600) { estado = 'jogando'; zera(); } return; }
   pular();
 }
 function pular() { if (alt === 0 && vy === 0) { vy = PULO; somPulo(); } }
 addEventListener('keydown', e => {
+  if (modalAberto() || e.target.tagName === 'INPUT') return;
   if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') { e.preventDefault(); if (!e.repeat) apertou(); }
 });
 c.addEventListener('pointerdown', e => { e.preventDefault(); apertou(); });
@@ -202,6 +313,7 @@ function morre() {
   estado = 'morto'; mortoEm = performance.now(); somMorre();
   if (Math.floor(pts) > recorde) { recorde = Math.floor(pts); ls.set('galado-recorde', recorde); novoRecorde = true; }
   else novoRecorde = false;
+  salvaPontos(pts);
 }
 let novoRecorde = false;
 
@@ -305,12 +417,29 @@ function placar() {
   if (!(piscaMil > 0 && Math.floor(piscaMil / 8) % 2)) { x.fillStyle = '#f3f1f7'; x.fillText(p, W - 20, 32); }
   x.textAlign = 'left';
 }
-function texto(t1, t2, t) {
+function texto(t1, t2, t, cx = W / 2) {
   x.textAlign = 'center';
-  x.fillStyle = 'rgba(13,12,18,.6)'; x.fillRect(W / 2 - 230, 78, 460, 92);
-  x.fillStyle = '#ffed00'; x.font = '900 30px system-ui'; x.fillText(t1, W / 2, 118);
-  if (Math.floor(t / 500) % 2 === 0 || estado === 'morto') { x.fillStyle = '#ddd'; x.font = '600 16px system-ui'; x.fillText(t2, W / 2, 150); }
+  x.fillStyle = 'rgba(13,12,18,.6)'; x.fillRect(cx - 220, 78, 440, 92);
+  x.fillStyle = '#ffed00'; x.font = '900 28px system-ui'; x.fillText(t1, cx, 118);
+  if (Math.floor(t / 500) % 2 === 0 || estado === 'morto') { x.fillStyle = '#ddd'; x.font = '600 15px system-ui'; x.fillText(t2, cx, 150); }
   x.textAlign = 'left';
+}
+
+function balao(txt, bx, by, idade) {
+  const k = Math.min(1, idade / 180);             // aparece crescendo
+  const tam = k < 1 ? k * (1.15 - .15 * k) : 1;
+  x.save(); x.translate(bx, by); x.scale(tam, tam);
+  x.font = '800 17px system-ui';
+  const w = x.measureText(txt).width + 26, h = 36, ox = 8, oy = -h - 22;
+  x.fillStyle = '#fff'; x.strokeStyle = '#111'; x.lineWidth = 2.5;
+  x.beginPath();
+  x.roundRect ? x.roundRect(ox, oy, w, h, 14) : x.rect(ox, oy, w, h);
+  x.fill(); x.stroke();
+  // rabinho apontando pro Galado
+  x.beginPath(); x.moveTo(ox + 18, oy + h); x.lineTo(0, 0); x.lineTo(ox + 34, oy + h); x.stroke();
+  x.beginPath(); x.moveTo(ox + 16, oy + h - 2); x.lineTo(0, 0); x.lineTo(ox + 36, oy + h - 2); x.closePath(); x.fill();
+  x.fillStyle = '#111'; x.textBaseline = 'middle'; x.fillText(txt, ox + 13, oy + h / 2 + 1);
+  x.restore();
 }
 
 // ================== LOOP ==================
@@ -328,12 +457,14 @@ function loop(t) {
   obst.forEach(o => o.tipo === 'galho' ? desenhaGalho(o) : desenhaMissil(o, t));
   const st = estado === 'morto' ? 'morto' : estado === 'inicio' ? 'parado' : (alt < 0 ? 'pular' : 'correr');
   drawGalado(x, 170, CHAO + alt, ESC, st, t);
+  if (estado === 'morto') balao('Paga nada primo', 196, CHAO - 112, performance.now() - mortoEm);
   efeitos.forEach(e => { x.globalAlpha = 1 - e.t / 70; x.fillStyle = '#5dff8a'; x.font = '900 22px system-ui'; x.fillText(e.txt, e.x, e.y); x.globalAlpha = 1; });
   placar();
   if (estado === 'inicio') texto('BORA GALADO CARALHO', 'aperta ESPAÇO ou toca na tela pra começar', t);
-  if (estado === 'morto') texto(novoRecorde ? 'RECORDE NOVO PORRA 🏆' : 'SE FODEU GALADO 💀', 'fez ' + Math.floor(pts) + ' ponto · espaço ou toque pra ir de novo', t);
+  if (estado === 'morto') texto(novoRecorde ? 'RECORDE NOVO PORRA 🏆' : 'SE FODEU GALADO 💀', 'fez ' + Math.floor(pts) + ' ponto · espaço ou toque pra ir de novo', t, 600);
   requestAnimationFrame(loop);
 }
+abreNome();
 requestAnimationFrame(loop);
 </script>
 </body>

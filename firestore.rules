@@ -144,5 +144,20 @@ service cloud.firestore {
         && request.resource.data.t == request.time;
       allow delete: if aprovador() || (signedIn() && resource.data.autor == request.auth.uid);
     }
+    // ===== Jogos: ranking do Galado Pula =====
+    // Um doc por jogador (uid do login anônimo). Pontuação só pode subir.
+    function galadoOk() {
+      return request.resource.data.keys().hasOnly(["nome", "pts", "t"])
+        && request.resource.data.nome is string && request.resource.data.nome.size() > 0 && request.resource.data.nome.size() <= 20
+        && request.resource.data.pts is int && request.resource.data.pts >= 0 && request.resource.data.pts <= 1000000
+        && request.resource.data.t == request.time;
+    }
+    match /galado/{uid} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.auth.uid == uid && galadoOk();
+      allow update: if signedIn() && request.auth.uid == uid && galadoOk()
+        && request.resource.data.pts >= resource.data.pts;
+      allow delete: if aprovador();
+    }
   }
 }

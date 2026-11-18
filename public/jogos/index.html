@@ -7,6 +7,9 @@
 <meta name="description" content="os joguinho da galera Simas">
 <meta property="og:title" content="Jogos do Simas 🎮">
 <meta property="og:description" content="os joguinho da galera, vem perder teu tempo">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
 html,body{margin:0;background:#0d0c12;color:#f3f1f7;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 .snav{flex:none;position:relative;z-index:70;display:flex;align-items:center;gap:14px;height:44px;padding:0 14px;background:#0d0c12;border-bottom:1px solid #2a2733;font:600 14px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#f3f1f7;box-sizing:border-box}
@@ -33,6 +36,11 @@ h1{margin:6px 0 4px;font-size:38px;font-weight:900}
 .info h3{margin:0 0 6px;font-size:21px}
 .info p{margin:0 0 12px;color:#b5b0c2;font-size:14.5px;line-height:1.45}
 .rec{font-size:13px;color:#9a95a8}
+.top5{margin:0 0 4px;padding:10px 12px;background:#0f0d16;border-radius:12px}
+.top5 b{display:block;font-size:12px;letter-spacing:1px;color:#9a95a8;margin-bottom:6px}
+.top5 ol{list-style:none;margin:0;padding:0}
+.top5 li{display:flex;justify-content:space-between;font-size:14px;padding:3px 0}
+.top5 li span:last-child{font-family:ui-monospace,Consolas,monospace;font-weight:700}
 .btn{display:inline-block;margin-top:10px;background:linear-gradient(90deg,#ff8c00,#e40303);color:#fff;font-weight:800;padding:9px 14px;border-radius:11px}
 .breve{opacity:.5;border-style:dashed;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-height:200px;text-align:center;padding:20px}
 /* ===== cores LGBT animadas (o arco-íris anda devagar em tudo que usa --rainbow) ===== */
@@ -59,6 +67,7 @@ h1{margin:6px 0 4px;font-size:38px;font-weight:900}
       <div class="info">
         <h3>🐔 Galado Pula</h3>
         <p>o Galado correndo q nem um desgraçado. pula os GALHO, fica quietinho no chão quando vier MISSIL e pega os pacote de R$500 q aparece de vez em nunca</p>
+        <div class="top5"><b>🏆 TOP 5</b><ol id="top"><li>carregando...</li></ol></div>
         <div class="rec" id="rec"></div>
         <span class="btn">jogar essa porra →</span>
       </div>
@@ -70,6 +79,28 @@ h1{margin:6px 0 4px;font-size:38px;font-weight:900}
 <script src="/jogos/galado-pula/galado.js?v=1"></script>
 <script>
 try { const r = localStorage.getItem('galado-recorde'); if (r) document.getElementById('rec').textContent = '🏆 teu recorde: ' + r; } catch (e) {}
+// top 5 do Galado Pula
+(function () {
+  const el = document.getElementById('top');
+  if (typeof firebase === 'undefined') { el.innerHTML = '<li>ranking fora do ar</li>'; return; }
+  firebase.initializeApp({
+    apiKey: "AIzaSyA0G_qSK5eEVzGnLskGS8leXCwC7XNzK0A",
+    authDomain: "simasfitness2.firebaseapp.com",
+    projectId: "simasfitness2",
+    storageBucket: "simasfitness2.firebasestorage.app",
+    messagingSenderId: "1068623437415",
+    appId: "1:1068623437415:web:63ccdb065e991452563ec2"
+  });
+  const esc = t => String(t).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  firebase.auth().onAuthStateChanged(u => {
+    if (!u) { firebase.auth().signInAnonymously().catch(() => el.innerHTML = '<li>ranking fora do ar</li>'); return; }
+    firebase.firestore().collection('galado').orderBy('pts', 'desc').limit(5).onSnapshot(q => {
+      const li = [];
+      q.forEach(d => { const r = d.data(); li.push('<li><span>' + ['🥇','🥈','🥉','4º','5º'][li.length] + ' ' + esc(r.nome) + '</span><span>' + r.pts + '</span></li>'); });
+      el.innerHTML = li.join('') || '<li>ninguem jogou ainda</li>';
+    }, () => el.innerHTML = '<li>ranking fora do ar</li>');
+  });
+})();
 const c = document.getElementById('prev'), x = c.getContext('2d');
 let off = 0;
 function loop(t) {

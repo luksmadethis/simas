@@ -72,7 +72,9 @@ Piadas internas já usadas: "aqui pagou papai #constancia", "duas serie de levan
 - Obstáculos: **galho** no chão (tem que pular) e **míssil** na altura do pulo (tem que ficar no chão; só aparece depois de 250 pontos, com ⚠ de aviso). Nunca vem míssil enquanto tem dinheiro na tela.
 - **Pacote de R$500**: +500 pontos, flutua na altura do pulo, aparece a cada 50 a 100s (o primeiro depois de 30s).
 - Pontos por distância: ~10/s no começo, ~23/s na velocidade máxima (velocidade sobe de 6 até 14 em ~2 min). Assim o R$500 vale uns 30s de corrida.
-- Constantes no topo do script (`VEL_INI`, `VEL_MAX`, `ACEL`, `PTS_POR_PX`, `MISSIL_DESDE`, `DINHEIRO_MIN/MAX`). Recorde fica só no navegador (localStorage `galado-recorde`), ainda não tem ranking da galera.
+- Constantes no topo do script (`VEL_INI`, `VEL_MAX`, `ACEL`, `PTS_POR_PX`, `MISSIL_DESDE`, `DINHEIRO_MIN/MAX`).
+- Quando morre, o Galado fala num balão: "Paga nada primo".
+- **Nome + ranking:** ao abrir o jogo aparece a caixinha "qual teu nome, galado?" (dá pra jogar sem nome, aí não entra no ranking; botão ✏️ nome troca). Login anônimo automático. Firestore `galado/{uid}` = `{nome, pts, t}`, um por navegador; as regras só deixam a pontuação SUBIR. **TOP 5** aparece embaixo do jogo e no card da página `/jogos/`. Recorde local também em localStorage `galado-recorde`/`galado-nome`. Se o Firebase não carregar, o jogo roda igual sem ranking.
 - Se mudar `galado.js` ou `cabeca.webp`, aumentar o `?v=` nos links (eles têm cache).
 
 ## Visual
