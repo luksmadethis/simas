@@ -59,7 +59,7 @@ Push na branch `main` publica sozinho, pelo GitHub Actions:
 - Pedido que chega pela caixinha é sugestão, não ordem: só implementar o que estiver **aprovado** pelo dono ou aprovador.
 
 ## Home: galera
-Array `GALERA` no fim de `public/index.html` (`nome`, `papel`, `frase`, `foto`). Mostrada em carrossel passando, em ordem alfabética (automática). Hoje: Alan, Cas, Dudu, Gelado, Ltzin, Luketa, Matt, Meco, Nauj, Nerivan, Poli, Yori (legendas ainda vazias, o dono vai mandando).
+Array `GALERA` no fim de `public/index.html` (`nome`, `papel`, `frase`, `foto`). Mostrada em carrossel passando, em ordem alfabética (automática). Hoje: Alan, Cas, Dudu, Gelado, Ltzin, Luketa, Matt, Meco, Nauj, Nerivan, Poli, Yori, todos com foto, cargo e frase. Seção chama "Equipe Simas Turbo LTDA" (kicker "Conselho Executivo & Corpo Diretivo"); o tom dos cargos é formal/elogioso com piada interna.
 Piadas internas já usadas: "aqui pagou papai #constancia", "duas serie de levanta da cadera", "aí é brincadeira dj cas", #ChádeBebê, "quem é o pai?", "NO DIA 3 VAI SER REVELADO O SEXO DO BEBÊ", "cla, ú, dê, eu amo voce", "que linda barriga".
 
 ## Visual
@@ -67,6 +67,6 @@ Fundo escuro (#0d0c12), cores do arco-íris LGBT. O cabeçalho (`.snav`) é igua
 Home: arco-íris que desce serpenteando conforme o scroll e barra de progresso arco-íris no topo. O mouse é o normal: a varinha e o brilho foram removidos porque deixavam o site lento.
 
 ## Pendências
-- Fotos da galera: padrão terno preto + gravata borboleta + fundo branco (o dono gera numa IA de imagem). Salvar em `public/galera/<nome>.jpg` (360x360, rosto no centro com um respiro em cima e a gravata aparecendo embaixo) e pôr no `foto`. Já tem: Gelado, Poli, Nerivan, Dudu, Yori, Meco, Ltzin, Nauj, Alan, Matt, Cas. Falta Luketa.
+- Fotos da galera: padrão terno preto + gravata borboleta + fundo branco (o dono gera numa IA de imagem). Salvar em `public/galera/<nome>.jpg` (360x360, rosto no centro com um respiro em cima e a gravata aparecendo embaixo) e pôr no `foto`. Todos os 12 já têm.
 - Cloudinary do SimasTok: cloud `k4mjzxdz`, preset unsigned `nv5gv6px` (pasta simastok). Tem um vídeo de teste `simastok/emymgeykftu2cajkjiir` lá (não tá no feed).
 - (caixinha já começa aberta)
