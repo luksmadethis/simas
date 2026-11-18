@@ -73,7 +73,7 @@ function atirar(dx, dy) {
   if (a.explode) { W.foguetes.push({ x: ox, y: oy, vx: Math.cos(ang) * a.vel, vy: Math.sin(ang) * a.vel, vida: a.alcance / a.vel, dono: j }); return; }
   for (let k = 0; k < a.bala; k++) {
     const aa = ang + rnd(-a.espalha, a.espalha);
-    W.balas.push({ x: ox, y: oy, vx: Math.cos(aa) * a.vel, vy: Math.sin(aa) * a.vel, vida: a.alcance / a.vel, dano: a.dano, dono: j });
+    const bl = { x: ox, y: oy, vx: Math.cos(aa) * a.vel, vy: Math.sin(aa) * a.vel, vida: a.alcance / a.vel, dano: a.dano, dono: j }; W.balas.push(bl); ONLINE.tiro(bl);
   }
   W.efeitos.push({ t: 'clarao', x: ox, y: oy, vida: 0.06, max: 0.06 });
   // tiro assusta todo mundo e chama a polícia se tiver perto
@@ -103,7 +103,7 @@ function atualizaBalas(dt) {
         if (b.vida > 0) for (const ch of W.chefes) if (ch.levaTiro && ch.levaTiro(b.x, b.y, b.dano)) { b.vida = 0; break; }
       } else {
         const alvo = j.carro || j, r = j.carro ? j.carro.l * 0.42 : 13;
-        if (dist(alvo.x, alvo.y, b.x, b.y) < r) { if (j.carro) danoCarro(j.carro, b.dano * 0.3); else ferirJogador(b.dano); b.vida = 0; }
+        if (dist(alvo.x, alvo.y, b.x, b.y) < r) { if (b.dono && b.dono.remoto) ONLINE.marcaAtacante(b.dono.remoto); if (j.carro) danoCarro(j.carro, b.dano * 0.3); else ferirJogador(b.dano); b.vida = 0; }
         else if (b.dono && b.dono.aliado === false) { /* nada */ }
       }
     }
@@ -439,7 +439,7 @@ function atualizaEfeitos(dt) {
 let TELA_FIM = null;
 function morreu(tipo) {
   const j = W.jog; if (j.morto) return;
-  j.morto = true; TELA_FIM = { tipo, t: 0 }; conta(tipo === 'preso' ? 'presos' : 'mortes');
+  j.morto = true; TELA_FIM = { tipo, t: 0 }; ONLINE.morri(); conta(tipo === 'preso' ? 'presos' : 'mortes');
   if (j.carro) { j.carro.motorista = null; j.carro = null; }
   SOM.falha(); SOM.atualizaMotor(0, false); RADIO.tocar(false);
   if (MISSAO.ativa) MISSAO.falhar(tipo === 'preso' ? 'tu foi PRESO' : 'tu MORREU');

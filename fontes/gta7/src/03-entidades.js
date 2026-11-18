@@ -270,6 +270,7 @@ function atualizaGangueMoto(dt) {
 
 function explodir(x, y, raio = 130, dano = 120, quem) {
   SOM.explosao(); tremer(14);
+  if (quem === W.jog) ONLINE.explosao(x, y, raio, dano);
   W.efeitos.push({ t: 'explosao', x, y, r: raio, vida: 0.7, max: 0.7 });
   W.manchas.push({ t: 'queimado', x, y, r: raio * 0.6 });
   for (const p of W.peds) { const d = dist(p.x, p.y, x, y); if (d < raio) feriPed(p, dano * (1 - d / raio), quem); }

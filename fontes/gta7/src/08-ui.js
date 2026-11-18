@@ -176,6 +176,7 @@ function desenharHUD(dt) {
   }
   // fôlego nadando
   if (j.nadando) { const w = 160; g.font = 'bold 11px system-ui'; g.textAlign = 'center'; textoContorno(g, '🫧 FÔLEGO', VW / 2, VH - (toque ? 270 : 130), '#bfe9ff', 3); barra(g, VW / 2 - w / 2, VH - (toque ? 264 : 124), w, 9, (j.folego ?? 100) / 100, j.folego < 25 ? '#e74c3c' : '#5dade2'); }
+  ONLINE.hud(g);
   desenharTrofeuAviso(g, dt);
   if (INTERIOR) desenharInterior(g, dt);
   if (MISSAO.dialogo) desenharDialogo(g, dt);
@@ -225,6 +226,7 @@ function desenharMini(g) {
   for (const c of W.carros) if (c.policia && c.ia && c.ia.tipo === 'policia') blip(c.x, c.y, c.modelo === 'gelado' ? '#ffd23f' : (W.tempo * 4 | 0) % 2 ? '#ff3b3b' : '#3b6bff', c.modelo === 'gelado' ? 6 : 3);
   for (const p of W.peds) if ((p.hostil || p.policia) && !p.morto) blip(p.x, p.y, '#ff3b3b', 2.5);
   for (const c of W.carros) if (c.gangue && c.hp > 0) blip(c.x, c.y, '#ff8c00', 3.5);
+  ONLINE.mini(blip);
   for (const l of LUGARES) { const p = LUGAR[l.k]; if (p) blip(p.x, p.y, 0, 0, l.ic); }
   for (const [k, ic] of [['cas', '🪑'], ['skate', '🛹'], ['yori', '🥭'], ['nauj', '🌿'], ['baile', '🔊'], ['gelado', '🕶️'], ['poli', '🎙️'], ['matheus', '🤖'], ['ltzin', '👑'], ['mirante', '⛰️']]) if (LUGAR[k]) blip(LUGAR[k].x, LUGAR[k].y, 0, 0, ic);
   for (const m of extrasDisponiveis()) { const p = lugarMissao(m); blip(p.x, p.y, '#00e5ff', 5); }
@@ -499,6 +501,7 @@ function montarToque() {
   bt('.b-rodas', () => { PRESS.k = true; });
   bt('.b-mapa', () => { PRESS.m = true; });
   bt('.b-pausa', () => { PRESS.escape = true; });
+  bt('.b-chat', () => { ONLINE.chat(); });
 }
 
 // navegação do menu pelo teclado (setas + ENTER)

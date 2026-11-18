@@ -491,6 +491,7 @@ function desenharMundo() {
   if (!j.carro && !j.morto) { if (j.nadando) { g.save(); g.globalAlpha = 0.55; g.fillStyle = '#1d4f8f'; g.beginPath(); g.arc(j.x, j.y, 30, 0, 7); g.fill(); g.restore(); } desenharPessoa(g, j, { arma: j.nadando ? null : j.arma, nomes: false, anel: true, escala: 1.45 }); if (j.nadando) { g.strokeStyle = 'rgba(255,255,255,.6)'; g.lineWidth = 3; g.beginPath(); g.arc(j.x, j.y, 24 + Math.sin(W.tempo * 6) * 4, 0, 7); g.stroke(); } }
   if (!j.carro && j.morto) desenharPessoa(g, { ...j, morto: true });
   for (const ch of W.chefes) ch.desenhar && ch.desenhar(g);
+  ONLINE.desenhar(g);
   // balas
   g.strokeStyle = '#fff3a0'; g.lineWidth = 3;
   for (const b of W.balas) { g.beginPath(); g.moveTo(b.x, b.y); g.lineTo(b.x - b.vx * 0.018, b.y - b.vy * 0.018); g.stroke(); }

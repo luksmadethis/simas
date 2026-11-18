@@ -63,7 +63,8 @@ function comecar(save) {
   povoarInicial();
   RODANDO = true; ultimo = performance.now();
   if (ehToque()) montarToque();
-  if (MISSAO.feitas === 0) setTimeout(() => iniciarMissao(MISSOES[0]), 600);
+  if (ONLINE.ativo) { j.rosto = ONLINE.skin; const sp = pick([LUGAR.dudu, LUGAR.garagem, LUGAR.hospital, LUGAR.motors, LUGAR.padaria]); j.x = sp.x + rnd(-60, 60); j.y = sp.y + 60; cam.x = j.x; cam.y = j.y; ONLINE.iniciar(); falar('luketa', 'bem-vindo ao GTA 7 ONLINE! aqui é modo livre: rouba, briga e zoa com a galera. T abre o chat', 5); }
+  else if (MISSAO.feitas === 0) setTimeout(() => iniciarMissao(MISSOES[0]), 600);
   else falar('luketa', `bem-vindo de volta, Nerivan! ${proximaMissao() ? 'próxima missão: ' + NOMES[proximaMissao().quem] + '. segue a seta' : 'a cidade é tua'}`, 4.5);
   requestAnimationFrame(laco);
 }
@@ -72,7 +73,8 @@ function gatilhos() {
   const j = W.jog; if (j.morto || MISSAO.dialogo) return;
   // lugares (entra com E): só marca qual tá perto
   INTERACAO = (MENU || INTERIOR) ? null : lugarPerto();
-  // começar missão
+  // começar missão (no online não tem história)
+  if (ONLINE.ativo) return;
   if (!MISSAO.ativa && W.procurado === 0) for (const m of extrasDisponiveis()) { const p = lugarMissao(m); if (dist(j.x, j.y, p.x, p.y) < 55) { if (j.carro) { j.carro.vx = j.carro.vy = 0; j.carro.vel = 0; } iniciarMissao(m); break; } }
   if (!MISSAO.ativa) {
     const m = proximaMissao(), p = lugarMissao(m);
@@ -111,6 +113,7 @@ function passo(dt) {
   if (apertou('e', 'f')) { if (INTERACAO) entrarLugar(INTERACAO); else entrarSair(); }
   if (apertou('tab', 'q')) trocarArma(1);
   if (apertou('k')) trocarRodas();
+  if (apertou('t') && ONLINE.ativo) ONLINE.chat();
   if (apertou('r') && j.carro) {
     { RADIO.atual = (RADIO.atual + 1) % RADIOS.length; RADIO.tocar(true); RADIO_AVISO = { t: 0 }; }
   }
@@ -154,7 +157,7 @@ function laco(agora) {
   if (!RODANDO) return;
   const dt = Math.min(0.05, (agora - ultimo) / 1000); ultimo = agora;
   try {
-    passo(dt);
+    passo(dt); ONLINE.tick(dt);
     atualizaCamera(dt);
     RADIO.atualiza(); atualizaBaile();
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#1d4f8f'; ctx.fillRect(0, 0, cv.width, cv.height);
@@ -188,8 +191,10 @@ function iniciarTela() {
   const bj = t.querySelector('.jogar'), bn = t.querySelector('.novo');
   if (save && save.feitas > 0) { bj.textContent = `▶ continuar (missão ${Math.min(save.feitas, MISSOES.length - 1)})`; bn.style.display = ''; }
   t.addEventListener('pointerdown', () => { try { if (ytAtivo() && !RODANDO) YTR.player.playVideo(); } catch (e) { } }, { once: true });
-  const vai = s => { SOM.init(); RADIO.atual = 0; t.classList.add('some'); document.body.classList.remove('titulo-on'); setTimeout(() => t.remove(), 500); comecar(s); };
+  const vai = (s, online) => iniciarJogo(s, online);
+  window.iniciarJogo = (s, online) => { SOM.init(); RADIO.atual = 0; t.classList.add('some'); document.body.classList.remove('titulo-on'); setTimeout(() => t.remove(), 500); comecar(s); };
   bj.onclick = () => vai(save && save.feitas > 0 ? save : null);
+  t.querySelector('.online').onclick = () => { SOM.init(); abrirLobbyOnline(save); };
   bn.onclick = () => { if (!bn.dataset.ok) { bn.dataset.ok = 1; bn.textContent = '⚠️ certeza? clica de novo (apaga o save)'; return; } try { localStorage.removeItem('gta7-save'); } catch (e) { } vai(null); };
   document.getElementById('dicas-ctrl').textContent = ehToque() ? 'celular: analógico na esquerda, botões na direita. Vira o celular de lado!' : CONTROLES_TXT;
   if (new URLSearchParams(location.search).has('deus')) DEUS = true;
