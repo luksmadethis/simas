@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="build" content="1794959981">
+<meta name="build" content="1794963142">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SimasTelas</title>
 <meta name="description" content="Faz live ai primo 🏳️‍🌈 Transmissão de tela em 1080p 60fps.">
@@ -207,6 +207,13 @@
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#24212d;border:1px solid var(--line);padding:10px 18px;border-radius:12px;font-size:14px;z-index:99}
   @media(max-width:480px){.stopme,.camctl button{height:40px;padding:0 11px;font-size:13px}}
   @media(max-width:820px){body{overflow:auto;height:auto}.app{grid-template-columns:1fr}.stage{order:-1;padding:10px}.grid{min-height:58vh;flex:none;height:58vh}.side{border-right:0;border-top:1px solid var(--line)}.list{max-height:40vh}.center-msg h1{font-size:34px}}
+
+/* ===== cores LGBT animadas (o arco-íris anda devagar em tudo que usa --rainbow) ===== */
+@property --rbx{syntax:'<percentage>';inherits:true;initial-value:0%}
+:root{--rainbow:repeating-linear-gradient(90deg,#e40303 calc(var(--rbx,0%) - 100%),#ff8c00 calc(var(--rbx,0%) - 83.33%),#ffed00 calc(var(--rbx,0%) - 66.67%),#00a83a calc(var(--rbx,0%) - 50%),#2a6bff calc(var(--rbx,0%) - 33.33%),#9b2bc2 calc(var(--rbx,0%) - 16.67%),#e40303 var(--rbx,0%));animation:rbx 9s steps(90) infinite}
+@keyframes rbx{to{--rbx:100%}}
+@media (prefers-reduced-motion:reduce){:root{animation:none}}
+.btn.main{background:var(--rainbow)}
 </style>
 </head>
 <body>

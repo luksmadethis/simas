@@ -57,6 +57,13 @@
   .mem span{flex:1;overflow:hidden;text-overflow:ellipsis}
   .closed{background:#2a1416;border:1px solid #5a2328;color:#ffb3b3;border-radius:14px;padding:14px;margin-top:20px;font-weight:700}
   [hidden]{display:none!important}
+
+/* ===== cores LGBT animadas (o arco-íris anda devagar em tudo que usa --rainbow) ===== */
+@property --rbx{syntax:'<percentage>';inherits:true;initial-value:0%}
+:root{--rainbow:repeating-linear-gradient(90deg,#e40303 calc(var(--rbx,0%) - 100%),#ff8c00 calc(var(--rbx,0%) - 83.33%),#ffed00 calc(var(--rbx,0%) - 66.67%),#00a83a calc(var(--rbx,0%) - 50%),#2a6bff calc(var(--rbx,0%) - 33.33%),#9b2bc2 calc(var(--rbx,0%) - 16.67%),#e40303 var(--rbx,0%));animation:rbx 9s steps(90) infinite}
+@keyframes rbx{to{--rbx:100%}}
+@media (prefers-reduced-motion:reduce){:root{animation:none}}
+.main{background:var(--rainbow)}
 </style>
 </head>
 <body>

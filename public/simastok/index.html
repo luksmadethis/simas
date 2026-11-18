@@ -95,6 +95,13 @@
   .menu{position:absolute;right:66px;bottom:150px;z-index:7;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
   .menu button{display:block;width:100%;background:none;border:0;color:var(--txt);padding:10px 16px;text-align:left;font-weight:700}
   .menu button:hover{background:var(--card2)}
+
+/* ===== cores LGBT animadas (o arco-íris anda devagar em tudo que usa --rainbow) ===== */
+@property --rbx{syntax:'<percentage>';inherits:true;initial-value:0%}
+:root{--rainbow:repeating-linear-gradient(90deg,#e40303 calc(var(--rbx,0%) - 100%),#ff8c00 calc(var(--rbx,0%) - 83.33%),#ffed00 calc(var(--rbx,0%) - 66.67%),#00a83a calc(var(--rbx,0%) - 50%),#2a6bff calc(var(--rbx,0%) - 33.33%),#9b2bc2 calc(var(--rbx,0%) - 16.67%),#e40303 var(--rbx,0%));animation:rbx 9s steps(90) infinite}
+@keyframes rbx{to{--rbx:100%}}
+@media (prefers-reduced-motion:reduce){:root{animation:none}}
+.rbtn,.send{background:var(--rainbow)}
 </style>
 </head>
 <body>

@@ -63,7 +63,7 @@ Array `GALERA` no fim de `public/index.html` (`nome`, `papel`, `frase`, `foto`).
 Piadas internas já usadas: "aqui pagou papai #constancia", "duas serie de levanta da cadera", "aí é brincadeira dj cas", #ChádeBebê, "quem é o pai?", "NO DIA 3 VAI SER REVELADO O SEXO DO BEBÊ", "cla, ú, dê, eu amo voce", "que linda barriga".
 
 ## Visual
-Fundo escuro (#0d0c12), cores do arco-íris LGBT. O cabeçalho (`.snav`) é igual em todas as páginas: logo Simas + Home, SimasTelas, Fitness, SimasTok e Sugestões.
+Fundo escuro (#0d0c12), cores do arco-íris LGBT, **animadas** em todas as páginas: `--rainbow` é um repeating-gradient que anda com a variável registrada `--rbx` (bloco "cores LGBT animadas" no fim do <style> de cada página; steps(90) em 9s pra não pesar). O cabeçalho (`.snav`) é igual em todas as páginas: logo Simas + Home, SimasTelas, Fitness, SimasTok e Sugestões.
 Home: arco-íris que desce serpenteando conforme o scroll e barra de progresso arco-íris no topo. O mouse é o normal: a varinha e o brilho foram removidos porque deixavam o site lento.
 
 ## Pendências
