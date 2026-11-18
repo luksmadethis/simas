@@ -151,7 +151,7 @@ function lugarMissao(m) {
 async function iniciarMissao(m) {
   if (MISSAO.ativa) return;
   MISSAO.ativa = m; MISSAO.ger++;
-  AVISO = { titulo: m.nome.toUpperCase(), sub: m.id === 'intro' ? 'GTA 7' : m.extra ? 'missão de moto' : 'missão ' + MISSOES.indexOf(m), cor: '#ffd23f', t: 0, dur: 3 };
+  AVISO = { titulo: m.nome.toUpperCase(), sub: m.id === 'intro' ? 'GTA 7' : m.extra ? (m.sub || 'missão de moto') : 'missão ' + MISSOES.indexOf(m), cor: '#ffd23f', t: 0, dur: 3 };
   try {
     await m.fn();
     if (MISSAO.ativa !== m) return;
@@ -679,11 +679,11 @@ const XINGOS_SIBITO = ['sai daqui, desgraçado', 'tu de novo?? some', 'que cara 
 const FIGURAS = [];
 function criarFiguras() {
   const C = LUGAR.cafe;
-  const sib = novoPed(C.x - 30, C.y + 10, { nome: 'Sibito', fixo: true, invuln: true, olhaJog: true, semGrana: true, camisa: '#e67e22', calca: '#2c3e50', cabelo: '#111', cabeloLongo: true, corNome: COR_NOME.sibito });
+  const sib = novoPed(C.x - 30, C.y + 10, { nome: 'Sibito', fixo: true, invuln: true, olhaJog: true, semGrana: true, camisa: '#e67e22', calca: '#2c3e50', cabelo: '#111', corte: 'longo', corNome: COR_NOME.sibito });
   sib.figura = 'sibito'; W.peds.push(sib); FIGURAS.push(sib);
   // Gabs passeando com o ex em volta do quarteirão (11,12)
   const bx = GRID * 11, by = GRID * 12, cs = [[bx + 2.5, by + 2.5], [bx + 11.5, by + 2.5], [bx + 11.5, by + 11.5], [bx + 2.5, by + 11.5]].map(([x, y]) => ({ x: x * T, y: y * T }));
-  const gabs = novoPed(cs[0].x, cs[0].y, { nome: 'Gabs', fixo: true, invuln: true, semGrana: true, camisa: '#fd79a8', calca: '#2d3436', cabelo: '#3b2412', cabeloLongo: true, corNome: COR_NOME.gabs });
+  const gabs = novoPed(cs[0].x, cs[0].y, { nome: 'Gabs', fixo: true, invuln: true, semGrana: true, camisa: '#fd79a8', calca: '#2d3436', cabelo: '#3b2412', corte: 'longo', corNome: COR_NOME.gabs });
   const ex = novoPed(cs[0].x - 30, cs[0].y, { nome: 'Ex Namorado', fixo: true, invuln: true, semGrana: true, camisa: '#7f8c8d', calca: '#34495e', corNome: COR_NOME.ex });
   let wp = 1;
   gabs.ia = (p, dt) => { const a = cs[wp]; const d = dist(p.x, p.y, a.x, a.y); p.a = Math.atan2(a.y - p.y, a.x - p.x); if (d < 6) wp = (wp + 1) % 4; else { p.x += Math.cos(p.a) * 55 * dt; p.y += Math.sin(p.a) * 55 * dt; p.anda += dt * 7; } };
@@ -692,6 +692,15 @@ function criarFiguras() {
   const M = LUGAR.masadakun;
   const mas = novoPed(M.x, M.y + 40, { nome: 'Masadakun', fixo: true, invuln: true, olhaJog: true, semGrana: true, camisa: '#f1c40f', calca: '#c0392b', chapeu: '#c8a165', corNome: COR_NOME.masadakun });
   mas.figura = 'masadakun'; W.peds.push(mas); FIGURAS.push(mas);
+  // banhistas no Litoral Sul (andam pela areia)
+  for (let k = 0; k < 18; k++) {
+    let x = 0, y = 0, ok = false;
+    for (let tn = 0; tn < 60 && !ok; tn++) { x = rndi(30, MW - 30); y = rndi(278, 292); ok = tile(x, y) === TL.AREIA; }
+    if (!ok) continue;
+    const b = novoPed(x * T, y * T, { fixo: true, camisa: pick(['#e84393', '#00cec9', '#fdcb6e', '#fff', '#ff7675']), calca: pick(['#e17055', '#0984e3', '#00b894']), banhista: true });
+    b.ia = (p, dt) => { p.troca = (p.troca || 0) - dt; if (p.troca <= 0) { p.troca = rnd(1, 4); p.a = rnd(Math.PI * 2); p.parado = rnd() < 0.5; } if (p.medo > 0) { p.parado = false; } const v = p.parado ? 0 : (p.medo > 0 ? 160 : 45); const nx = p.x + Math.cos(p.a) * v * dt, ny = p.y + Math.sin(p.a) * v * dt; const tt = tileEm(nx, ny); if (tt === TL.AREIA || tt === TL.GRAMA) { p.x = nx; p.y = ny; p.anda += dt * 9; } else p.troca = 0; };
+    W.peds.push(b);
+  }
 }
 const FALAS_FIG = {
   gabs: ['a gente é só amigo, tá?', 'ele que insistiu em vir passear', 'não começa, Nerivan', 'tô de boa, só caminhando'],
@@ -750,6 +759,53 @@ const MISSOES_EXTRA = [
     semLimite(); await diz('masadakun', 'Luar biasa! Tu é o rei do grau da Indonésia. Toma, e leva a XJ6.'); m.missao = false; premio(2500);
   } }
 ];
+// cena dentro de um lugar (a conversa acontece lá dentro)
+async function cena(tipo, nome, ...linhas) { INTERIOR = { tipo, nome, t: 0, cena: true }; document.getElementById('menu').classList.add('interior'); try { await conversa(...linhas); } finally { sairInterior(); } }
+function aguaPerto(tx, ty) { for (let r = 0; r < 12; r++) for (let a = 0; a < 16; a++) { const x = Math.round(tx + Math.cos(a / 16 * 6.283) * r), y = Math.round(ty + Math.sin(a / 16 * 6.283) * r); if (tile(x, y) === TL.AGUA && tile(x + 1, y) === TL.AGUA && tile(x, y + 1) === TL.AGUA) return { x: x * T + T / 2, y: y * T + T / 2 }; } return { x: tx * T, y: ty * T }; }
+MISSOES_EXTRA.push(
+  { id: 'cafeSibito', extra: true, sub: 'missão da Sibito', nome: 'Café Amargo', quem: 'sibito', libera: () => MISSAO.feitas >= 4, pos: () => ({ x: LUGAR.cafe.x + 140, y: LUGAR.cafe.y + 60 }), fn: async () => {
+    MISSAO.ativa.premio = 1600;
+    await cena('cafe', 'Café do Porto', ['sibito', 'QUE FOI, NERIVAN? veio encher o saco de novo, seu inútil?'], ['nerivan', 'calma, vim só tomar um café'], ['sibito', 'ACABOU O CAFÉ, ANIMAL. o fornecedor sumiu com as 3 sacas no porto. vai lá buscar e não me faz passar vergonha'], ['sibito', 'e se derrubar UMA saca eu te arrebento, ouviu?']);
+    const C = LUGAR.cafe, pts = [livrePerto(C.x + 700, C.y + 500), livrePerto(C.x - 600, C.y + 900), livrePerto(C.x + 300, C.y - 800)];
+    limiteTempo(150, 'a Sibito fechou o café e te xingou até tua sétima geração');
+    for (let k = 0; k < 3; k++) { await vai(pts[k].x, pts[k].y, { r: 80, texto: `pega a saca de café ${k + 1}/3`, cor: '#8e5a2b' }); SOM.pega(); falar('sibito', pick(['DEMOROU, LESMA', 'anda logo, molenga', 'isso aí é saca ou travesseiro?']), 2); }
+    await vai(C.x, C.y + 40, { r: 90, texto: 'volta pro Café do Porto com o café' });
+    semLimite();
+    await cena('cafe', 'Café do Porto', ['sibito', 'até que enfim, seu jumento.'], ['sibito', '...'], ['sibito', 'tá. obrigada. MAS NÃO ACOSTUMA. toma teu dinheiro e some daqui']);
+    premio(1600);
+  } },
+  { id: 'gabsEx', extra: true, sub: 'missão da Gabs', nome: 'O Ex Não Larga', quem: 'gabs', libera: () => MISSAO.feitas >= 4, pos: () => { const g = FIGURAS.find(p => p.figura === 'gabs'); return g ? { x: g.x + 80, y: g.y } : LUGAR.cafe; }, fn: async () => {
+    MISSAO.ativa.premio = 2000;
+    const gabs = FIGURAS.find(p => p.figura === 'gabs'), ex = FIGURAS.find(p => p.figura === 'ex');
+    await conversa(['gabs', 'Nerivan, socorro. ele pegou meu celular "só pra ver uma coisa" e não devolve.'], ['ex', 'só tô vendo se tu ainda tem nossas fotos 👀'], ['gabs', 'pega de volta pra mim? ele corre feito um doido'], ['ex', 'NUNCA! ESSE AMOR É MEU!']);
+    const iaVelha = ex.ia; let pego = false;
+    ex.ia = (p, dt) => { const j = W.jog, d = dist(p.x, p.y, j.x, j.y); let a = Math.atan2(p.y - j.y, p.x - j.x); for (const da of [0, 0.7, -0.7, 1.4, -1.4, 2.2, -2.2]) { const aa = a + da, nx = p.x + Math.cos(aa) * 30, ny = p.y + Math.sin(aa) * 30; if (!solidoEm(nx, ny)) { a = aa; break; } } const v = d < 500 ? 215 : 120; const nx = p.x + Math.cos(a) * v * dt, ny = p.y + Math.sin(a) * v * dt; if (!solidoEm(nx, ny)) { p.x = nx; p.y = ny; p.a = a; p.anda += dt * 12; } if (d < (j.carro ? 50 : 34)) pego = true; };
+    ex.nome = 'Ex Namorado 📱';
+    limiteTempo(90, 'o Ex fugiu e postou tudo nos stories');
+    MISSAO.alvo = ex; objetivo('pega o Ex e recupera o celular da Gabs (encosta nele)');
+    await ate(() => pego);
+    semLimite(); MISSAO.alvo = null; falarPed(ex, 'TÁ BOM, TÁ BOM, TOMA ESSA PORCARIA'); SOM.pega();
+    ex.ia = iaVelha; ex.nome = 'Ex Namorado';
+    await vai(gabs.x, gabs.y, { r: 80, texto: 'devolve o celular pra Gabs', pre: () => { MISSAO.alvo = { x: gabs.x, y: gabs.y }; } });
+    await cena('cafe', 'Café do Porto', ['gabs', 'meu herói! deixa eu te pagar um café'], ['sibito', 'ELE NÃO MERECE CAFÉ NENHUM'], ['gabs', 'kkkkk relaxa Sibito. obrigada Nerivan, toma aqui'], ['ex', '(lá fora, olhando pela janela) ...']);
+    premio(2000);
+  } },
+  { id: 'arroz', extra: true, sub: 'missão da Masadakun (de lancha)', nome: 'Contrabando de Arroz', quem: 'masadakun', libera: () => MISSAO.feitas >= 5, pos: () => ({ x: LUGAR.masadakun.x - 120, y: LUGAR.masadakun.y + 80 }), fn: async () => {
+    MISSAO.ativa.premio = 3000;
+    await cena('templo', 'Templo', ['masadakun', 'Nerivan, senta. respira. medita comigo um pouco.'], ['nerivan', 'tô sentindo... fome'], ['masadakun', 'EXATO. Recife tá sem arroz. eu tenho 5 sacos aqui. leva de lancha pelo mar, que na ponte a polícia revista'], ['masadakun', 'e cuidado: a Guarda Costeira do Ltzin patrulha o mar.']);
+    const M = LUGAR.masadakun, a0 = aguaPerto(M.x / T + 10, M.y / T + 6), barco = precisaMoto('lancha', a0.x, a0.y, 'Lancha do Arroz');
+    await subirNaMoto(barco);
+    const rota = [[232, 120], [222, 132], [210, 140], [200, 146], [194, 150]].map(([x, y]) => aguaPerto(x, y));
+    limiteTempo(130, 'o arroz molhou e virou papa');
+    for (let k = 0; k < rota.length; k++) {
+      await vai(rota[k].x, rota[k].y, { r: 120, texto: `leva o arroz pelo mar: boia ${k + 1}/${rota.length}`, cor: '#00e5ff' });
+      if (k === 1 || k === 3) { const ap = aguaPerto(rota[k].x / T + 6, rota[k].y / T - 6); const gc = novoCarro('jetski', ap.x, ap.y, 0, { missao: true, nome: 'Guarda Costeira do Ltzin' }); gc.motorista = novoPed(gc.x, gc.y, { hostil: true }); gc.ia = { tipo: 'script', fn: (c, dt) => { const al = W.jog.carro || W.jog; iaPersegue(c, dt, al.x, al.y, 1); c.recarga = (c.recarga || 1) - dt; if (c.recarga <= 0 && dist(c.x, c.y, al.x, al.y) < 380) { c.recarga = rnd(1, 1.8); inimigoAtira(c, al.x, al.y, 7, 0.15); } } }; W.carros.push(gc); falar('masadakun', 'GUARDA COSTEIRA! acelera!', 2); }
+    }
+    semLimite(); barco.missao = false; barco.nome = null;
+    await diz('masadakun', 'Terima kasih! Recife vai comer arroz hoje. A lancha é tua, mano.');
+    premio(3000);
+  } }
+);
 function extrasDisponiveis() { return MISSOES_EXTRA.filter(m => m.libera() && !(W.extras || {})[m.id]); }
 
 // ---------- segredos escondidos (easter eggs) ----------

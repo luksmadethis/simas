@@ -87,7 +87,7 @@ const ONLINE = {
       const c = j.carro;
       this.enviar({ t: 'st', n: RANK.nome() || 'sem nome', sk: this.skin, cor: this.cor, x: Math.round(j.x), y: Math.round(j.y), a: +(c ? c.a : j.a).toFixed(2), ar: j.arma, hp: Math.round(j.hp), m: j.morto ? 1 : 0, ab: this.abates,
         c: c ? { m: c.modelo, cor: c.cor, l: c.listra || 0, v: Math.round(Math.hypot(c.vx, c.vy)) } : null,
-        r: { ca: j.camisa, cl: j.calca, ch: j.chapeu, ct: j.chapeuTipo, o: j.oculos ? 1 : 0, e: j.estampa, ja: j.jaqueta, co: j.corrente ? 1 : 0, mo: j.mochila, tc: j.tenisCor, ro: j.rodaAtiva, ot: j.oculosTipo, ma: j.mascara, cs: j.costas, cc: j.costasCor, ci: j.cintura, fa: j.fantasia, cr: j.corte, cb: j.cabelo, ba: j.barba ? 1 : 0, pe: j.pele } });
+        r: { ca: j.camisa, cl: j.calca, ch: j.chapeu, ct: j.chapeuTipo, o: j.oculos ? 1 : 0, e: j.estampa, ja: j.jaqueta, co: j.corrente ? 1 : 0, mo: j.mochila, tc: j.tenisCor, ro: j.rodaAtiva, ot: j.oculosTipo, ma: j.mascara, cs: j.costas, cc: j.costasCor, ci: j.cintura, fa: j.fantasia, cr: j.corte, cb: j.cabelo, ba: j.barba ? 1 : 0, pe: j.pele, ga: j.galinha ? 1 : 0 } });
     }
     const agora = performance.now();
     for (const [id, o] of this.outros) {
@@ -117,6 +117,7 @@ const ONLINE = {
       const r = o.r || {};
       const pessoa = { x: o.x, y: o.y, a: o.a, anda: o.anda, rosto: o.sk, pele: '#c68642', camisa: r.ca || '#ff6ec7', calca: r.cl || '#1a1a2e', chapeu: r.ch, chapeuTipo: r.ct, oculos: !!r.o, estampa: r.e, jaqueta: r.ja, corrente: !!r.co, mochila: r.mo, tenisCor: r.tc, rodaAtiva: r.ro, corNome: o.cor, oculosTipo: r.ot, mascara: r.ma, costas: r.cs, costasCor: r.cc, cintura: r.ci, fantasia: r.fa, corte: r.cr, cabelo: r.cb, barba: !!r.ba };
       if (r.pe) pessoa.pele = r.pe;
+      if (r.ga) pessoa.galinha = true;
       if (o.c) {
         const tc = TIPOS_CARRO[o.c.m] || TIPOS_CARRO.sedan;
         desenharCarro(g, { modelo: TIPOS_CARRO[o.c.m] ? o.c.m : 'sedan', x: o.x, y: o.y, a: o.a, w: tc.w, l: tc.l, hp: 1, hpMax: 1, cor: o.c.cor || '#888', listra: o.c.l || null, vx: Math.cos(o.a) * o.c.v, vy: Math.sin(o.a) * o.c.v, motor: 0, blind: 0, sirene: false, motorista: pessoa });

@@ -69,6 +69,7 @@ function desenharHUD(dt) {
   if (j.colete > 0) { barra(g, x0 + 2, yv, rc * 11.6, 6, j.colete / 100, '#5dade2'); yv += 12; }
   if (j.carro) { const c = j.carro; barra(g, x0 + 2, yv, rc * 11.6, 5, c.hp / c.hpMax, c.hp < c.hpMax * 0.3 ? '#e74c3c' : '#f39c12'); g.font = 'bold 10px system-ui'; g.textAlign = 'left'; textoContorno(g, Math.round(Math.abs(c.vel) / 5) + ' km/h', x0 + rc * 11.6 + 8, yv + 6, '#fff', 3); yv += 12; }
   if (j.carro && j.carro.nitro) { barra(g, x0 + 2, yv + 12, rc * 11.6, 5, (j.carro.nitroCarga ?? 100) / 100, j.carro.nitroOn ? '#00e5ff' : '#3498db'); g.font = 'bold 9px system-ui'; g.textAlign = 'left'; textoContorno(g, 'NITRO (N)', x0 + 2, yv + 28, '#9fe', 2); yv += 22; }
+  hudHabilidade(g, x0, yv + 4, peq); yv += peq ? 28 : 32;
   HUD_Y = yv;
   // retrato do personagem (fica no HUD, não em cima do boneco)
   { const rr2 = peq ? 22 : 28, px = x0 + bw + rr2 + 8, py = y0 + rr2 + 2; rostoHUD(g, ONLINE.ativo ? ONLINE.skin : 'nerivan', px, py, rr2); g.font = `900 ${peq ? 9 : 10}px system-ui`; g.textAlign = 'center'; textoContorno(g, (ONLINE.ativo ? (NOMES[ONLINE.skin] || 'eu') : nomePers()).toUpperCase(), px, py + rr2 + 11, '#ffd23f', 3); }
@@ -230,6 +231,7 @@ function desenharMini(g) {
   for (const p of W.peds) if ((p.hostil || p.policia) && !p.morto) blip(p.x, p.y, '#ff3b3b', 2.5);
   for (const c of W.carros) if (c.gangue && c.hp > 0) blip(c.x, c.y, '#ff8c00', 3.5);
   ONLINE.mini(blip);
+  if (LUNETA_T > 0 && W.baus) for (const b of W.baus) if (!b.ok) blip(b.x, b.y, '#ffe600', 3);
   if (PERS === 'luketa') for (const it of W.itens) if (it.t === 'segredo' && dist(it.x, it.y, j.x, j.y) < 1400) blip(it.x, it.y, '#00e5ff', 3);
   for (const l of LUGARES) { const p = LUGAR[l.k]; if (p) blip(p.x, p.y, 0, 0, l.ic); }
   for (const [k, ic] of [['cas', '🪑'], ['skate', '🛹'], ['yori', '🥭'], ['nauj', '🌿'], ['baile', '🔊'], ['gelado', '🕶️'], ['poli', '🎙️'], ['matheus', '🤖'], ['ltzin', '👑'], ['mirante', '⛰️']]) if (LUGAR[k]) blip(LUGAR[k].x, LUGAR[k].y, 0, 0, ic);
@@ -352,20 +354,25 @@ function fecharMenu() { const el = document.getElementById('menu'); el.classList
 const CORES_PINTURA = [['Rosa Simas', '#ff6ec7'], ['Preto Fosco', '#151515'], ['Branco Gelo', '#f2f2f2'], ['Vermelho Ferrari', '#d50000'], ['Azul Calcinha', '#7fb3ff'], ['Verde Bandeira', '#1e8e3e'], ['Amarelo Taxi', '#ffd000'], ['Roxo Baile', '#7d3cff'], ['Laranja Galado', '#ff8c1a'], ['Dourado Rei', '#c9a227'],
   ['Prata Uber', '#bdc3c7'], ['Grafite', '#4d5656'], ['Azul Marinho', '#1a2a6c'], ['Ciano Neon', '#00e5ff'], ['Verde Limão', '#a3e635'], ['Verde Militar', '#4a5d23'], ['Vinho Pastor', '#6d1a36'], ['Marrom Doce de Leite', '#8e5a2b'], ['Lilás Tia', '#c39bd3'], ['Coral', '#ff6f61'], ['Rosa Bebê', '#ffc0cb'], ['Bege Fiat', '#e5d3b3']];
 const TUNE = ['roda', 'neon', 'adesivo', 'fume', 'aero', 'nitro', 'buzina'];
-function menuTuning() {
-  const c = W.jog.carro, j = W.jog;
-  const sub = (tit, itens) => () => { abrirMenu(tit, [...itens(), { txt: '⬅️ voltar', fn: () => { menuTuning(); return false; } }], `${fmt$(j.grana)} no bolso`); return false; };
+function menuTuning(marina) {
+  const c = W.jog.carro, j = W.jog; if (!c) return;
+  const tc = TIPOS_CARRO[c.modelo], moto = !!tc.moto, barco = !!tc.barco;
+  const sub = (tit, itens) => () => { abrirMenu(tit, [...itens(), { txt: '⬅️ voltar', fn: () => { menuTuning(marina); return false; } }], `${fmt$(j.grana)} no bolso`); return false; };
   const ok = v => v ? ' ✔' : '';
-  abrirMenu('✨ TUNING DO NERIVAN', [
-    { txt: '🛞 Cor das rodas', fn: sub('🛞 RODAS', () => [['Cromada', '#dfe6e9'], ['Preta', '#111'], ['Dourada', '#c9a227'], ['Rosa', '#ff6ec7'], ['Vermelha', '#d50000'], ['Azul', '#2e86de'], ['Verde Neon', '#39ff14']].map(([n, cc]) => ({ txt: n + ok(c.roda === cc), cor: cc, preco: 200, fn: () => { c.roda = cc; } }))) },
-    { txt: '💡 Neon embaixo', fn: sub('💡 NEON', () => [['Rosa', '#ff2fa0'], ['Azul', '#00b4ff'], ['Verde', '#39ff14'], ['Roxo', '#a020f0'], ['Vermelho', '#ff1a1a'], ['Amarelo', '#ffe600'], ['Branco', '#ffffff']].map(([n, cc]) => ({ txt: 'Neon ' + n + ok(c.neon === cc), cor: cc, preco: 600, fn: () => { c.neon = cc; } })).concat([{ txt: 'tirar neon', off: !c.neon, fn: () => { c.neon = null; } }])) },
-    { txt: '🔥 Adesivo', fn: sub('🔥 ADESIVOS', () => [['Chamas de rebaixado', 'chamas', 400], ['Listras de corrida', 'listras', 250], ['Arco-íris do Simas', 'arco', 500], ['Escrito SIMAS no capô', 'simas', 300], ['Oncinha', 'oncinha', 350]].map(([n, a, p]) => ({ txt: n + ok(c.adesivo === a), preco: p, fn: () => { c.adesivo = a; c.listra = null; } })).concat([{ txt: 'tirar adesivo', off: !c.adesivo, fn: () => { c.adesivo = null; } }])) },
-    { txt: '🕶️ Insulfilm fumê' + ok(c.fume), preco: c.fume ? undefined : 300, off: !!c.fume, fn: () => { c.fume = true; } },
-    { txt: '🏁 Aerofólio' + ok(c.aero), preco: c.aero ? undefined : 700, off: !!c.aero, fn: () => { c.aero = true; } },
-    { txt: '🚀 Nitro (aperta N acelerando)' + ok(c.nitro), preco: c.nitro ? undefined : 2500, off: !!c.nitro, fn: () => { c.nitro = true; c.nitroCarga = 100; } },
-    { txt: '📯 Buzina', fn: sub('📯 BUZINAS', () => [['Normal', null, 0], ['Corneta de baile', 'corneta', 300], ['Caminhão', 'caminhao', 300], ['Palhaço', 'palhaco', 200], ['Galinha do Galado', 'galinha', 250]].map(([n, b, p]) => ({ txt: n + ok(c.buzina === b), preco: p || undefined, fn: () => { c.buzina = b; SOM.buzina(b); } }))) },
-    { txt: '⬅️ voltar', fn: () => { menuGaragem(); return false; } }
-  ], 'aperta H pra buzinar · N pra nitro');
+  const itens = [];
+  if (barco) itens.push({ txt: '🎨 Pintar o barco', fn: sub('🎨 COR DO BARCO', () => CORES_PINTURA.map(([n, cc]) => ({ txt: n + ok(c.cor === cc), cor: cc, preco: 250, fn: () => { c.cor = cc; } }))) });
+  if (!barco) itens.push({ txt: moto ? '🛞 Cor das rodas da moto' : '🛞 Cor das rodas', fn: sub('🛞 RODAS', () => [['Cromada', '#dfe6e9'], ['Preta', '#111'], ['Dourada', '#c9a227'], ['Rosa', '#ff6ec7'], ['Vermelha', '#d50000'], ['Azul', '#2e86de'], ['Verde Neon', '#39ff14']].map(([n, cc]) => ({ txt: n + ok(c.roda === cc), cor: cc, preco: 200, fn: () => { c.roda = cc; } }))) });
+  itens.push({ txt: barco ? '💡 Luz neon no casco' : '💡 Neon embaixo', fn: sub('💡 NEON', () => [['Rosa', '#ff2fa0'], ['Azul', '#00b4ff'], ['Verde', '#39ff14'], ['Roxo', '#a020f0'], ['Vermelho', '#ff1a1a'], ['Amarelo', '#ffe600'], ['Branco', '#ffffff'], ['Arco-íris (muda de cor)', 'arco']].map(([n, cc]) => ({ txt: 'Neon ' + n + ok(c.neon === cc), cor: cc === 'arco' ? '#ff6ec7' : cc, preco: cc === 'arco' ? 1500 : 600, fn: () => { c.neon = cc; } })).concat([{ txt: 'tirar neon', off: !c.neon, fn: () => { c.neon = null; } }])) });
+  itens.push({ txt: '🔥 Adesivo', fn: sub('🔥 ADESIVOS', () => [['Chamas de rebaixado', 'chamas', 400], ['Listras de corrida', 'listras', 250], ['Arco-íris do Simas', 'arco', 500], ['Escrito SIMAS', 'simas', 300], ['Oncinha', 'oncinha', 350], ['Xadrez de largada', 'xadrez', 350], ['Camuflado do exército', 'camuflado', 400]].map(([n, a, p]) => ({ txt: n + ok(c.adesivo === a), preco: p, fn: () => { c.adesivo = a; c.listra = null; } })).concat([{ txt: 'tirar adesivo', off: !c.adesivo, fn: () => { c.adesivo = null; } }])) });
+  if (!moto && !barco) {
+    itens.push({ txt: '🕶️ Insulfilm fumê' + ok(c.fume), preco: c.fume ? undefined : 300, off: !!c.fume, fn: () => { c.fume = true; } });
+    itens.push({ txt: '🏁 Aerofólio' + ok(c.aero), preco: c.aero ? undefined : 700, off: !!c.aero, fn: () => { c.aero = true; } });
+  }
+  itens.push({ txt: '🚀 Nitro (aperta N acelerando)' + ok(c.nitro), preco: c.nitro ? undefined : (moto ? 1800 : 2500), off: !!c.nitro, fn: () => { c.nitro = true; c.nitroCarga = 100; } });
+  itens.push({ txt: '📯 Buzina', fn: sub('📯 BUZINAS', () => [['Normal', null, 0], ['Corneta de baile', 'corneta', 300], ['Caminhão', 'caminhao', 300], ['Palhaço', 'palhaco', 200], ['Galinha do Galado', 'galinha', 250]].map(([n, b, p]) => ({ txt: n + ok(c.buzina === b), preco: p || undefined, fn: () => { c.buzina = b; SOM.buzina(b); } }))) });
+  if (barco) itens.push({ txt: `🔧 Consertar (${Math.round(c.hp / c.hpMax * 100)}%)`, preco: c.hp < c.hpMax ? 150 : undefined, off: c.hp >= c.hpMax, fn: () => { c.hp = c.hpMax; } });
+  else itens.push({ txt: '⬅️ voltar', fn: () => { menuGaragem(); return false; } });
+  abrirMenu(barco ? '⚓ MARINA SIMAS' : moto ? '✨ TUNING DA MOTO' : '✨ TUNING DO CARRO', itens, 'gira o veículo arrastando · H buzina · N nitro');
 }
 function menuGaragem() {
   const j = W.jog, c = j.carro;
@@ -413,28 +420,17 @@ function menuRoupas() {
   const cores = [['Rosa Simas', '#ff6ec7'], ['Vermelha', '#c0392b'], ['Preta Básica', '#151515'], ['Branca de Rico', '#f5f5f5'], ['Verde Galado', '#27ae60'], ['Amarela Seleção', '#f1c40f'], ['Azul Royal', '#2471a3'], ['Roxa Baile', '#7d3cff'], ['Laranja', '#e67e22'], ['Vinho', '#7b241c'], ['Ciano', '#00bcd4'], ['Lilás', '#c39bd3'], ['Verde Limão', '#a3e635'], ['Cinza Mescla', '#95a5a6'], ['Bege', '#e5d3b3'], ['Marrom', '#6e2c00']];
   abrirMenu('👕 SIMAS STORE', [
     { txt: '👕 Camisas (16 cores)', fn: sub('👕 CAMISAS', () => cores.map(([n, c]) => ({ txt: 'Camisa ' + n, cor: c, preco: 100, fn: () => { j.camisa = c; j.estampa = null; } }))) },
-    { txt: '🎨 Estampas', fn: sub('🎨 ESTAMPAS', () => [['Listrada', 'listrada', 180], ['Arco-íris do Simas', 'simas', 400], ['Xadrez de Festa Junina', 'xadrez', 200], ['Camuflada', 'camuflada', 300], ['Rubro-negra (genérica)', 'flamengo', 250]].map(([n, e, p]) => ({ txt: n, preco: p, fn: () => { j.estampa = e; } })).concat([{ txt: 'tirar estampa', fn: () => { j.estampa = null; } }])) },
+    { txt: '🎨 Estampas normais', fn: sub('🎨 ESTAMPAS', () => [['Listrada', 'listrada', 180], ['Arco-íris do Simas', 'simas', 400], ['Xadrez de Festa Junina', 'xadrez', 200], ['Camuflada', 'camuflada', 300], ['Rubro-negra (genérica)', 'flamengo', 250], ['Havaiana de turista', 'havaiana', 220]].map(([n, e, p]) => ({ txt: n, preco: p, fn: () => { j.estampa = e; } })).concat([{ txt: 'tirar estampa', fn: () => { j.estampa = null; } }])) },
+    { txt: '🤪 Camisetas ZOADAS', fn: sub('🤪 CAMISETAS ZOADAS', () => [['Camisa do Galado 🐔', 'galado', '#ff8c1a', 500], ['Smile de rave', 'smile', '#151515', 250], ['Caveira de metaleiro', 'caveira', '#151515', 300], ['Coração apaixonado (pro Ltzin)', 'coracao', '#ffc0cb', 250], ['Raio do Ltzin', 'raio', '#1a2a6c', 400], ['Camisa 171 (estelionato)', 'n171', '#c0392b', 171], ['Estampa de banana', 'banana', '#2e86de', 300], ['Smoking de camiseta (chique e pobre)', 'smoking', '#151515', 600]].map(([n, e, c, p]) => ({ txt: n + (j.estampa === e ? ' ✔' : ''), cor: c, preco: p, fn: () => { j.estampa = e; j.camisa = c; } }))) },
     { txt: '🧥 Jaquetas', fn: sub('🧥 JAQUETAS', () => [['Jaqueta Jeans', '#5d6d7e', 350], ['Jaqueta de Couro', '#1b1b1b', 700], ['Corta-vento Neon', '#a3e635', 400], ['Moletom Rosa', '#ff6ec7', 300]].map(([n, c, p]) => ({ txt: n, cor: c, preco: p, fn: () => { j.jaqueta = c; } })).concat([{ txt: 'tirar jaqueta', fn: () => { j.jaqueta = null; } }])) },
     { txt: '👖 Calças e bermudas', fn: sub('👖 CALÇAS', () => [['Bermuda Jeans', '#2c3e50'], ['Calça Preta', '#111'], ['Bermuda Florida', '#e67e22'], ['Calça Branca de Pagodeiro', '#f5f5f5'], ['Tactel Azul', '#2980b9'], ['Moletom Cinza', '#7f8c8d']].map(([n, c]) => ({ txt: n, cor: c, preco: 100, fn: () => { j.calca = c; } }))) },
-    { txt: '🧢 Bonés e chapéus', fn: sub('🧢 CABEÇA', () => [['Boné Rosa', '#ff6ec7', 'bone', 150], ['Boné Preto', '#111', 'bone', 150], ['Boné Vermelho', '#c0392b', 'bone', 150], ['Chapéu de Cowboy (Juazeiro)', '#8e5a2b', 'cowboy', 400], ['Bucket Hat', '#f5f5f5', 'bucket', 250], ['Bucket Hat Preto', '#111', 'bucket', 250], ['Capacete de motoboy', '#e67e22', 'capacete', 300]].map(([n, c, t, p]) => ({ txt: n, cor: c, preco: p, fn: () => { j.chapeu = c; j.chapeuTipo = t; } })).concat([{ txt: 'tirar o que tá na cabeça', off: !j.chapeu, fn: () => { j.chapeu = null; j.chapeuTipo = null; } }])) },
-    { txt: '🤡 Chapéus ZOADOS', fn: sub('🤡 CHAPÉUS ZOADOS', () => [['Cone de trânsito roubado', '#ff6b00', 'cone', 350], ['Chapéu de mestre-cuca', '#fff', 'chef', 400], ['Coroa do Rei de Recife (réplica)', '#f1c40f', 'coroa', 3000], ['Chapéu de pirata', '#111', 'pirata', 600], ['Capacete viking', '#95a5a6', 'viking', 800], ['Orelhinha de gato', '#111', 'gato', 300], ['Orelhinha de gato rosa', '#ff6ec7', 'gato', 300], ['Chapéu de aniversário', '#fff', 'festa', 150], ['Cartola de mágico', '#111', 'cartola', 900], ['Sombrero gigante', '#d4ac0d', 'sombrero', 700]].map(([n, c, t, p]) => ({ txt: n + (j.chapeuTipo === t && j.chapeu ? ' ✔' : ''), cor: c, preco: p, fn: () => { j.chapeu = c; j.chapeuTipo = t; } }))) },
-    { txt: '🎭 Máscaras e fantasias', fn: sub('🎭 FANTASIAS', () => [
-      { txt: '🤡 Nariz de palhaço' + (j.mascara === 'palhaco' ? ' ✔' : ''), preco: 120, fn: () => { j.mascara = 'palhaco'; } },
-      { txt: '🐴 Máscara de cavalo (a clássica)' + (j.mascara === 'cavalo' ? ' ✔' : ''), preco: 500, fn: () => { j.mascara = 'cavalo'; } },
-      { txt: 'tirar máscara', off: !j.mascara, fn: () => { j.mascara = null; } },
-      { txt: '🍌 Fantasia de banana' + (j.fantasia === 'banana' ? ' ✔' : ''), preco: 800, fn: () => { j.fantasia = 'banana'; } },
-      { txt: '🦖 Fantasia de dinossauro' + (j.fantasia === 'dino' ? ' ✔' : ''), preco: 1200, fn: () => { j.fantasia = 'dino'; j.costas = 'rabo'; j.costasCor = '#27ae60'; } },
-      { txt: 'tirar fantasia', off: !j.fantasia, fn: () => { if (j.fantasia === 'dino' && j.costas === 'rabo') j.costas = null; j.fantasia = null; } }]) },
-    { txt: '🦸 Costas (capa, asas, jetpack...)', fn: sub('🦸 COSTAS', () => [['Capa de super-herói vermelha', 'capa', '#c0392b', 900], ['Capa roxa de vilão', 'capa', '#7d3cff', 900], ['Capa dourada de rei', 'capa', '#c9a227', 2000], ['Asinha de anjo', 'asas', '#fff', 1500], ['Jetpack (não voa, só pose)', 'jetpack', '#95a5a6', 2500], ['Rabo de dinossauro', 'rabo', '#27ae60', 600], ['Rabo de diabinho', 'rabo', '#c0392b', 600]].map(([n, t, c, p]) => ({ txt: n, cor: c, preco: p, fn: () => { j.costas = t; j.costasCor = c; j.mochila = null; } })).concat([
-      { txt: '🎒 Mochila de entregador', preco: 150, fn: () => { j.mochila = '#c0392b'; j.costas = null; } },
-      { txt: '🛟 Boia de patinho na cintura' + (j.cintura ? ' ✔' : ''), preco: 200, fn: () => { j.cintura = j.cintura ? null : 'boia'; } },
-      { txt: 'tirar o que tá nas costas', off: !j.costas && !j.mochila, fn: () => { j.costas = null; j.mochila = null; } }])) },
+    { txt: '🧢 Bonés e chapéus normais', fn: sub('🧢 CABEÇA', () => [['Boné Rosa', '#ff6ec7', 'bone', 150], ['Boné Preto', '#111', 'bone', 150], ['Boné Vermelho', '#c0392b', 'bone', 150], ['Chapéu de Cowboy (Juazeiro)', '#8e5a2b', 'cowboy', 400], ['Bucket Hat', '#f5f5f5', 'bucket', 250], ['Bucket Hat Preto', '#111', 'bucket', 250], ['Capacete de motoboy', '#e67e22', 'capacete', 300]].map(([n, c, t, p]) => ({ txt: n, cor: c, preco: p, fn: () => { j.chapeu = c; j.chapeuTipo = t; } })).concat([{ txt: 'tirar o que tá na cabeça', off: !j.chapeu, fn: () => { j.chapeu = null; j.chapeuTipo = null; } }])) },
+    { txt: '🤡 Chapéus ZOADOS', fn: sub('🤡 CHAPÉUS ZOADOS', () => [['Cone de trânsito roubado', '#ff6b00', 'cone', 350], ['Chapéu de mestre-cuca', '#fff', 'chef', 400], ['Coroa do Rei de Recife (réplica)', '#f1c40f', 'coroa', 3000], ['Chapéu de pirata', '#111', 'pirata', 600], ['Capacete viking', '#95a5a6', 'viking', 800], ['Orelhinha de gato', '#111', 'gato', 300], ['Orelhinha de gato rosa', '#ff6ec7', 'gato', 300], ['Chapéu de aniversário', '#fff', 'festa', 150], ['Cartola de mágico', '#111', 'cartola', 900], ['Sombrero gigante', '#d4ac0d', 'sombrero', 700], ['Hélice de criança', '#e74c3c', 'helice', 250], ['Galinha na cabeça', '#fff', 'galinha', 800], ['Melancia de capacete', '#27ae60', 'melancia', 350], ['Chapéu de palha de festa junina', '#d4ac0d', 'palha', 200]].map(([n, c, t, p]) => ({ txt: n + (j.chapeuTipo === t && j.chapeu ? ' ✔' : ''), cor: c, preco: p, fn: () => { j.chapeu = c; j.chapeuTipo = t; } }))) },
     { txt: '💎 Acessórios', fn: sub('💎 ACESSÓRIOS', () => [
       ...[['🕶️ Óculos Juliet', 'juliet', 200], ['🤓 Óculos de nerd (igual do Yori)', 'nerd', 150], ['💘 Óculos de coração', 'coracao', 300], ['⭐ Óculos de estrela', 'estrela', 350]].map(([n, t, p]) => ({ txt: n + (j.oculos && (j.oculosTipo || 'juliet') === t ? ' ✔' : ''), preco: p, fn: () => { j.oculos = true; j.oculosTipo = t; } })),
       { txt: 'tirar óculos', off: !j.oculos, fn: () => { j.oculos = false; } },
       { txt: j.corrente ? '⛓️ Tirar a corrente' : '⛓️ Corrente de ouro (ostentação)', preco: j.corrente ? undefined : 2000, fn: () => { j.corrente = !j.corrente; } },
       { txt: j.mochila ? '🎒 Tirar a mochila' : '🎒 Mochila de entregador', preco: j.mochila ? undefined : 150, fn: () => { j.mochila = j.mochila ? null : '#c0392b'; } }]) },
-    { txt: '💈 Barbearia (corte, cor, barba)', fn: sub('💈 BARBEARIA', () => [['Corte na régua', 'curto'], ['Black power', 'black'], ['Moicano', 'moicano'], ['Trancinhas', 'trancas'], ['Cabelo longo de roqueiro', 'longo'], ['Topete', 'topete'], ['Careca brilhando', 'careca'], ['Arco-íris que muda de cor', 'colorido']].map(([n, c]) => ({ txt: '✂️ ' + n + (j.corte === c ? ' ✔' : ''), preco: c === 'colorido' ? 800 : 80, fn: () => { j.corte = c; } })).concat([['Preto', '#111'], ['Castanho', '#3b2412'], ['Loiro pivete', '#f4d03f'], ['Platinado', '#ecf0f1'], ['Rosa', '#ff6ec7'], ['Azul', '#2e86de'], ['Verde', '#27ae60'], ['Ruivo', '#c0392b']].map(([n, c]) => ({ txt: '🎨 Pintar de ' + n, cor: c, preco: 120, fn: () => { j.cabelo = c; } }))).concat([{ txt: j.barba ? '🪒 Tirar a barba' : '🧔 Deixar barba', preco: j.barba ? 30 : 60, fn: () => { j.barba = !j.barba; } }])) },
     { txt: '👟 Tênis (corre mais)', fn: sub('👟 TÊNIS', () => Object.entries(TENIS).map(([k, t]) => ({ txt: `${t.nome} (+${Math.round((t.vel - 1) * 100)}% correndo)${j.tenis === k ? ' ✔' : ''}`, cor: t.cor, preco: (j.temTenis || {})[k] || !t.preco ? undefined : t.preco, fn: () => { j.temTenis = j.temTenis || {}; j.temTenis[k] = true; j.tenis = k; j.tenisCor = t.cor; } }))) },
     { txt: '🛹 Skate e patins (aperta K pra usar)', fn: sub('🛹 RODAS', () => [
       { txt: '🛹 Skate Simas SK8' + ((j.temRodas || {}).skate ? ' ✔ (tem)' : ''), preco: (j.temRodas || {}).skate ? undefined : 600, off: !!(j.temRodas || {}).skate, fn: () => { j.temRodas = j.temRodas || {}; j.temRodas.skate = true; j.rodaAtiva = 'skate'; } },
@@ -516,7 +512,7 @@ function menuPausa() {
     { txt: '🗑️ Começar do zero (apaga o save)', fn: () => { if (!MENU.confirma) { MENU.confirma = true; const it = document.querySelectorAll('#menu .item span'); it[it.length - 1].textContent = '⚠️ certeza? clica de novo pra apagar tudo'; return false; } try { localStorage.removeItem('gta7-save'); } catch (e) { } location.reload(); } }
   ], CONTROLES_TXT);
 }
-const CONTROLES_TXT = 'WASD/setas: andar e dirigir · E ou F: entrar/sair/assaltar · mouse ou CTRL/ESPAÇO: atirar · TAB/Q: trocar arma · ESPAÇO no carro: freio de mão · SHIFT: correr · K: skate/patins · R: rádio · H: buzina · M: mapa · ESC: pausa';
+const CONTROLES_TXT = 'WASD/setas: andar e dirigir · X: habilidade especial · N: nitro · E ou F: entrar/sair/assaltar · mouse ou CTRL/ESPAÇO: atirar · TAB/Q: trocar arma · ESPAÇO no carro: freio de mão · SHIFT: correr · K: skate/patins · R: rádio · H: buzina · M: mapa · ESC: pausa';
 
 // ---------- controles de celular ----------
 function montarToque() {
@@ -535,6 +531,7 @@ function montarToque() {
   bt('.b-freio', () => { TOQUE.freio = true; }, () => { TOQUE.freio = false; });
   bt('.b-radio', () => { PRESS.r = true; });
   bt('.b-rodas', () => { PRESS.k = true; });
+  bt('.b-hab', () => { usarHabilidade(); });
   bt('.b-nitro', () => { TOQUE.nitro = true; }, () => { TOQUE.nitro = false; });
   bt('.b-mapa', () => { PRESS.m = true; });
   bt('.b-pausa', () => { PRESS.escape = true; });

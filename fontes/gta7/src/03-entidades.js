@@ -94,6 +94,7 @@ function modeloDaRegiao(reg) {
   if (reg === REG.BH) return pick(['popular', 'popular', 'sedan', 'gol', 'cg', 'biz', 'fusca', 'onibus']);
   if (reg === REG.INDONESIA) return pick(['biz', 'biz', 'cg', 'trilha', 'popular']);
   if (reg === REG.SERRA) return pick(['pickup', 'trilha', 'sw4', 'fusca']);
+  if (reg === REG.LITORAL) return pick(['jeep', 'fusca', 'sw4', 'biz', 'lambo', 'esporte'].filter(m => TIPOS_CARRO[m]));
   return pick(['popular', 'sedan', 'sedan', 'esporte', 'popular', 'pickup', 'taxi', 'taxi', 'gol', 'fusca', 'biz', 'cg', 'xj6', 'sw4', 'onibus', 'lambo']);
 }
 

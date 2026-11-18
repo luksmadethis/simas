@@ -47,6 +47,13 @@ function estacionados() {
 }
 
 let PERS_ESCOLHA = null;
+function estacionadosLitoral() {
+  for (let k = 0; k < 14; k++) {
+    const t = 30 + Math.random() * (MW - 50), y = 266 + Math.sin(t * 0.045) * 7 + Math.sin(t * 0.13) * 2.5 + (Math.random() < 0.5 ? -3.2 : 3.2);
+    const x = t * T, yy = y * T; if (solidoEm(x, yy) || tileEm(x, yy) === TL.ESTRADA) continue;
+    W.carros.push(novoCarro(pick(['sw4', 'fusca', 'esporte', 'lambo', 'pickup', 'biz', 'xj6']), x, yy, 0, { fixo: true }));
+  }
+}
 function comecar(save) {
   gerarMapa(); gerarMini(); carregarRostos();
   const ini = save ? LUGAR.dudu : LUGAR.policia;
@@ -58,7 +65,7 @@ function comecar(save) {
     MISSAO.feitas = save.feitas || 0; W.garagem = save.garagem || []; W.stats = { ...W.stats, ...(save.stats || {}) };
     Object.assign(j, save.roupa || {}); W.imoveis = save.imoveis || []; W.segredos = save.segredos || []; W.extras = save.extras || {}; W.pontos = save.pontos || 0; W.trofeus = save.trofeus || [];
   }
-  espalharItens(); criarFixos(); criarFiguras(); estacionados(); criarSegredos(); criarBarcos(); criarTesouro();
+  espalharItens(); criarFixos(); criarFiguras(); estacionados(); criarSegredos(); criarBarcos(); criarTesouro(); criarBausSubmersos(); estacionadosLitoral();
   if (ONLINE.ativo) aplicarPersonagemOnline(ONLINE.skin); else PERS = 'nerivan';
   if (MISSAO.feitas >= MISSOES.length) liberarFatal(false);
   cam.x = j.x; cam.y = j.y;
@@ -115,19 +122,20 @@ function passo(dt) {
   if (apertou('e', 'f')) { if (INTERACAO) entrarLugar(INTERACAO); else entrarSair(); }
   if (apertou('tab', 'q')) trocarArma(1);
   if (apertou('k')) trocarRodas();
+  if (apertou('x')) usarHabilidade();
   if (apertou('t') && ONLINE.ativo) ONLINE.chat();
   if (apertou('r') && j.carro) {
     { RADIO.atual = (RADIO.atual + 1) % RADIOS.length; RADIO.tocar(true); RADIO_AVISO = { t: 0 }; }
   }
   if (W.escorregou > 0) W.escorregou -= dt;
   if (!j.morto && j.hp < 100 && W.tempo - (W.ultDano || 0) > 5) j.hp = Math.min(100, j.hp + 4 * dt * (PERS === 'cas' ? 2 : 1));
-  j.recarga = Math.max(0, j.recarga - dt);
+  j.recarga = Math.max(0, j.recarga - dt); atualizaHabilidade(dt);
   if (j.carro) atualizaJogadorCarro(dt); else atualizaJogadorPe(dt);
   if (j.carro !== carroAntes) { if (j.carro) { CARRO_AVISO = { txt: TIPOS_CARRO[j.carro.modelo].nome, t: 0 }; RADIO_AVISO = { t: 0 }; } carroAntes = j.carro; }
   if (!j.carro) SOM.atualizaMotor(0, false);
   atualizaPeds(dt); atualizaCarros(dt); colisoes(dt); atualizaBalas(dt); atualizaItens(dt); atualizaChefes(dt);
   atualizaProcurado(dt); atualizaEfeitos(dt); povoar(dt, VW / cam.zoom, VH / (cam.zoom * INCL));
-  MISSAO.tick(dt); gatilhos(); atualizaNado(dt); atualizaConquistas(dt); atualizaGangueMoto(dt); atualizaDicas(dt); atualizaFiguras(dt); atualizaRenda(dt); atualizaSegredos(dt);
+  MISSAO.tick(dt); gatilhos(); atualizaNado(dt); atualizaBaus(dt); if (LUNETA_T > 0) LUNETA_T -= dt; atualizaConquistas(dt); atualizaGangueMoto(dt); atualizaDicas(dt); atualizaFiguras(dt); atualizaRenda(dt); atualizaSegredos(dt);
 }
 
 // som do baile do Meco: uma música do "Malando com Zensat", sem grave até devolver o paredão

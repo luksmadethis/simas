@@ -61,6 +61,7 @@ canvas{display:block;cursor:crosshair}
 #toque .b-arma{right:calc(110px + env(safe-area-inset-right));bottom:calc(104px + env(safe-area-inset-bottom));width:54px;height:54px;font-size:20px}
 #toque .b-radio{right:calc(14px + env(safe-area-inset-right));top:calc(182px + env(safe-area-inset-top));width:44px;height:44px;font-size:18px}
 #toque .b-mapa{right:calc(64px + env(safe-area-inset-right));top:calc(182px + env(safe-area-inset-top));width:44px;height:44px;font-size:18px}
+#toque .b-hab{right:calc(314px + env(safe-area-inset-right));top:calc(182px + env(safe-area-inset-top));width:44px;height:44px;font-size:18px;border-color:#00e5ff!important}
 #toque .b-nitro{right:calc(264px + env(safe-area-inset-right));top:calc(182px + env(safe-area-inset-top));width:44px;height:44px;font-size:18px}
 #toque .b-rodas{right:calc(164px + env(safe-area-inset-right));top:calc(182px + env(safe-area-inset-top));width:44px;height:44px;font-size:18px}
 #toque .b-pausa{right:calc(114px + env(safe-area-inset-right));top:calc(182px + env(safe-area-inset-top));width:44px;height:44px;font-size:16px}
@@ -131,7 +132,7 @@ body.titulo-on #radio{right:auto;left:50%;transform:translateX(-50%);bottom:12px
 <div id="toque">
   <div class="jo"><div class="bola"></div></div>
   <button class="b-tiro">🔫</button><button class="b-carro">🚗</button><button class="b-freio">FREIO</button><button class="b-arma">🔄</button>
-  <button class="b-radio">📻</button><button class="b-rodas">🛹</button><button class="b-nitro">🚀</button><button class="b-mapa">🗺️</button><button class="b-pausa">⏸️</button><button class="b-chat">💬</button>
+  <button class="b-radio">📻</button><button class="b-rodas">🛹</button><button class="b-nitro">🚀</button><button class="b-hab">⚡</button><button class="b-mapa">🗺️</button><button class="b-pausa">⏸️</button><button class="b-chat">💬</button>
 </div>
 <div id="radio"><div class="topo">📻 RÁDIO POLI FM <span>R troca</span></div><div id="yt"></div></div>
 <button id="retry">↻ TENTAR DE NOVO</button>
@@ -144,7 +145,7 @@ const FOTOS = {"alan": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDA
    jogo de mundo aberto visto de cima (estilo GTA de PS1)
    ========================================================= */
 const T = 64;                 // tamanho do bloquinho (tile) em pixels do mundo
-const MW = 248, MH = 240;     // mapa em tiles (cidade em 0..191, Indonésia a leste, Serra ao sul)
+const MW = 320, MH = 300;     // mapa em tiles (cidade em 0..191, Indonésia a leste, Serra ao sul)
 const CIDADE = 192;
 const GRID = 12;              // ruas a cada 12 tiles
 const LAND0 = 6, LAND1 = MW - 7;
@@ -305,8 +306,8 @@ const TL = { AGUA: 0, AREIA: 1, GRAMA: 2, RUA: 3, CALCADA: 4, PREDIO: 5, PRACA: 
 const SOLIDO = new Set([TL.AGUA, TL.PREDIO]);
 const mapa = new Uint8Array(MW * MH);
 const regiaoTile = new Uint8Array(MW * MH);
-const REG = { CENTRO: 0, JUAZEIRO: 1, RIO: 2, BH: 3, RECIFE: 4, SUBURBIO: 5, INDONESIA: 6, SERRA: 7 };
-const NOME_REG = ['São Simas (centro)', 'Juazeiro', 'Rio de Janeiro', 'BH', 'Recife', 'Subúrbio', 'Indonésia', 'Serra do Simas'];
+const REG = { CENTRO: 0, JUAZEIRO: 1, RIO: 2, BH: 3, RECIFE: 4, SUBURBIO: 5, INDONESIA: 6, SERRA: 7, LITORAL: 8 };
+const NOME_REG = ['São Simas (centro)', 'Juazeiro', 'Rio de Janeiro', 'BH', 'Recife', 'Subúrbio', 'Indonésia', 'Serra do Simas', 'Litoral Sul'];
 const predios = [];
 const LUGAR = {};     // lugares importantes: {x, y (mundo), nome}
 const deco = [];      // decoração no chão: árvores, palmeiras, rampas, contêineres
@@ -403,7 +404,7 @@ function gerarMapa() {
     const terra = x >= esq && x <= dir && y >= cima && y <= baixo;
     mapa[y * MW + x] = terra ? TL.GRAMA : TL.AGUA;
     const i = Math.floor(x / GRID), j = Math.floor(y / GRID);
-    regiaoTile[y * MW + x] = x >= CIDADE ? REG.INDONESIA : y >= CIDADE ? REG.SERRA : regiaoDoBloco(clamp(i, 0, 15), clamp(j, 0, 15));
+    regiaoTile[y * MW + x] = y >= 240 ? REG.LITORAL : x >= CIDADE ? REG.INDONESIA : y >= CIDADE ? REG.SERRA : regiaoDoBloco(clamp(i, 0, 15), clamp(j, 0, 15));
   }
   // chão de cada região perto da água
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
@@ -449,7 +450,7 @@ function gerarMapa() {
     if (i === 7 && (j === 9 || j === 10)) { montarParque(x0, y0, x1, y1, j === 9, r); continue; }
     preencherLote(regiaoDoBloco(i, j), x0, y0, x1, y1, r);
   }
-  gerarIndonesia(r); gerarSerra(r); mobiliaUrbana(r);
+  gerarIndonesia(r); gerarSerra(r); gerarLitoral(r); orlaDoRio(r); mobiliaUrbana(r);
   for (let k = deco.length - 1; k >= 0; k--) { const d = deco[k]; if (['arvore', 'palmeira', 'cacto', 'banco', 'poste', 'hidrante', 'lixeira', 'pedra', 'placa'].includes(d.t) && (tileEm(d.x, d.y) === TL.AGUA || tileEm(d.x, d.y) === TL.PREDIO || tileEm(d.x, d.y) === TL.RUA)) deco.splice(k, 1); }
   for (let k = 0; k < 50; k++) { const x = rnd(4, 40), y = rnd(130, 188); if (tile(x | 0, y | 0) === TL.AREIA) deco.push({ t: 'palmeira', x: x * T, y: y * T, s: 1 }); }
   for (let k = 0; k < 50; k++) { const x = rnd(10, 80), y = rnd(178, 189); if (tile(x | 0, y | 0) === TL.AREIA) deco.push({ t: 'palmeira', x: x * T, y: y * T, s: 1 }); }
@@ -675,8 +676,8 @@ function gerarIndonesia(r) {
 }
 // ---------- Serra do Simas: morro ao sul, estrada cheia de curva ----------
 function gerarSerra(r) {
-  for (let y = CIDADE; y < MH - 2; y++) for (let x = 14; x < 180; x++) {
-    const topo = 196 + ruido(x, 31) * 5, fundo = MH - 4 - ruido(x, 37) * 5, esq = 18 + ruido(y, 41) * 6, dir = 176 - ruido(y, 43) * 6;
+  for (let y = CIDADE; y < 238; y++) for (let x = 14; x < 180; x++) {
+    const topo = 196 + ruido(x, 31) * 5, fundo = 236 - ruido(x, 37) * 5, esq = 18 + ruido(y, 41) * 6, dir = 176 - ruido(y, 43) * 6;
     if (y > topo && y < fundo && x > esq && x < dir) setTile(x, y, ruido(x * 1.7 + y, 7) > 0.62 ? TL.TERRA : TL.GRAMA);
   }
   // duas ligações com a cidade (continuação das ruas verticais 7 e 3)
@@ -689,6 +690,43 @@ function gerarSerra(r) {
   LUGAR.mirante = { x: 120 * T, y: 232 * T, nome: 'Mirante da Serra' };
   for (let y = 230; y < 236; y++) for (let x = 115; x < 126; x++) if (tile(x, y) !== TL.AGUA) setTile(x, y, TL.PRACA);
   for (let k = 0; k < 260; k++) { const x = 16 + r() * 162, y = 196 + r() * 42, t = tile(x | 0, y | 0); if (t === TL.GRAMA || t === TL.TERRA) deco.push({ t: r() < 0.75 ? 'arvore' : 'pedra', x: x * T, y: y * T, s: 0.9 + r() * 0.7 }); }
+}
+// ---------- Litoral Sul: faixa de praia nova, rodovia cheia de curva, autódromo e farol ----------
+function gerarLitoral(r) {
+  const yTopo = x => 247 + ruido(x, 51) * 5, yFundo = x => 289 - ruido(x, 57) * 5;
+  for (let y = 240; y < MH - 2; y++) for (let x = 16; x < MW - 6; x++) {
+    const esq = 18 + ruido(y, 61) * 5, dir = MW - 10 - ruido(y, 63) * 6;
+    if (y > yTopo(x) && y < yFundo(x) && x > esq && x < dir) setTile(x, y, y > yFundo(x) - 7 ? TL.AREIA : (ruido(x * 1.3 + y, 9) > 0.66 ? TL.TERRA : TL.GRAMA));
+  }
+  // rodovia da orla, de ponta a ponta, toda serpenteando
+  const orla = t => [t, 266 + Math.sin(t * 0.045) * 7 + Math.sin(t * 0.13) * 2.5];
+  estrada(curva(orla, 24, MW - 14, 0.4), 1.5);
+  // ligações: da Serra (descendo o morro), do mirante e da ponta sul da Indonésia (ponte comprida)
+  estrada(curva(t => [168 + Math.sin(t * 0.25) * 6, t], 214 + Math.sin(168 * 0.09) * 9, 262, 0.4), 1.4);
+  estrada(curva(t => [120 + Math.sin(t * 0.4) * 5, t], 232, 266, 0.4), 1.3);
+  estrada(curva(t => [222 + Math.sin(t * 0.12) * 10, t], 186, 266, 0.4), 1.4);
+  // autódromo Simas: circuito fechado cheio de curva
+  const pista = t => [62 + Math.cos(t) * 30 + Math.sin(t * 2) * 5, 274 + Math.sin(t) * 9 + Math.cos(t * 3) * 2];
+  for (let y = 260; y < 288; y++) for (let x = 28; x < 98; x++) if (tile(x, y) === TL.GRAMA || tile(x, y) === TL.TERRA) setTile(x, y, TL.GRAMA);
+  estrada(curva(pista, 0, Math.PI * 2 + 0.05, 0.03), 1.7);
+  LUGAR.autodromo = { x: pista(0)[0] * T, y: pista(0)[1] * T, nome: 'Autódromo Simas' };
+  LUGAR.pistaPts = []; for (let k = 1; k <= 10; k++) { const p = pista(k / 10 * Math.PI * 2); LUGAR.pistaPts.push({ x: p[0] * T, y: p[1] * T }); }
+  addPredio(56, 262, 12, 3, 0.35, '#c0392b', { teto: '#7b241c', placa: 'AUTÓDROMO SIMAS', neon: '#ff6ec7' });
+  // farol na ponta leste
+  const fx = MW - 22, fy = 272;
+  addPredio(fx, fy, 4, 4, 1.4, '#ecf0f1', { teto: '#c0392b', placa: 'FAROL', neon: '#ffe600' });
+  LUGAR.farol = { x: (fx + 2) * T, y: (fy + 5.5) * T, nome: 'Farol do Simas' };
+  // vila de pescador, quiosques e casinhas de praia
+  for (let k = 0; k < 26; k++) { const x = 100 + Math.floor(r() * (MW - 130)), y = 250 + Math.floor(r() * 30); if (retLivre(x, y, 3, 3) && Math.abs(y - orla(x)[1]) > 4) addPredio(x, y, 3, 3, 0.25 + r() * 0.3, pick(['#c8a165', '#5dade2', '#f5b7b1', '#a3e4d7', '#f9e79f']), { teto: pick(['#5d4037', '#c0392b', '#2471a3']), palha: r() < 0.5 }); }
+  for (let k = 0; k < 10; k++) { const x = 30 + Math.floor(r() * (MW - 50)); for (let y = 280; y < 292; y++) if (tile(x, y) === TL.AREIA && tile(x, y + 3) === TL.AREIA && retLivre(x, y, 2, 2)) { addPredio(x, y, 2, 2, 0.2, '#f5cba7', { teto: '#e74c3c', palha: true, placa: k % 2 ? 'COCO' : 'QUIOSQUE' }); break; } }
+  LUGAR.litoral = { x: 200 * T, y: orla(200)[1] * T };
+  for (let k = 0; k < 220; k++) { const x = 20 + r() * (MW - 30), y = 246 + r() * 46, t = tile(x | 0, y | 0); if (t === TL.AREIA) deco.push({ t: 'palmeira', x: x * T, y: y * T, s: 1 }); else if (t === TL.GRAMA && r() < 0.5) deco.push({ t: r() < 0.8 ? 'arvore' : 'pedra', x: x * T, y: y * T, s: 0.9 + r() * 0.5 }); }
+}
+// ---------- orla do Rio: avenida curva na beira da praia (oeste) ----------
+function orlaDoRio(r) {
+  const xo = y => 3 + ruido(y, 1) * 7 + 2.6;
+  estrada(curva(t => [xo(t), t], 112, 186, 0.4), 1.3);
+  for (const k of [10, 11, 12, 13, 14]) { const y = GRID * k + 1; estrada([[xo(y), y], [GRID + 0.5, y]], 1.2); }
 }
 // ---------- poste, hidrante, lixeira e placa nas calçadas (tudo dá pra derrubar de carro) ----------
 function mobiliaUrbana(r) {
@@ -839,6 +877,7 @@ function modeloDaRegiao(reg) {
   if (reg === REG.BH) return pick(['popular', 'popular', 'sedan', 'gol', 'cg', 'biz', 'fusca', 'onibus']);
   if (reg === REG.INDONESIA) return pick(['biz', 'biz', 'cg', 'trilha', 'popular']);
   if (reg === REG.SERRA) return pick(['pickup', 'trilha', 'sw4', 'fusca']);
+  if (reg === REG.LITORAL) return pick(['jeep', 'fusca', 'sw4', 'biz', 'lambo', 'esporte'].filter(m => TIPOS_CARRO[m]));
   return pick(['popular', 'sedan', 'sedan', 'esporte', 'popular', 'pickup', 'taxi', 'taxi', 'gol', 'fusca', 'biz', 'cg', 'xj6', 'sw4', 'onibus', 'lambo']);
 }
 
@@ -1427,7 +1466,7 @@ function atualizaJogadorPe(dt) {
   const corre = segura('shift') || (TOQUE.ativo && Math.hypot(mx, my) > 0.9);
   const roda = j.skate ? 'skate' : j.rodaAtiva;
   const tn = TENIS[j.tenis] || TENIS.chinelo;
-  const vel = (roda === 'skate' ? (corre ? 430 : 360) * (PERS === 'alan' ? 1.15 : 1) : roda === 'patins' ? (corre ? 500 : 410) : (corre ? 250 : 160) * tn.vel) * (PERS === 'meco' ? 1.25 : 1);
+  const vel = (roda === 'skate' ? (corre ? 430 : 360) * (PERS === 'alan' ? 1.15 : 1) : roda === 'patins' ? (corre ? 500 : 410) : (corre ? 250 : 160) * tn.vel) * (PERS === 'meco' ? 1.25 : 1) * (j.turbo > 0 ? j.turboMult || 1 : 1) * (j.galinha ? 1.3 : 1);
   const len = Math.hypot(mx, my);
   if (len > 0.1) {
     const nx = mx / Math.max(1, len), ny = my / Math.max(1, len);
@@ -1869,8 +1908,9 @@ function boneco(g, p, x, y, opt = {}) {
   const nada = p.nadando;
   // anel do jogador + sombra
   if (opt.anel) { const pu = 1 + Math.sin(t * 5) * 0.08; g.strokeStyle = 'rgba(255,210,63,.9)'; g.lineWidth = 3; g.beginPath(); g.ellipse(0, 0, 20 * s * pu, 9 * s * pu, 0, 0, 7); g.stroke(); }
-  g.fillStyle = 'rgba(0,0,0,.32)'; g.beginPath(); g.ellipse(0, 0, 13 * s, 5 * s, 0, 0, 7); g.fill();
+  if (!opt.sentado) { g.fillStyle = 'rgba(0,0,0,.32)'; g.beginPath(); g.ellipse(0, 0, 13 * s, 5 * s, 0, 0, 7); g.fill(); }
   if (esq && vista === 'lado') g.scale(-1, 1);
+  if (opt.sentado) g.translate(0, 15 * s);
   const pele = p.pele || '#c68642';
   const H = -1;  // pra cima
   // ---- coisas nas costas (desenha antes do corpo quando ele tá de frente/lado) ----
@@ -1882,7 +1922,12 @@ function boneco(g, p, x, y, opt = {}) {
     if (p.mochila) { g.fillStyle = p.mochila; rr(g, -8 * s, -31 * s, 16 * s, 15 * s, 3 * s); g.fill(); }
   };
   if (vista !== 'costas') costas();
-  if (nada) {
+  if (opt.sentado) {
+    // sentado: coxa pra frente, canela pra baixo
+    g.fillStyle = p.calca || '#2c3e50';
+    if (vista === 'lado') { g.fillRect(-2 * s, -19 * s, 12 * s, 6 * s); g.fillRect(6 * s, -15 * s, 5 * s, 9 * s); g.fillStyle = p.tenisCor || '#111'; g.fillRect(6 * s, -7 * s, 8 * s, 3 * s); }
+    else for (const sd of [-1, 1]) { g.fillRect(sd * 7 * s - 3 * s, -19 * s, 6 * s, 8 * s); g.fillStyle = p.tenisCor || '#111'; g.fillRect(sd * 7 * s - 3.5 * s, -12 * s, 7 * s, 3 * s); g.fillStyle = p.calca || '#2c3e50'; }
+  } else if (nada) {
     g.fillStyle = 'rgba(29,79,143,.75)'; g.beginPath(); g.ellipse(0, -2 * s, 18 * s, 7 * s, 0, 0, 7); g.fill();
     g.strokeStyle = 'rgba(255,255,255,.7)'; g.lineWidth = 2; g.beginPath(); g.ellipse(0, -2 * s, 16 * s + Math.sin(t * 6) * 2, 6 * s, 0, 0, 7); g.stroke();
   } else {
@@ -1906,6 +1951,14 @@ function boneco(g, p, x, y, opt = {}) {
       else if (p.estampa === 'xadrez') { g.fillStyle = 'rgba(0,0,0,.35)'; for (let k = 0; k < 16; k += 4) { g.fillRect(-tw / 2, ty + k * s, tw, 2 * s); g.fillRect(-tw / 2 + k * s, ty, 2 * s, th); } }
       else if (p.estampa === 'camuflada') { const cs = ['#4a5d23', '#6b4f2a', '#2d3a1a']; for (let k = 0; k < 8; k++) { g.fillStyle = cs[k % 3]; g.beginPath(); g.arc((-6 + (k * 37) % 12) * s, ty + ((k * 53) % 16) * s, 3 * s, 0, 7); g.fill(); } }
       else if (p.estampa === 'flamengo') { for (let k = 0; k < 16; k += 4) { g.fillStyle = (k / 4) % 2 ? '#111' : '#c0392b'; g.fillRect(-tw / 2, ty + k * s, tw, 4 * s); } }
+      else if (p.estampa === 'smile') { g.fillStyle = '#ffe600'; g.beginPath(); g.arc(0, ty + th / 2, 5 * s, 0, 7); g.fill(); g.fillStyle = '#111'; g.fillRect(-2.2 * s, ty + th / 2 - 2 * s, 1.2 * s, 1.6 * s); g.fillRect(1 * s, ty + th / 2 - 2 * s, 1.2 * s, 1.6 * s); g.strokeStyle = '#111'; g.lineWidth = 0.8 * s; g.beginPath(); g.arc(0, ty + th / 2, 3 * s, 0.3, Math.PI - 0.3); g.stroke(); }
+      else if (p.estampa === 'caveira') { g.fillStyle = '#fff'; g.beginPath(); g.arc(0, ty + th / 2 - 1 * s, 4.5 * s, 0, 7); g.fill(); g.fillRect(-2.5 * s, ty + th / 2 + 2 * s, 5 * s, 3 * s); g.fillStyle = '#111'; g.beginPath(); g.arc(-1.8 * s, ty + th / 2 - 1 * s, 1.3 * s, 0, 7); g.arc(1.8 * s, ty + th / 2 - 1 * s, 1.3 * s, 0, 7); g.fill(); }
+      else if (p.estampa === 'coracao') { g.fillStyle = '#ff2f6d'; g.beginPath(); g.arc(-2 * s, ty + th / 2 - 1.5 * s, 2.6 * s, 0, 7); g.arc(2 * s, ty + th / 2 - 1.5 * s, 2.6 * s, 0, 7); g.fill(); g.beginPath(); g.moveTo(-4.5 * s, ty + th / 2 - 0.8 * s); g.lineTo(0, ty + th / 2 + 4.5 * s); g.lineTo(4.5 * s, ty + th / 2 - 0.8 * s); g.fill(); }
+      else if (p.estampa === 'galado') { g.fillStyle = '#fff'; g.beginPath(); g.ellipse(0, ty + th / 2 + 1 * s, 5 * s, 4 * s, 0, 0, 7); g.fill(); g.beginPath(); g.arc(3 * s, ty + th / 2 - 3 * s, 2.5 * s, 0, 7); g.fill(); g.fillStyle = '#e74c3c'; g.fillRect(2.4 * s, ty + th / 2 - 6.5 * s, 1.6 * s, 2 * s); g.fillStyle = '#f39c12'; g.fillRect(5 * s, ty + th / 2 - 3 * s, 2 * s, 1.2 * s); }
+      else if (p.estampa === 'raio') { g.fillStyle = '#ffe600'; g.beginPath(); g.moveTo(1.5 * s, ty + 1 * s); g.lineTo(-3 * s, ty + th / 2 + 1 * s); g.lineTo(0, ty + th / 2 + 1 * s); g.lineTo(-1.5 * s, ty + th - 1 * s); g.lineTo(3.5 * s, ty + th / 2 - 1 * s); g.lineTo(0.5 * s, ty + th / 2 - 1 * s); g.closePath(); g.fill(); }
+      else if (p.estampa === 'n171') { g.fillStyle = '#fff'; g.font = `900 ${7 * s}px system-ui`; g.textAlign = 'center'; g.fillText('171', 0, ty + th / 2 + 2.5 * s); }
+      else if (p.estampa === 'banana') { g.fillStyle = '#f4d03f'; for (let k = 0; k < 6; k++) { g.save(); g.translate((-5 + (k * 23) % 10) * s, ty + 3 * s + ((k * 31) % 11) * s); g.rotate(k); g.beginPath(); g.ellipse(0, 0, 2.6 * s, 1 * s, 0, 0, 7); g.fill(); g.restore(); } }
+      else if (p.estampa === 'smoking') { g.fillStyle = '#111'; g.fillRect(-tw / 2, ty, tw * 0.36, th); g.fillRect(tw / 2 - tw * 0.36, ty, tw * 0.36, th); g.fillStyle = '#fff'; g.fillRect(-tw * 0.14, ty, tw * 0.28, th); g.fillStyle = '#c0392b'; g.beginPath(); g.moveTo(-3 * s, ty + 1 * s); g.lineTo(0, ty + 2.5 * s); g.lineTo(-3 * s, ty + 4 * s); g.moveTo(3 * s, ty + 1 * s); g.lineTo(0, ty + 2.5 * s); g.lineTo(3 * s, ty + 4 * s); g.fill(); }
       else if (p.estampa === 'havaiana') { const cs = ['#f1c40f', '#e84393', '#2ecc71']; for (let k = 0; k < 7; k++) { g.fillStyle = cs[k % 3]; g.beginPath(); g.arc((-6 + (k * 29) % 12) * s, ty + 2 * s + ((k * 41) % 13) * s, 2.2 * s, 0, 7); g.fill(); } }
       g.restore();
     }
@@ -2003,6 +2056,10 @@ function chapeu(g, p, vista, hy, r, s, t) {
     case 'festa': g.fillStyle = `hsl(${(t * 60) % 360},80%,55%)`; g.beginPath(); g.moveTo(-r * 0.6, top + 2 * s); g.lineTo(r * 0.6, top + 2 * s); g.lineTo(0, top - 14 * s); g.closePath(); g.fill(); g.fillStyle = '#fff'; g.beginPath(); g.arc(0, top - 14 * s, 2.5 * s, 0, 7); g.fill(); break;
     case 'cartola': g.fillStyle = '#111'; g.fillRect(-r * 1.4, hy - 5 * s, r * 2.8, 3 * s); g.fillRect(-r * 0.8, top - 12 * s, r * 1.6, 14 * s); g.fillStyle = '#c0392b'; g.fillRect(-r * 0.8, hy - 8 * s, r * 1.6, 2.5 * s); break;
     case 'capacete': g.fillStyle = c; g.beginPath(); g.arc(0, hy, r * 1.25, 0, 7); g.fill(); if (vista !== 'costas') { g.fillStyle = 'rgba(140,200,255,.6)'; g.beginPath(); g.arc(vista === 'lado' ? 4 * s : 0, hy + 1 * s, r * 0.7, -1.2, 1.2); g.fill(); } break;
+    case 'helice': g.beginPath(); g.arc(0, hy - 2 * s, r * 1.05, Math.PI, 0); g.fill(); g.fillStyle = '#f1c40f'; g.fillRect(-1 * s, top - 6 * s, 2 * s, 5 * s); { const ha = t * 20; g.fillStyle = '#2e86de'; g.fillRect(-Math.cos(ha) * 9 * s, top - 7 * s, Math.cos(ha) * 18 * s || 1, 2 * s); } break;
+    case 'galinha': g.fillStyle = '#fdfefe'; g.beginPath(); g.ellipse(0, top - 4 * s, 8 * s, 6 * s, 0, 0, 7); g.fill(); g.beginPath(); g.arc(6 * s, top - 10 * s, 3.5 * s, 0, 7); g.fill(); g.fillStyle = '#e74c3c'; g.fillRect(5 * s, top - 15 * s, 2 * s, 3 * s); g.fillStyle = '#f39c12'; g.beginPath(); g.moveTo(9 * s, top - 10 * s); g.lineTo(13 * s, top - 9 * s); g.lineTo(9 * s, top - 8 * s); g.fill(); g.fillStyle = '#111'; g.fillRect(6.5 * s, top - 11 * s, 1.2 * s, 1.2 * s); break;
+    case 'melancia': g.fillStyle = '#27ae60'; g.beginPath(); g.arc(0, hy - 2 * s, r * 1.15, Math.PI, 0); g.fill(); g.fillStyle = '#1e8449'; for (let k = -2; k <= 2; k++) g.fillRect(k * 3 * s - 0.6 * s, top - 1 * s, 1.2 * s, r * 0.9); g.fillStyle = '#e74c3c'; g.fillRect(-r * 1.15, hy - 3 * s, r * 2.3, 1.6 * s); break;
+    case 'palha': g.fillStyle = '#d4ac0d'; g.beginPath(); g.ellipse(0, hy - 4 * s, r * 1.9, 3.2 * s, 0, 0, 7); g.fill(); g.beginPath(); g.arc(0, hy - 4 * s, r * 0.9, Math.PI, 0); g.fill(); g.fillStyle = '#c0392b'; g.fillRect(-r * 0.9, hy - 6 * s, r * 1.8, 1.6 * s); g.fillStyle = '#7d6608'; for (let k = 0; k < 5; k++) g.fillRect(-r * 1.7 + k * r * 0.8, hy - 3 * s, 1 * s, 2 * s); break;
     case 'sombrero': g.fillStyle = '#d4ac0d'; g.beginPath(); g.ellipse(0, hy - 4 * s, r * 2.4, 4 * s, 0, 0, 7); g.fill(); g.beginPath(); g.ellipse(0, top - 3 * s, r * 0.8, 8 * s, 0, Math.PI, 0); g.fill(); g.fillStyle = '#c0392b'; g.fillRect(-r * 2.2, hy - 5 * s, r * 4.4, 1.5 * s); break;
   }
 }
@@ -2083,16 +2140,26 @@ function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w
 function desenharMoto(g, c, t) {
   const L = c.l;
   g.save(); g.translate(c.x, c.y);
-  g.fillStyle = 'rgba(0,0,0,.35)'; g.save(); g.translate(4, 6); g.rotate(c.a); rr(g, -L / 2, -8, L, 16, 7); g.fill(); g.restore();
+  if (c.neon && c.hp > 0) { const nc = c.neon === 'arco' ? `hsl(${(W.tempo * 120) % 360},100%,55%)` : c.neon; g.save(); g.globalAlpha = 0.55; g.fillStyle = nc; g.beginPath(); g.ellipse(0, 0, L * 0.6, 16, c.a, 0, 7); g.fill(); g.restore(); }
+  g.fillStyle = 'rgba(0,0,0,.35)'; g.save(); g.translate(3, 4); g.rotate(c.a); rr(g, -L / 2, -8, L, 16, 7); g.fill(); g.restore();
+  // rodas no chão, corpo um pouco acima (dá altura na câmera inclinada)
+  g.save(); g.rotate(c.a); g.fillStyle = '#111'; rr(g, L / 2 - 15, -4, 15, 8, 4); g.fill(); rr(g, -L / 2, -4, 15, 8, 4); g.fill(); g.restore();
+  g.translate(0, -7 / INCL);
   g.rotate(c.a);
   g.fillStyle = '#111'; rr(g, L / 2 - 14, -5, 14, 10, 4); g.fill(); rr(g, -L / 2, -5, 14, 10, 4); g.fill();
+  g.fillStyle = c.roda || '#7f8c8d'; g.fillRect(L / 2 - 10, -2, 6, 4); g.fillRect(-L / 2 + 4, -2, 6, 4);
   g.fillStyle = c.hp <= 0 ? '#333' : c.cor; rr(g, -L / 2 + 8, -7, L - 16, 14, 6); g.fill(); g.strokeStyle = escurecer(c.cor, 0.6); g.lineWidth = 2; g.stroke();
   g.fillStyle = '#bdc3c7'; g.fillRect(L / 2 - 16, -11, 3, 22);
   g.fillStyle = '#fff6b0'; g.fillRect(L / 2 - 3, -3, 3, 6);
+  if (c.adesivo === 'chamas') { g.fillStyle = '#ff8c00'; g.beginPath(); g.moveTo(L * 0.2, -5); g.lineTo(-L * 0.2, -2); g.lineTo(L * 0.05, 0); g.lineTo(-L * 0.2, 2); g.lineTo(L * 0.2, 5); g.fill(); }
+  else if (c.adesivo === 'listras' || c.adesivo === 'xadrez') { g.fillStyle = '#fff'; g.fillRect(-L / 2 + 8, -1.5, L - 16, 3); }
+  else if (c.adesivo === 'arco') ['#e40303', '#ff8c00', '#ffed00', '#008026', '#004dff', '#750787'].forEach((cc, k) => { g.fillStyle = cc; g.fillRect(-L / 2 + 8, -6 + k * 2, L - 16, 2); });
+  else if (c.adesivo) { g.fillStyle = 'rgba(0,0,0,.35)'; for (let k = 0; k < 5; k++) { g.beginPath(); g.arc(-L * 0.25 + k * L * 0.12, (k % 2 ? -3 : 3), 2, 0, 7); g.fill(); } }
+  if (c.nitroOn) { g.fillStyle = '#00e5ff'; g.beginPath(); g.arc(-L / 2 - 4, 0, 4 + Math.random() * 4, 0, 7); g.fill(); }
   if (c.modelo === 'biz') { g.fillStyle = '#c0392b'; g.fillRect(-L / 2 + 2, -9, 12, 18); g.fillStyle = '#fff'; g.font = 'bold 7px system-ui'; g.fillText('iFOME', -L / 2 + 2, 3); }
   g.restore();
   const m = c.motorista;
-  if (m) { g.save(); desenharPessoa(g, { ...m, x: c.x, y: c.y + 2, a: c.a, anda: 0, chapeu: m.capacete || m.chapeu, chapeuTipo: m.capacete ? 'capacete' : m.chapeuTipo, nome: null, nadando: false }, { semNome: true, jog: m === W.jog }); g.restore(); }
+  if (m) { g.save(); desenharPessoa(g, { ...m, x: c.x - Math.cos(c.a) * 4, y: c.y - Math.sin(c.a) * 4 - 2, a: c.a, anda: 0, chapeu: m.capacete || m.chapeu, chapeuTipo: m.capacete ? 'capacete' : m.chapeuTipo, nome: null, nadando: false }, { semNome: true, sentado: true, jog: m === W.jog }); g.restore(); }
   g.save();
   g.restore();
   if (c.nome && dist(c.x, c.y, W.jog.x, W.jog.y) < 700) rotuloEmPe(g, c.nome, c.x, c.y, 58, c.gangue ? '#ff8c00' : '#ff6b6b', 'bold 11px system-ui');
@@ -2103,7 +2170,8 @@ function desenharCarro(g, c) {
   if (t.barco) return desenharBarco(g, c, t);
   g.save(); g.translate(c.x, c.y);
   // neon embaixo do carro
-  if (c.neon && c.hp > 0) { const gr = g.createRadialGradient(0, 0, 4, 0, 0, L * 0.75); gr.addColorStop(0, c.neon + 'cc'); gr.addColorStop(1, c.neon + '00'); g.fillStyle = gr; g.beginPath(); g.ellipse(0, 0, L * 0.8, L * 0.6, c.a, 0, 7); g.fill(); }
+  if (c.neon && c.hp > 0) { const nc = c.neon === 'arco' ? `hsl(${(W.tempo * 120) % 360},100%,55%)` : c.neon; const gr0 = g.createRadialGradient(0, 0, 4, 0, 0, L * 0.75); gr0.addColorStop(0, c.neon === 'arco' ? nc.replace('hsl', 'hsla').replace(')', ',.8)') : c.neon + 'cc'); gr0.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr0; g.beginPath(); g.ellipse(0, 0, L * 0.75, Wd * 1.1, c.a, 0, 7); g.fill(); }
+  if (false) { const gr = g.createRadialGradient(0, 0, 4, 0, 0, L * 0.75); gr.addColorStop(0, c.neon + 'cc'); gr.addColorStop(1, c.neon + '00'); g.fillStyle = gr; g.beginPath(); g.ellipse(0, 0, L * 0.8, L * 0.6, c.a, 0, 7); g.fill(); }
   g.fillStyle = 'rgba(0,0,0,.35)'; g.save(); g.translate(5, 7); g.rotate(c.a); rr(g, -L / 2, -Wd / 2, L, Wd, 10); g.fill(); g.restore();
   g.rotate(c.a);
   const cor = c.hp <= 0 ? '#2a2a2a' : c.cor;
@@ -2138,6 +2206,8 @@ function desenharCarro(g, c) {
   else if (c.adesivo === 'listras') { g.fillStyle = '#fff'; g.fillRect(-L / 2 + 2, -7, L - 4, 4); g.fillRect(-L / 2 + 2, 3, L - 4, 4); }
   else if (c.adesivo === 'arco') { ['#e40303', '#ff8c00', '#ffed00', '#008026', '#004dff', '#750787'].forEach((cc, k) => { g.fillStyle = cc; g.fillRect(-L / 2 + 2, -Wd / 2 + 3 + k * (Wd - 6) / 6, L - 4, (Wd - 6) / 6); }); g.fillStyle = '#9ec7e0'; g.fillRect(L * 0.12, -Wd / 2 + 5, 10, Wd - 10); }
   else if (c.adesivo === 'simas') { g.save(); g.rotate(Math.PI / 2); g.fillStyle = '#ff6ec7'; g.font = 'bold 10px system-ui'; g.textAlign = 'center'; g.fillText('SIMAS', 0, -L * 0.33); g.restore(); }
+  else if (c.adesivo === 'xadrez') { for (let xx = 0; xx < 6; xx++) for (let yy = 0; yy < 2; yy++) { g.fillStyle = (xx + yy) % 2 ? '#111' : '#fff'; g.fillRect(-L * 0.15 + xx * 5, -5 + yy * 5, 5, 5); } }
+  else if (c.adesivo === 'camuflado') { const cs = ['#4a5d23', '#6b4f2a', '#2d3a1a']; for (let k = 0; k < 12; k++) { g.fillStyle = cs[k % 3]; g.beginPath(); g.arc(-L * 0.4 + (k * 29) % (L * 0.8), -Wd / 2 + 4 + (k * 17) % (Wd - 8), 4, 0, 7); g.fill(); } }
   else if (c.adesivo === 'oncinha') { g.fillStyle = 'rgba(60,30,0,.75)'; for (let k = 0; k < 10; k++) { g.beginPath(); g.arc(-L * 0.4 + (k * 37) % (L * 0.8), -Wd / 2 + 4 + (k * 19) % (Wd - 8), 2.5, 0, 7); g.fill(); } }
   if (c.fume) { g.fillStyle = 'rgba(10,10,15,.85)'; g.fillRect(L * 0.12, -Wd / 2 + 5, 10, Wd - 10); g.fillRect(-L * 0.32, -Wd / 2 + 6, 7, Wd - 12); }
   if (c.aero) { g.fillStyle = escurecer(cor, 0.7); g.fillRect(-L / 2 - 4, -Wd / 2 - 1, 6, Wd + 2); g.fillStyle = '#111'; g.fillRect(-L / 2 + 2, -Wd / 2 + 6, 4, 4); g.fillRect(-L / 2 + 2, Wd / 2 - 10, 4, 4); }
@@ -2356,7 +2426,7 @@ function desenharMundo() {
       g.restore();
     }
   }
-  desenharMarcadores(g);
+  desenharMarcadores(g); desenharBaus(g);
   for (const p of W.peds) if (p.morto && !p.dentroCarro && dentro(p.x, p.y)) desenharPessoa(g, p);
   // ---- tudo que fica de pé, na ordem de quem tá mais "atrás" (y menor) pra frente ----
   const fila = [];
@@ -2568,7 +2638,7 @@ function lugarMissao(m) {
 async function iniciarMissao(m) {
   if (MISSAO.ativa) return;
   MISSAO.ativa = m; MISSAO.ger++;
-  AVISO = { titulo: m.nome.toUpperCase(), sub: m.id === 'intro' ? 'GTA 7' : m.extra ? 'missão de moto' : 'missão ' + MISSOES.indexOf(m), cor: '#ffd23f', t: 0, dur: 3 };
+  AVISO = { titulo: m.nome.toUpperCase(), sub: m.id === 'intro' ? 'GTA 7' : m.extra ? (m.sub || 'missão de moto') : 'missão ' + MISSOES.indexOf(m), cor: '#ffd23f', t: 0, dur: 3 };
   try {
     await m.fn();
     if (MISSAO.ativa !== m) return;
@@ -3096,11 +3166,11 @@ const XINGOS_SIBITO = ['sai daqui, desgraçado', 'tu de novo?? some', 'que cara 
 const FIGURAS = [];
 function criarFiguras() {
   const C = LUGAR.cafe;
-  const sib = novoPed(C.x - 30, C.y + 10, { nome: 'Sibito', fixo: true, invuln: true, olhaJog: true, semGrana: true, camisa: '#e67e22', calca: '#2c3e50', cabelo: '#111', cabeloLongo: true, corNome: COR_NOME.sibito });
+  const sib = novoPed(C.x - 30, C.y + 10, { nome: 'Sibito', fixo: true, invuln: true, olhaJog: true, semGrana: true, camisa: '#e67e22', calca: '#2c3e50', cabelo: '#111', corte: 'longo', corNome: COR_NOME.sibito });
   sib.figura = 'sibito'; W.peds.push(sib); FIGURAS.push(sib);
   // Gabs passeando com o ex em volta do quarteirão (11,12)
   const bx = GRID * 11, by = GRID * 12, cs = [[bx + 2.5, by + 2.5], [bx + 11.5, by + 2.5], [bx + 11.5, by + 11.5], [bx + 2.5, by + 11.5]].map(([x, y]) => ({ x: x * T, y: y * T }));
-  const gabs = novoPed(cs[0].x, cs[0].y, { nome: 'Gabs', fixo: true, invuln: true, semGrana: true, camisa: '#fd79a8', calca: '#2d3436', cabelo: '#3b2412', cabeloLongo: true, corNome: COR_NOME.gabs });
+  const gabs = novoPed(cs[0].x, cs[0].y, { nome: 'Gabs', fixo: true, invuln: true, semGrana: true, camisa: '#fd79a8', calca: '#2d3436', cabelo: '#3b2412', corte: 'longo', corNome: COR_NOME.gabs });
   const ex = novoPed(cs[0].x - 30, cs[0].y, { nome: 'Ex Namorado', fixo: true, invuln: true, semGrana: true, camisa: '#7f8c8d', calca: '#34495e', corNome: COR_NOME.ex });
   let wp = 1;
   gabs.ia = (p, dt) => { const a = cs[wp]; const d = dist(p.x, p.y, a.x, a.y); p.a = Math.atan2(a.y - p.y, a.x - p.x); if (d < 6) wp = (wp + 1) % 4; else { p.x += Math.cos(p.a) * 55 * dt; p.y += Math.sin(p.a) * 55 * dt; p.anda += dt * 7; } };
@@ -3109,6 +3179,15 @@ function criarFiguras() {
   const M = LUGAR.masadakun;
   const mas = novoPed(M.x, M.y + 40, { nome: 'Masadakun', fixo: true, invuln: true, olhaJog: true, semGrana: true, camisa: '#f1c40f', calca: '#c0392b', chapeu: '#c8a165', corNome: COR_NOME.masadakun });
   mas.figura = 'masadakun'; W.peds.push(mas); FIGURAS.push(mas);
+  // banhistas no Litoral Sul (andam pela areia)
+  for (let k = 0; k < 18; k++) {
+    let x = 0, y = 0, ok = false;
+    for (let tn = 0; tn < 60 && !ok; tn++) { x = rndi(30, MW - 30); y = rndi(278, 292); ok = tile(x, y) === TL.AREIA; }
+    if (!ok) continue;
+    const b = novoPed(x * T, y * T, { fixo: true, camisa: pick(['#e84393', '#00cec9', '#fdcb6e', '#fff', '#ff7675']), calca: pick(['#e17055', '#0984e3', '#00b894']), banhista: true });
+    b.ia = (p, dt) => { p.troca = (p.troca || 0) - dt; if (p.troca <= 0) { p.troca = rnd(1, 4); p.a = rnd(Math.PI * 2); p.parado = rnd() < 0.5; } if (p.medo > 0) { p.parado = false; } const v = p.parado ? 0 : (p.medo > 0 ? 160 : 45); const nx = p.x + Math.cos(p.a) * v * dt, ny = p.y + Math.sin(p.a) * v * dt; const tt = tileEm(nx, ny); if (tt === TL.AREIA || tt === TL.GRAMA) { p.x = nx; p.y = ny; p.anda += dt * 9; } else p.troca = 0; };
+    W.peds.push(b);
+  }
 }
 const FALAS_FIG = {
   gabs: ['a gente é só amigo, tá?', 'ele que insistiu em vir passear', 'não começa, Nerivan', 'tô de boa, só caminhando'],
@@ -3167,6 +3246,53 @@ const MISSOES_EXTRA = [
     semLimite(); await diz('masadakun', 'Luar biasa! Tu é o rei do grau da Indonésia. Toma, e leva a XJ6.'); m.missao = false; premio(2500);
   } }
 ];
+// cena dentro de um lugar (a conversa acontece lá dentro)
+async function cena(tipo, nome, ...linhas) { INTERIOR = { tipo, nome, t: 0, cena: true }; document.getElementById('menu').classList.add('interior'); try { await conversa(...linhas); } finally { sairInterior(); } }
+function aguaPerto(tx, ty) { for (let r = 0; r < 12; r++) for (let a = 0; a < 16; a++) { const x = Math.round(tx + Math.cos(a / 16 * 6.283) * r), y = Math.round(ty + Math.sin(a / 16 * 6.283) * r); if (tile(x, y) === TL.AGUA && tile(x + 1, y) === TL.AGUA && tile(x, y + 1) === TL.AGUA) return { x: x * T + T / 2, y: y * T + T / 2 }; } return { x: tx * T, y: ty * T }; }
+MISSOES_EXTRA.push(
+  { id: 'cafeSibito', extra: true, sub: 'missão da Sibito', nome: 'Café Amargo', quem: 'sibito', libera: () => MISSAO.feitas >= 4, pos: () => ({ x: LUGAR.cafe.x + 140, y: LUGAR.cafe.y + 60 }), fn: async () => {
+    MISSAO.ativa.premio = 1600;
+    await cena('cafe', 'Café do Porto', ['sibito', 'QUE FOI, NERIVAN? veio encher o saco de novo, seu inútil?'], ['nerivan', 'calma, vim só tomar um café'], ['sibito', 'ACABOU O CAFÉ, ANIMAL. o fornecedor sumiu com as 3 sacas no porto. vai lá buscar e não me faz passar vergonha'], ['sibito', 'e se derrubar UMA saca eu te arrebento, ouviu?']);
+    const C = LUGAR.cafe, pts = [livrePerto(C.x + 700, C.y + 500), livrePerto(C.x - 600, C.y + 900), livrePerto(C.x + 300, C.y - 800)];
+    limiteTempo(150, 'a Sibito fechou o café e te xingou até tua sétima geração');
+    for (let k = 0; k < 3; k++) { await vai(pts[k].x, pts[k].y, { r: 80, texto: `pega a saca de café ${k + 1}/3`, cor: '#8e5a2b' }); SOM.pega(); falar('sibito', pick(['DEMOROU, LESMA', 'anda logo, molenga', 'isso aí é saca ou travesseiro?']), 2); }
+    await vai(C.x, C.y + 40, { r: 90, texto: 'volta pro Café do Porto com o café' });
+    semLimite();
+    await cena('cafe', 'Café do Porto', ['sibito', 'até que enfim, seu jumento.'], ['sibito', '...'], ['sibito', 'tá. obrigada. MAS NÃO ACOSTUMA. toma teu dinheiro e some daqui']);
+    premio(1600);
+  } },
+  { id: 'gabsEx', extra: true, sub: 'missão da Gabs', nome: 'O Ex Não Larga', quem: 'gabs', libera: () => MISSAO.feitas >= 4, pos: () => { const g = FIGURAS.find(p => p.figura === 'gabs'); return g ? { x: g.x + 80, y: g.y } : LUGAR.cafe; }, fn: async () => {
+    MISSAO.ativa.premio = 2000;
+    const gabs = FIGURAS.find(p => p.figura === 'gabs'), ex = FIGURAS.find(p => p.figura === 'ex');
+    await conversa(['gabs', 'Nerivan, socorro. ele pegou meu celular "só pra ver uma coisa" e não devolve.'], ['ex', 'só tô vendo se tu ainda tem nossas fotos 👀'], ['gabs', 'pega de volta pra mim? ele corre feito um doido'], ['ex', 'NUNCA! ESSE AMOR É MEU!']);
+    const iaVelha = ex.ia; let pego = false;
+    ex.ia = (p, dt) => { const j = W.jog, d = dist(p.x, p.y, j.x, j.y); let a = Math.atan2(p.y - j.y, p.x - j.x); for (const da of [0, 0.7, -0.7, 1.4, -1.4, 2.2, -2.2]) { const aa = a + da, nx = p.x + Math.cos(aa) * 30, ny = p.y + Math.sin(aa) * 30; if (!solidoEm(nx, ny)) { a = aa; break; } } const v = d < 500 ? 215 : 120; const nx = p.x + Math.cos(a) * v * dt, ny = p.y + Math.sin(a) * v * dt; if (!solidoEm(nx, ny)) { p.x = nx; p.y = ny; p.a = a; p.anda += dt * 12; } if (d < (j.carro ? 50 : 34)) pego = true; };
+    ex.nome = 'Ex Namorado 📱';
+    limiteTempo(90, 'o Ex fugiu e postou tudo nos stories');
+    MISSAO.alvo = ex; objetivo('pega o Ex e recupera o celular da Gabs (encosta nele)');
+    await ate(() => pego);
+    semLimite(); MISSAO.alvo = null; falarPed(ex, 'TÁ BOM, TÁ BOM, TOMA ESSA PORCARIA'); SOM.pega();
+    ex.ia = iaVelha; ex.nome = 'Ex Namorado';
+    await vai(gabs.x, gabs.y, { r: 80, texto: 'devolve o celular pra Gabs', pre: () => { MISSAO.alvo = { x: gabs.x, y: gabs.y }; } });
+    await cena('cafe', 'Café do Porto', ['gabs', 'meu herói! deixa eu te pagar um café'], ['sibito', 'ELE NÃO MERECE CAFÉ NENHUM'], ['gabs', 'kkkkk relaxa Sibito. obrigada Nerivan, toma aqui'], ['ex', '(lá fora, olhando pela janela) ...']);
+    premio(2000);
+  } },
+  { id: 'arroz', extra: true, sub: 'missão da Masadakun (de lancha)', nome: 'Contrabando de Arroz', quem: 'masadakun', libera: () => MISSAO.feitas >= 5, pos: () => ({ x: LUGAR.masadakun.x - 120, y: LUGAR.masadakun.y + 80 }), fn: async () => {
+    MISSAO.ativa.premio = 3000;
+    await cena('templo', 'Templo', ['masadakun', 'Nerivan, senta. respira. medita comigo um pouco.'], ['nerivan', 'tô sentindo... fome'], ['masadakun', 'EXATO. Recife tá sem arroz. eu tenho 5 sacos aqui. leva de lancha pelo mar, que na ponte a polícia revista'], ['masadakun', 'e cuidado: a Guarda Costeira do Ltzin patrulha o mar.']);
+    const M = LUGAR.masadakun, a0 = aguaPerto(M.x / T + 10, M.y / T + 6), barco = precisaMoto('lancha', a0.x, a0.y, 'Lancha do Arroz');
+    await subirNaMoto(barco);
+    const rota = [[232, 120], [222, 132], [210, 140], [200, 146], [194, 150]].map(([x, y]) => aguaPerto(x, y));
+    limiteTempo(130, 'o arroz molhou e virou papa');
+    for (let k = 0; k < rota.length; k++) {
+      await vai(rota[k].x, rota[k].y, { r: 120, texto: `leva o arroz pelo mar: boia ${k + 1}/${rota.length}`, cor: '#00e5ff' });
+      if (k === 1 || k === 3) { const ap = aguaPerto(rota[k].x / T + 6, rota[k].y / T - 6); const gc = novoCarro('jetski', ap.x, ap.y, 0, { missao: true, nome: 'Guarda Costeira do Ltzin' }); gc.motorista = novoPed(gc.x, gc.y, { hostil: true }); gc.ia = { tipo: 'script', fn: (c, dt) => { const al = W.jog.carro || W.jog; iaPersegue(c, dt, al.x, al.y, 1); c.recarga = (c.recarga || 1) - dt; if (c.recarga <= 0 && dist(c.x, c.y, al.x, al.y) < 380) { c.recarga = rnd(1, 1.8); inimigoAtira(c, al.x, al.y, 7, 0.15); } } }; W.carros.push(gc); falar('masadakun', 'GUARDA COSTEIRA! acelera!', 2); }
+    }
+    semLimite(); barco.missao = false; barco.nome = null;
+    await diz('masadakun', 'Terima kasih! Recife vai comer arroz hoje. A lancha é tua, mano.');
+    premio(3000);
+  } }
+);
 function extrasDisponiveis() { return MISSOES_EXTRA.filter(m => m.libera() && !(W.extras || {})[m.id]); }
 
 // ---------- segredos escondidos (easter eggs) ----------
@@ -3498,6 +3624,7 @@ function desenharHUD(dt) {
   if (j.colete > 0) { barra(g, x0 + 2, yv, rc * 11.6, 6, j.colete / 100, '#5dade2'); yv += 12; }
   if (j.carro) { const c = j.carro; barra(g, x0 + 2, yv, rc * 11.6, 5, c.hp / c.hpMax, c.hp < c.hpMax * 0.3 ? '#e74c3c' : '#f39c12'); g.font = 'bold 10px system-ui'; g.textAlign = 'left'; textoContorno(g, Math.round(Math.abs(c.vel) / 5) + ' km/h', x0 + rc * 11.6 + 8, yv + 6, '#fff', 3); yv += 12; }
   if (j.carro && j.carro.nitro) { barra(g, x0 + 2, yv + 12, rc * 11.6, 5, (j.carro.nitroCarga ?? 100) / 100, j.carro.nitroOn ? '#00e5ff' : '#3498db'); g.font = 'bold 9px system-ui'; g.textAlign = 'left'; textoContorno(g, 'NITRO (N)', x0 + 2, yv + 28, '#9fe', 2); yv += 22; }
+  hudHabilidade(g, x0, yv + 4, peq); yv += peq ? 28 : 32;
   HUD_Y = yv;
   // retrato do personagem (fica no HUD, não em cima do boneco)
   { const rr2 = peq ? 22 : 28, px = x0 + bw + rr2 + 8, py = y0 + rr2 + 2; rostoHUD(g, ONLINE.ativo ? ONLINE.skin : 'nerivan', px, py, rr2); g.font = `900 ${peq ? 9 : 10}px system-ui`; g.textAlign = 'center'; textoContorno(g, (ONLINE.ativo ? (NOMES[ONLINE.skin] || 'eu') : nomePers()).toUpperCase(), px, py + rr2 + 11, '#ffd23f', 3); }
@@ -3659,6 +3786,7 @@ function desenharMini(g) {
   for (const p of W.peds) if ((p.hostil || p.policia) && !p.morto) blip(p.x, p.y, '#ff3b3b', 2.5);
   for (const c of W.carros) if (c.gangue && c.hp > 0) blip(c.x, c.y, '#ff8c00', 3.5);
   ONLINE.mini(blip);
+  if (LUNETA_T > 0 && W.baus) for (const b of W.baus) if (!b.ok) blip(b.x, b.y, '#ffe600', 3);
   if (PERS === 'luketa') for (const it of W.itens) if (it.t === 'segredo' && dist(it.x, it.y, j.x, j.y) < 1400) blip(it.x, it.y, '#00e5ff', 3);
   for (const l of LUGARES) { const p = LUGAR[l.k]; if (p) blip(p.x, p.y, 0, 0, l.ic); }
   for (const [k, ic] of [['cas', '🪑'], ['skate', '🛹'], ['yori', '🥭'], ['nauj', '🌿'], ['baile', '🔊'], ['gelado', '🕶️'], ['poli', '🎙️'], ['matheus', '🤖'], ['ltzin', '👑'], ['mirante', '⛰️']]) if (LUGAR[k]) blip(LUGAR[k].x, LUGAR[k].y, 0, 0, ic);
@@ -3781,20 +3909,25 @@ function fecharMenu() { const el = document.getElementById('menu'); el.classList
 const CORES_PINTURA = [['Rosa Simas', '#ff6ec7'], ['Preto Fosco', '#151515'], ['Branco Gelo', '#f2f2f2'], ['Vermelho Ferrari', '#d50000'], ['Azul Calcinha', '#7fb3ff'], ['Verde Bandeira', '#1e8e3e'], ['Amarelo Taxi', '#ffd000'], ['Roxo Baile', '#7d3cff'], ['Laranja Galado', '#ff8c1a'], ['Dourado Rei', '#c9a227'],
   ['Prata Uber', '#bdc3c7'], ['Grafite', '#4d5656'], ['Azul Marinho', '#1a2a6c'], ['Ciano Neon', '#00e5ff'], ['Verde Limão', '#a3e635'], ['Verde Militar', '#4a5d23'], ['Vinho Pastor', '#6d1a36'], ['Marrom Doce de Leite', '#8e5a2b'], ['Lilás Tia', '#c39bd3'], ['Coral', '#ff6f61'], ['Rosa Bebê', '#ffc0cb'], ['Bege Fiat', '#e5d3b3']];
 const TUNE = ['roda', 'neon', 'adesivo', 'fume', 'aero', 'nitro', 'buzina'];
-function menuTuning() {
-  const c = W.jog.carro, j = W.jog;
-  const sub = (tit, itens) => () => { abrirMenu(tit, [...itens(), { txt: '⬅️ voltar', fn: () => { menuTuning(); return false; } }], `${fmt$(j.grana)} no bolso`); return false; };
+function menuTuning(marina) {
+  const c = W.jog.carro, j = W.jog; if (!c) return;
+  const tc = TIPOS_CARRO[c.modelo], moto = !!tc.moto, barco = !!tc.barco;
+  const sub = (tit, itens) => () => { abrirMenu(tit, [...itens(), { txt: '⬅️ voltar', fn: () => { menuTuning(marina); return false; } }], `${fmt$(j.grana)} no bolso`); return false; };
   const ok = v => v ? ' ✔' : '';
-  abrirMenu('✨ TUNING DO NERIVAN', [
-    { txt: '🛞 Cor das rodas', fn: sub('🛞 RODAS', () => [['Cromada', '#dfe6e9'], ['Preta', '#111'], ['Dourada', '#c9a227'], ['Rosa', '#ff6ec7'], ['Vermelha', '#d50000'], ['Azul', '#2e86de'], ['Verde Neon', '#39ff14']].map(([n, cc]) => ({ txt: n + ok(c.roda === cc), cor: cc, preco: 200, fn: () => { c.roda = cc; } }))) },
-    { txt: '💡 Neon embaixo', fn: sub('💡 NEON', () => [['Rosa', '#ff2fa0'], ['Azul', '#00b4ff'], ['Verde', '#39ff14'], ['Roxo', '#a020f0'], ['Vermelho', '#ff1a1a'], ['Amarelo', '#ffe600'], ['Branco', '#ffffff']].map(([n, cc]) => ({ txt: 'Neon ' + n + ok(c.neon === cc), cor: cc, preco: 600, fn: () => { c.neon = cc; } })).concat([{ txt: 'tirar neon', off: !c.neon, fn: () => { c.neon = null; } }])) },
-    { txt: '🔥 Adesivo', fn: sub('🔥 ADESIVOS', () => [['Chamas de rebaixado', 'chamas', 400], ['Listras de corrida', 'listras', 250], ['Arco-íris do Simas', 'arco', 500], ['Escrito SIMAS no capô', 'simas', 300], ['Oncinha', 'oncinha', 350]].map(([n, a, p]) => ({ txt: n + ok(c.adesivo === a), preco: p, fn: () => { c.adesivo = a; c.listra = null; } })).concat([{ txt: 'tirar adesivo', off: !c.adesivo, fn: () => { c.adesivo = null; } }])) },
-    { txt: '🕶️ Insulfilm fumê' + ok(c.fume), preco: c.fume ? undefined : 300, off: !!c.fume, fn: () => { c.fume = true; } },
-    { txt: '🏁 Aerofólio' + ok(c.aero), preco: c.aero ? undefined : 700, off: !!c.aero, fn: () => { c.aero = true; } },
-    { txt: '🚀 Nitro (aperta N acelerando)' + ok(c.nitro), preco: c.nitro ? undefined : 2500, off: !!c.nitro, fn: () => { c.nitro = true; c.nitroCarga = 100; } },
-    { txt: '📯 Buzina', fn: sub('📯 BUZINAS', () => [['Normal', null, 0], ['Corneta de baile', 'corneta', 300], ['Caminhão', 'caminhao', 300], ['Palhaço', 'palhaco', 200], ['Galinha do Galado', 'galinha', 250]].map(([n, b, p]) => ({ txt: n + ok(c.buzina === b), preco: p || undefined, fn: () => { c.buzina = b; SOM.buzina(b); } }))) },
-    { txt: '⬅️ voltar', fn: () => { menuGaragem(); return false; } }
-  ], 'aperta H pra buzinar · N pra nitro');
+  const itens = [];
+  if (barco) itens.push({ txt: '🎨 Pintar o barco', fn: sub('🎨 COR DO BARCO', () => CORES_PINTURA.map(([n, cc]) => ({ txt: n + ok(c.cor === cc), cor: cc, preco: 250, fn: () => { c.cor = cc; } }))) });
+  if (!barco) itens.push({ txt: moto ? '🛞 Cor das rodas da moto' : '🛞 Cor das rodas', fn: sub('🛞 RODAS', () => [['Cromada', '#dfe6e9'], ['Preta', '#111'], ['Dourada', '#c9a227'], ['Rosa', '#ff6ec7'], ['Vermelha', '#d50000'], ['Azul', '#2e86de'], ['Verde Neon', '#39ff14']].map(([n, cc]) => ({ txt: n + ok(c.roda === cc), cor: cc, preco: 200, fn: () => { c.roda = cc; } }))) });
+  itens.push({ txt: barco ? '💡 Luz neon no casco' : '💡 Neon embaixo', fn: sub('💡 NEON', () => [['Rosa', '#ff2fa0'], ['Azul', '#00b4ff'], ['Verde', '#39ff14'], ['Roxo', '#a020f0'], ['Vermelho', '#ff1a1a'], ['Amarelo', '#ffe600'], ['Branco', '#ffffff'], ['Arco-íris (muda de cor)', 'arco']].map(([n, cc]) => ({ txt: 'Neon ' + n + ok(c.neon === cc), cor: cc === 'arco' ? '#ff6ec7' : cc, preco: cc === 'arco' ? 1500 : 600, fn: () => { c.neon = cc; } })).concat([{ txt: 'tirar neon', off: !c.neon, fn: () => { c.neon = null; } }])) });
+  itens.push({ txt: '🔥 Adesivo', fn: sub('🔥 ADESIVOS', () => [['Chamas de rebaixado', 'chamas', 400], ['Listras de corrida', 'listras', 250], ['Arco-íris do Simas', 'arco', 500], ['Escrito SIMAS', 'simas', 300], ['Oncinha', 'oncinha', 350], ['Xadrez de largada', 'xadrez', 350], ['Camuflado do exército', 'camuflado', 400]].map(([n, a, p]) => ({ txt: n + ok(c.adesivo === a), preco: p, fn: () => { c.adesivo = a; c.listra = null; } })).concat([{ txt: 'tirar adesivo', off: !c.adesivo, fn: () => { c.adesivo = null; } }])) });
+  if (!moto && !barco) {
+    itens.push({ txt: '🕶️ Insulfilm fumê' + ok(c.fume), preco: c.fume ? undefined : 300, off: !!c.fume, fn: () => { c.fume = true; } });
+    itens.push({ txt: '🏁 Aerofólio' + ok(c.aero), preco: c.aero ? undefined : 700, off: !!c.aero, fn: () => { c.aero = true; } });
+  }
+  itens.push({ txt: '🚀 Nitro (aperta N acelerando)' + ok(c.nitro), preco: c.nitro ? undefined : (moto ? 1800 : 2500), off: !!c.nitro, fn: () => { c.nitro = true; c.nitroCarga = 100; } });
+  itens.push({ txt: '📯 Buzina', fn: sub('📯 BUZINAS', () => [['Normal', null, 0], ['Corneta de baile', 'corneta', 300], ['Caminhão', 'caminhao', 300], ['Palhaço', 'palhaco', 200], ['Galinha do Galado', 'galinha', 250]].map(([n, b, p]) => ({ txt: n + ok(c.buzina === b), preco: p || undefined, fn: () => { c.buzina = b; SOM.buzina(b); } }))) });
+  if (barco) itens.push({ txt: `🔧 Consertar (${Math.round(c.hp / c.hpMax * 100)}%)`, preco: c.hp < c.hpMax ? 150 : undefined, off: c.hp >= c.hpMax, fn: () => { c.hp = c.hpMax; } });
+  else itens.push({ txt: '⬅️ voltar', fn: () => { menuGaragem(); return false; } });
+  abrirMenu(barco ? '⚓ MARINA SIMAS' : moto ? '✨ TUNING DA MOTO' : '✨ TUNING DO CARRO', itens, 'gira o veículo arrastando · H buzina · N nitro');
 }
 function menuGaragem() {
   const j = W.jog, c = j.carro;
@@ -3842,28 +3975,17 @@ function menuRoupas() {
   const cores = [['Rosa Simas', '#ff6ec7'], ['Vermelha', '#c0392b'], ['Preta Básica', '#151515'], ['Branca de Rico', '#f5f5f5'], ['Verde Galado', '#27ae60'], ['Amarela Seleção', '#f1c40f'], ['Azul Royal', '#2471a3'], ['Roxa Baile', '#7d3cff'], ['Laranja', '#e67e22'], ['Vinho', '#7b241c'], ['Ciano', '#00bcd4'], ['Lilás', '#c39bd3'], ['Verde Limão', '#a3e635'], ['Cinza Mescla', '#95a5a6'], ['Bege', '#e5d3b3'], ['Marrom', '#6e2c00']];
   abrirMenu('👕 SIMAS STORE', [
     { txt: '👕 Camisas (16 cores)', fn: sub('👕 CAMISAS', () => cores.map(([n, c]) => ({ txt: 'Camisa ' + n, cor: c, preco: 100, fn: () => { j.camisa = c; j.estampa = null; } }))) },
-    { txt: '🎨 Estampas', fn: sub('🎨 ESTAMPAS', () => [['Listrada', 'listrada', 180], ['Arco-íris do Simas', 'simas', 400], ['Xadrez de Festa Junina', 'xadrez', 200], ['Camuflada', 'camuflada', 300], ['Rubro-negra (genérica)', 'flamengo', 250]].map(([n, e, p]) => ({ txt: n, preco: p, fn: () => { j.estampa = e; } })).concat([{ txt: 'tirar estampa', fn: () => { j.estampa = null; } }])) },
+    { txt: '🎨 Estampas normais', fn: sub('🎨 ESTAMPAS', () => [['Listrada', 'listrada', 180], ['Arco-íris do Simas', 'simas', 400], ['Xadrez de Festa Junina', 'xadrez', 200], ['Camuflada', 'camuflada', 300], ['Rubro-negra (genérica)', 'flamengo', 250], ['Havaiana de turista', 'havaiana', 220]].map(([n, e, p]) => ({ txt: n, preco: p, fn: () => { j.estampa = e; } })).concat([{ txt: 'tirar estampa', fn: () => { j.estampa = null; } }])) },
+    { txt: '🤪 Camisetas ZOADAS', fn: sub('🤪 CAMISETAS ZOADAS', () => [['Camisa do Galado 🐔', 'galado', '#ff8c1a', 500], ['Smile de rave', 'smile', '#151515', 250], ['Caveira de metaleiro', 'caveira', '#151515', 300], ['Coração apaixonado (pro Ltzin)', 'coracao', '#ffc0cb', 250], ['Raio do Ltzin', 'raio', '#1a2a6c', 400], ['Camisa 171 (estelionato)', 'n171', '#c0392b', 171], ['Estampa de banana', 'banana', '#2e86de', 300], ['Smoking de camiseta (chique e pobre)', 'smoking', '#151515', 600]].map(([n, e, c, p]) => ({ txt: n + (j.estampa === e ? ' ✔' : ''), cor: c, preco: p, fn: () => { j.estampa = e; j.camisa = c; } }))) },
     { txt: '🧥 Jaquetas', fn: sub('🧥 JAQUETAS', () => [['Jaqueta Jeans', '#5d6d7e', 350], ['Jaqueta de Couro', '#1b1b1b', 700], ['Corta-vento Neon', '#a3e635', 400], ['Moletom Rosa', '#ff6ec7', 300]].map(([n, c, p]) => ({ txt: n, cor: c, preco: p, fn: () => { j.jaqueta = c; } })).concat([{ txt: 'tirar jaqueta', fn: () => { j.jaqueta = null; } }])) },
     { txt: '👖 Calças e bermudas', fn: sub('👖 CALÇAS', () => [['Bermuda Jeans', '#2c3e50'], ['Calça Preta', '#111'], ['Bermuda Florida', '#e67e22'], ['Calça Branca de Pagodeiro', '#f5f5f5'], ['Tactel Azul', '#2980b9'], ['Moletom Cinza', '#7f8c8d']].map(([n, c]) => ({ txt: n, cor: c, preco: 100, fn: () => { j.calca = c; } }))) },
-    { txt: '🧢 Bonés e chapéus', fn: sub('🧢 CABEÇA', () => [['Boné Rosa', '#ff6ec7', 'bone', 150], ['Boné Preto', '#111', 'bone', 150], ['Boné Vermelho', '#c0392b', 'bone', 150], ['Chapéu de Cowboy (Juazeiro)', '#8e5a2b', 'cowboy', 400], ['Bucket Hat', '#f5f5f5', 'bucket', 250], ['Bucket Hat Preto', '#111', 'bucket', 250], ['Capacete de motoboy', '#e67e22', 'capacete', 300]].map(([n, c, t, p]) => ({ txt: n, cor: c, preco: p, fn: () => { j.chapeu = c; j.chapeuTipo = t; } })).concat([{ txt: 'tirar o que tá na cabeça', off: !j.chapeu, fn: () => { j.chapeu = null; j.chapeuTipo = null; } }])) },
-    { txt: '🤡 Chapéus ZOADOS', fn: sub('🤡 CHAPÉUS ZOADOS', () => [['Cone de trânsito roubado', '#ff6b00', 'cone', 350], ['Chapéu de mestre-cuca', '#fff', 'chef', 400], ['Coroa do Rei de Recife (réplica)', '#f1c40f', 'coroa', 3000], ['Chapéu de pirata', '#111', 'pirata', 600], ['Capacete viking', '#95a5a6', 'viking', 800], ['Orelhinha de gato', '#111', 'gato', 300], ['Orelhinha de gato rosa', '#ff6ec7', 'gato', 300], ['Chapéu de aniversário', '#fff', 'festa', 150], ['Cartola de mágico', '#111', 'cartola', 900], ['Sombrero gigante', '#d4ac0d', 'sombrero', 700]].map(([n, c, t, p]) => ({ txt: n + (j.chapeuTipo === t && j.chapeu ? ' ✔' : ''), cor: c, preco: p, fn: () => { j.chapeu = c; j.chapeuTipo = t; } }))) },
-    { txt: '🎭 Máscaras e fantasias', fn: sub('🎭 FANTASIAS', () => [
-      { txt: '🤡 Nariz de palhaço' + (j.mascara === 'palhaco' ? ' ✔' : ''), preco: 120, fn: () => { j.mascara = 'palhaco'; } },
-      { txt: '🐴 Máscara de cavalo (a clássica)' + (j.mascara === 'cavalo' ? ' ✔' : ''), preco: 500, fn: () => { j.mascara = 'cavalo'; } },
-      { txt: 'tirar máscara', off: !j.mascara, fn: () => { j.mascara = null; } },
-      { txt: '🍌 Fantasia de banana' + (j.fantasia === 'banana' ? ' ✔' : ''), preco: 800, fn: () => { j.fantasia = 'banana'; } },
-      { txt: '🦖 Fantasia de dinossauro' + (j.fantasia === 'dino' ? ' ✔' : ''), preco: 1200, fn: () => { j.fantasia = 'dino'; j.costas = 'rabo'; j.costasCor = '#27ae60'; } },
-      { txt: 'tirar fantasia', off: !j.fantasia, fn: () => { if (j.fantasia === 'dino' && j.costas === 'rabo') j.costas = null; j.fantasia = null; } }]) },
-    { txt: '🦸 Costas (capa, asas, jetpack...)', fn: sub('🦸 COSTAS', () => [['Capa de super-herói vermelha', 'capa', '#c0392b', 900], ['Capa roxa de vilão', 'capa', '#7d3cff', 900], ['Capa dourada de rei', 'capa', '#c9a227', 2000], ['Asinha de anjo', 'asas', '#fff', 1500], ['Jetpack (não voa, só pose)', 'jetpack', '#95a5a6', 2500], ['Rabo de dinossauro', 'rabo', '#27ae60', 600], ['Rabo de diabinho', 'rabo', '#c0392b', 600]].map(([n, t, c, p]) => ({ txt: n, cor: c, preco: p, fn: () => { j.costas = t; j.costasCor = c; j.mochila = null; } })).concat([
-      { txt: '🎒 Mochila de entregador', preco: 150, fn: () => { j.mochila = '#c0392b'; j.costas = null; } },
-      { txt: '🛟 Boia de patinho na cintura' + (j.cintura ? ' ✔' : ''), preco: 200, fn: () => { j.cintura = j.cintura ? null : 'boia'; } },
-      { txt: 'tirar o que tá nas costas', off: !j.costas && !j.mochila, fn: () => { j.costas = null; j.mochila = null; } }])) },
+    { txt: '🧢 Bonés e chapéus normais', fn: sub('🧢 CABEÇA', () => [['Boné Rosa', '#ff6ec7', 'bone', 150], ['Boné Preto', '#111', 'bone', 150], ['Boné Vermelho', '#c0392b', 'bone', 150], ['Chapéu de Cowboy (Juazeiro)', '#8e5a2b', 'cowboy', 400], ['Bucket Hat', '#f5f5f5', 'bucket', 250], ['Bucket Hat Preto', '#111', 'bucket', 250], ['Capacete de motoboy', '#e67e22', 'capacete', 300]].map(([n, c, t, p]) => ({ txt: n, cor: c, preco: p, fn: () => { j.chapeu = c; j.chapeuTipo = t; } })).concat([{ txt: 'tirar o que tá na cabeça', off: !j.chapeu, fn: () => { j.chapeu = null; j.chapeuTipo = null; } }])) },
+    { txt: '🤡 Chapéus ZOADOS', fn: sub('🤡 CHAPÉUS ZOADOS', () => [['Cone de trânsito roubado', '#ff6b00', 'cone', 350], ['Chapéu de mestre-cuca', '#fff', 'chef', 400], ['Coroa do Rei de Recife (réplica)', '#f1c40f', 'coroa', 3000], ['Chapéu de pirata', '#111', 'pirata', 600], ['Capacete viking', '#95a5a6', 'viking', 800], ['Orelhinha de gato', '#111', 'gato', 300], ['Orelhinha de gato rosa', '#ff6ec7', 'gato', 300], ['Chapéu de aniversário', '#fff', 'festa', 150], ['Cartola de mágico', '#111', 'cartola', 900], ['Sombrero gigante', '#d4ac0d', 'sombrero', 700], ['Hélice de criança', '#e74c3c', 'helice', 250], ['Galinha na cabeça', '#fff', 'galinha', 800], ['Melancia de capacete', '#27ae60', 'melancia', 350], ['Chapéu de palha de festa junina', '#d4ac0d', 'palha', 200]].map(([n, c, t, p]) => ({ txt: n + (j.chapeuTipo === t && j.chapeu ? ' ✔' : ''), cor: c, preco: p, fn: () => { j.chapeu = c; j.chapeuTipo = t; } }))) },
     { txt: '💎 Acessórios', fn: sub('💎 ACESSÓRIOS', () => [
       ...[['🕶️ Óculos Juliet', 'juliet', 200], ['🤓 Óculos de nerd (igual do Yori)', 'nerd', 150], ['💘 Óculos de coração', 'coracao', 300], ['⭐ Óculos de estrela', 'estrela', 350]].map(([n, t, p]) => ({ txt: n + (j.oculos && (j.oculosTipo || 'juliet') === t ? ' ✔' : ''), preco: p, fn: () => { j.oculos = true; j.oculosTipo = t; } })),
       { txt: 'tirar óculos', off: !j.oculos, fn: () => { j.oculos = false; } },
       { txt: j.corrente ? '⛓️ Tirar a corrente' : '⛓️ Corrente de ouro (ostentação)', preco: j.corrente ? undefined : 2000, fn: () => { j.corrente = !j.corrente; } },
       { txt: j.mochila ? '🎒 Tirar a mochila' : '🎒 Mochila de entregador', preco: j.mochila ? undefined : 150, fn: () => { j.mochila = j.mochila ? null : '#c0392b'; } }]) },
-    { txt: '💈 Barbearia (corte, cor, barba)', fn: sub('💈 BARBEARIA', () => [['Corte na régua', 'curto'], ['Black power', 'black'], ['Moicano', 'moicano'], ['Trancinhas', 'trancas'], ['Cabelo longo de roqueiro', 'longo'], ['Topete', 'topete'], ['Careca brilhando', 'careca'], ['Arco-íris que muda de cor', 'colorido']].map(([n, c]) => ({ txt: '✂️ ' + n + (j.corte === c ? ' ✔' : ''), preco: c === 'colorido' ? 800 : 80, fn: () => { j.corte = c; } })).concat([['Preto', '#111'], ['Castanho', '#3b2412'], ['Loiro pivete', '#f4d03f'], ['Platinado', '#ecf0f1'], ['Rosa', '#ff6ec7'], ['Azul', '#2e86de'], ['Verde', '#27ae60'], ['Ruivo', '#c0392b']].map(([n, c]) => ({ txt: '🎨 Pintar de ' + n, cor: c, preco: 120, fn: () => { j.cabelo = c; } }))).concat([{ txt: j.barba ? '🪒 Tirar a barba' : '🧔 Deixar barba', preco: j.barba ? 30 : 60, fn: () => { j.barba = !j.barba; } }])) },
     { txt: '👟 Tênis (corre mais)', fn: sub('👟 TÊNIS', () => Object.entries(TENIS).map(([k, t]) => ({ txt: `${t.nome} (+${Math.round((t.vel - 1) * 100)}% correndo)${j.tenis === k ? ' ✔' : ''}`, cor: t.cor, preco: (j.temTenis || {})[k] || !t.preco ? undefined : t.preco, fn: () => { j.temTenis = j.temTenis || {}; j.temTenis[k] = true; j.tenis = k; j.tenisCor = t.cor; } }))) },
     { txt: '🛹 Skate e patins (aperta K pra usar)', fn: sub('🛹 RODAS', () => [
       { txt: '🛹 Skate Simas SK8' + ((j.temRodas || {}).skate ? ' ✔ (tem)' : ''), preco: (j.temRodas || {}).skate ? undefined : 600, off: !!(j.temRodas || {}).skate, fn: () => { j.temRodas = j.temRodas || {}; j.temRodas.skate = true; j.rodaAtiva = 'skate'; } },
@@ -3945,7 +4067,7 @@ function menuPausa() {
     { txt: '🗑️ Começar do zero (apaga o save)', fn: () => { if (!MENU.confirma) { MENU.confirma = true; const it = document.querySelectorAll('#menu .item span'); it[it.length - 1].textContent = '⚠️ certeza? clica de novo pra apagar tudo'; return false; } try { localStorage.removeItem('gta7-save'); } catch (e) { } location.reload(); } }
   ], CONTROLES_TXT);
 }
-const CONTROLES_TXT = 'WASD/setas: andar e dirigir · E ou F: entrar/sair/assaltar · mouse ou CTRL/ESPAÇO: atirar · TAB/Q: trocar arma · ESPAÇO no carro: freio de mão · SHIFT: correr · K: skate/patins · R: rádio · H: buzina · M: mapa · ESC: pausa';
+const CONTROLES_TXT = 'WASD/setas: andar e dirigir · X: habilidade especial · N: nitro · E ou F: entrar/sair/assaltar · mouse ou CTRL/ESPAÇO: atirar · TAB/Q: trocar arma · ESPAÇO no carro: freio de mão · SHIFT: correr · K: skate/patins · R: rádio · H: buzina · M: mapa · ESC: pausa';
 
 // ---------- controles de celular ----------
 function montarToque() {
@@ -3964,6 +4086,7 @@ function montarToque() {
   bt('.b-freio', () => { TOQUE.freio = true; }, () => { TOQUE.freio = false; });
   bt('.b-radio', () => { PRESS.r = true; });
   bt('.b-rodas', () => { PRESS.k = true; });
+  bt('.b-hab', () => { usarHabilidade(); });
   bt('.b-nitro', () => { TOQUE.nitro = true; }, () => { TOQUE.nitro = false; });
   bt('.b-mapa', () => { PRESS.m = true; });
   bt('.b-pausa', () => { PRESS.escape = true; });
@@ -4073,6 +4196,13 @@ function estacionados() {
 }
 
 let PERS_ESCOLHA = null;
+function estacionadosLitoral() {
+  for (let k = 0; k < 14; k++) {
+    const t = 30 + Math.random() * (MW - 50), y = 266 + Math.sin(t * 0.045) * 7 + Math.sin(t * 0.13) * 2.5 + (Math.random() < 0.5 ? -3.2 : 3.2);
+    const x = t * T, yy = y * T; if (solidoEm(x, yy) || tileEm(x, yy) === TL.ESTRADA) continue;
+    W.carros.push(novoCarro(pick(['sw4', 'fusca', 'esporte', 'lambo', 'pickup', 'biz', 'xj6']), x, yy, 0, { fixo: true }));
+  }
+}
 function comecar(save) {
   gerarMapa(); gerarMini(); carregarRostos();
   const ini = save ? LUGAR.dudu : LUGAR.policia;
@@ -4084,7 +4214,7 @@ function comecar(save) {
     MISSAO.feitas = save.feitas || 0; W.garagem = save.garagem || []; W.stats = { ...W.stats, ...(save.stats || {}) };
     Object.assign(j, save.roupa || {}); W.imoveis = save.imoveis || []; W.segredos = save.segredos || []; W.extras = save.extras || {}; W.pontos = save.pontos || 0; W.trofeus = save.trofeus || [];
   }
-  espalharItens(); criarFixos(); criarFiguras(); estacionados(); criarSegredos(); criarBarcos(); criarTesouro();
+  espalharItens(); criarFixos(); criarFiguras(); estacionados(); criarSegredos(); criarBarcos(); criarTesouro(); criarBausSubmersos(); estacionadosLitoral();
   if (ONLINE.ativo) aplicarPersonagemOnline(ONLINE.skin); else PERS = 'nerivan';
   if (MISSAO.feitas >= MISSOES.length) liberarFatal(false);
   cam.x = j.x; cam.y = j.y;
@@ -4141,19 +4271,20 @@ function passo(dt) {
   if (apertou('e', 'f')) { if (INTERACAO) entrarLugar(INTERACAO); else entrarSair(); }
   if (apertou('tab', 'q')) trocarArma(1);
   if (apertou('k')) trocarRodas();
+  if (apertou('x')) usarHabilidade();
   if (apertou('t') && ONLINE.ativo) ONLINE.chat();
   if (apertou('r') && j.carro) {
     { RADIO.atual = (RADIO.atual + 1) % RADIOS.length; RADIO.tocar(true); RADIO_AVISO = { t: 0 }; }
   }
   if (W.escorregou > 0) W.escorregou -= dt;
   if (!j.morto && j.hp < 100 && W.tempo - (W.ultDano || 0) > 5) j.hp = Math.min(100, j.hp + 4 * dt * (PERS === 'cas' ? 2 : 1));
-  j.recarga = Math.max(0, j.recarga - dt);
+  j.recarga = Math.max(0, j.recarga - dt); atualizaHabilidade(dt);
   if (j.carro) atualizaJogadorCarro(dt); else atualizaJogadorPe(dt);
   if (j.carro !== carroAntes) { if (j.carro) { CARRO_AVISO = { txt: TIPOS_CARRO[j.carro.modelo].nome, t: 0 }; RADIO_AVISO = { t: 0 }; } carroAntes = j.carro; }
   if (!j.carro) SOM.atualizaMotor(0, false);
   atualizaPeds(dt); atualizaCarros(dt); colisoes(dt); atualizaBalas(dt); atualizaItens(dt); atualizaChefes(dt);
   atualizaProcurado(dt); atualizaEfeitos(dt); povoar(dt, VW / cam.zoom, VH / (cam.zoom * INCL));
-  MISSAO.tick(dt); gatilhos(); atualizaNado(dt); atualizaConquistas(dt); atualizaGangueMoto(dt); atualizaDicas(dt); atualizaFiguras(dt); atualizaRenda(dt); atualizaSegredos(dt);
+  MISSAO.tick(dt); gatilhos(); atualizaNado(dt); atualizaBaus(dt); if (LUNETA_T > 0) LUNETA_T -= dt; atualizaConquistas(dt); atualizaGangueMoto(dt); atualizaDicas(dt); atualizaFiguras(dt); atualizaRenda(dt); atualizaSegredos(dt);
 }
 
 // som do baile do Meco: uma música do "Malando com Zensat", sem grave até devolver o paredão
@@ -4375,12 +4506,16 @@ const LUGARES = [
   { k: 'armas', nome: 'Arsenal', ic: '🔫', int: 'armas', acao: () => menuArmas() },
   { k: 'motors', nome: 'Simas Motors', ic: '🏍️', int: 'motors', acao: () => menuMotors() },
   { k: 'padaria', nome: 'Padaria', ic: '🥐', int: 'padaria', acao: () => menuPadaria() },
-  { k: 'fatal', nome: 'Fatal Model', ic: '💋', int: 'fatal', acao: () => FATAL_ABERTO ? menuFatal() : (falar('luketa', 'tá FECHADO: o Ltzin derrubou o sistema do Fatal Model. derrota ele que reabre', 3.5), sairInterior()) },
+  { k: 'fatal', nome: 'Fatal Model', ic: '💋', int: 'fatal', acao: () => (FATAL_ABERTO || ONLINE.ativo) ? menuFatal() : (falar('luketa', 'tá FECHADO: o Ltzin derrubou o sistema do Fatal Model. derrota ele que reabre', 3.5), sairInterior()) },
   { k: 'hospital', nome: 'Hospital', ic: '🏥', int: 'hospital', acao: () => menuHospital() },
   { k: 'policia', nome: 'Delegacia', ic: '🚔', int: 'delegacia', acao: () => menuDelegacia() },
   { k: 'dudu', nome: 'Esconderijo do Dudu', ic: '💻', int: 'dudu', acao: () => menuEsconderijo() },
   { k: 'cafe', nome: 'Café do Porto', ic: '☕', int: 'cafe', acao: () => menuCafe() },
-  { k: 'masadakun', nome: 'Templo', ic: '🛕', int: 'templo', acao: () => menuTemplo() }
+  { k: 'masadakun', nome: 'Templo', ic: '🛕', int: 'templo', acao: () => menuTemplo() },
+  ...[0, 1, 2, 3, 4, 5].map(i => ({ k: 'marina' + i, nome: 'Marina (tunar o barco)', ic: '⚓', carro: true, so: 'barco', int: 'garagem', acao: () => { MENU_GAR_LUGAR = null; menuTuning(true); } })),
+  { k: 'autodromo', nome: 'Autódromo Simas (corrida contra o tempo)', ic: '🏁', carro: true, so: 'carro', int: 'garagem', acao: () => { sairInterior(); if (MISSAO.ativa) { falar('luketa', 'termina a missão antes, apressado', 2.5); return; } iniciarMissao(CORRIDA_AUTODROMO); } },
+  { k: 'farol', nome: 'Farol do Simas', ic: '🗼', int: 'farol', acao: () => menuFarol() },
+  ...[0, 1, 2, 3, 4, 5].map(i => ({ k: 'pesca' + i, nome: 'Píer de pesca', ic: '🎣', int: 'pesca', acao: () => menuPesca() }))
 ];
 let INTERACAO = null, INTERIOR = null;
 function lugarPerto() {
@@ -4388,7 +4523,8 @@ function lugarPerto() {
   let m = null, md = 1e9;
   for (const l of LUGARES) {
     const p = LUGAR[l.k]; if (!p) continue;
-    if (j.carro && !l.carro) continue; if (!j.carro && l.so === 'carro') continue;
+    if (j.carro && !l.carro) continue; if (!j.carro && (l.so === 'carro' || l.so === 'barco')) continue;
+    const ehBarco = !!(j.carro && TIPOS_CARRO[j.carro.modelo].barco); if (j.carro && ehBarco !== (l.so === 'barco')) continue;
     const d = dist(j.x, j.y, p.x, p.y), r = j.carro ? 95 : 75;
     if (d < r && d < md) { md = d; m = l; }
   }
@@ -4465,7 +4601,7 @@ function desenharInterior(g, dt) {
   const I = INTERIOR; if (!I) return;
   I.t += dt; const k = Math.min(1, I.t / 0.35);
   g.save(); g.globalAlpha = k;
-  const pisoCor = { garagem: '#3d3d45', desmanche: '#3a2f2a', roupas: '#e8dfd2', armas: '#2b2b2b', motors: '#d8dce0', padaria: '#c9a77c', fatal: '#2a0a1e', hospital: '#e9f1f4', delegacia: '#4a5560', dudu: '#14181c', cafe: '#6e4b2a', templo: '#7b241c' }[I.tipo] || '#333';
+  const pisoCor = { garagem: '#3d3d45', desmanche: '#3a2f2a', roupas: '#e8dfd2', armas: '#2b2b2b', motors: '#d8dce0', padaria: '#c9a77c', fatal: '#2a0a1e', hospital: '#e9f1f4', delegacia: '#4a5560', dudu: '#14181c', cafe: '#6e4b2a', templo: '#7b241c', pesca: '#1d4f8f', farol: '#0b1a33' }[I.tipo] || '#333';
   g.fillStyle = pisoCor; g.fillRect(0, 0, VW, VH);
   const W2 = VW * 0.62, cx = W2 / 2, cy = VH / 2;
   // parede de cima
@@ -4478,9 +4614,20 @@ function desenharInterior(g, dt) {
     for (let k2 = 0; k2 < 8; k2++) { g.fillStyle = ['#c0392b', '#7f8c8d', '#2c3e50'][k2 % 3]; g.fillRect(40 + k2 * 50, VH * 0.06, 30, 50); }
     if (I.tipo === 'desmanche') for (let k2 = 0; k2 < 6; k2++) { g.fillStyle = '#5d4037'; g.beginPath(); g.arc(60 + k2 * 70, VH - 80, 26, 0, 7); g.fill(); }
     const c = W.jog.carro;
-    if (c) { g.save(); g.translate(cx, cy + 30); g.scale(2.6, 2.6); const ox = c.x, oy = c.y, oa = c.a, on = c.nome; c.x = 0; c.y = 0; c.a = -Math.PI / 2; c.nome = null; desenharCarro(g, c); c.x = ox; c.y = oy; c.a = oa; c.nome = on; g.restore(); }
+    if (c) {
+      // plataforma giratória: arrasta com o mouse/dedo ou usa A/D pra girar 360°
+      if (I.rot === undefined) { I.rot = -Math.PI / 2; I.mx = MOUSE.x; }
+      if (MOUSE.down && MOUSE.x < W2) I.rot += (MOUSE.x - I.mx) * 0.012; else if (segura('a', 'arrowleft')) I.rot -= dt * 2.5; else if (segura('d', 'arrowright')) I.rot += dt * 2.5; else if (!MOUSE.down) I.rot += dt * 0.5;
+      I.mx = MOUSE.x;
+      const esc = Math.min(3.2, W2 / (c.l * 1.7));
+      g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(cx, cy + 40, c.l * esc * 0.62, c.l * esc * 0.62 * INCL * 0.7, 0, 0, 7); g.fill();
+      g.strokeStyle = 'rgba(255,210,63,.6)'; g.lineWidth = 3; g.beginPath(); g.ellipse(cx, cy + 40, c.l * esc * 0.62, c.l * esc * 0.62 * INCL * 0.7, 0, 0, 7); g.stroke();
+      g.save(); g.translate(cx, cy + 40); g.scale(esc, esc * INCL * 0.75);
+      const ox = c.x, oy = c.y, oa = c.a, on = c.nome, om = c.motorista; c.x = 0; c.y = 0; c.a = I.rot; c.nome = null; c.motorista = null; desenharCarro(g, c); c.x = ox; c.y = oy; c.a = oa; c.nome = on; c.motorista = om; g.restore();
+      g.font = 'bold 13px system-ui'; g.textAlign = 'center'; textoContorno(g, ehToque() ? '👆 arrasta pra girar 360°' : '🖱️ arrasta (ou A/D) pra girar 360°', cx, VH * 0.86, '#ffd23f', 3);
+    }
     else { g.font = '20px system-ui'; g.textAlign = 'center'; textoContorno(g, 'vaga livre', cx, cy + 30, '#aaa', 3); }
-    placa(I.tipo === 'desmanche' ? 'DESMANCHE' : 'GARAGEM DO NERIVAN');
+    placa(I.tipo === 'desmanche' ? 'DESMANCHE' : W.jog.carro && TIPOS_CARRO[W.jog.carro.modelo].barco ? 'MARINA SIMAS' : 'GARAGEM DO NERIVAN');
   } else if (I.tipo === 'roupas') {
     for (let k2 = 0; k2 < 10; k2++) { g.fillStyle = CAMISAS[k2 % CAMISAS.length]; g.fillRect(30 + k2 * 42, VH * 0.08, 30, 70); }
     g.fillStyle = '#b8c6d1'; rr(g, cx - 120, cy - 150, 240, 330, 20); g.fill(); g.fillStyle = '#dfe9f1'; rr(g, cx - 108, cy - 138, 216, 306, 16); g.fill();
@@ -4513,6 +4660,21 @@ function desenharInterior(g, dt) {
   } else if (I.tipo === 'dudu') {
     for (let k2 = 0; k2 < 6; k2++) { g.fillStyle = '#111'; g.fillRect(40 + (k2 % 3) * 160, VH * 0.25 + Math.floor(k2 / 3) * 120, 140, 90); g.fillStyle = '#00ff9c'; g.font = '11px monospace'; g.textAlign = 'left'; for (let l = 0; l < 6; l++) g.fillText(((t * 7 + l * 13 + k2 * 5) | 0).toString(16).repeat(3).slice(0, 18), 48 + (k2 % 3) * 160, VH * 0.25 + 18 + l * 12 + Math.floor(k2 / 3) * 120); }
     placa('ESCONDERIJO DO DUDU');
+  } else if (I.tipo === 'farol') {
+    g.fillStyle = '#123a6b'; g.fillRect(0, VH * 0.45, W2, VH * 0.55);
+    for (let k2 = 0; k2 < 40; k2++) { g.fillStyle = 'rgba(255,255,255,.7)'; g.fillRect((k2 * 97) % W2, (k2 * 53) % (VH * 0.4), 2, 2); }
+    const fa = Math.sin(t * 0.8) * 0.9; g.fillStyle = 'rgba(255,240,150,.18)'; g.beginPath(); g.moveTo(cx, VH * 0.3); g.lineTo(cx + Math.cos(fa) * W2, VH * 0.3 + Math.sin(fa) * 160 - 80); g.lineTo(cx + Math.cos(fa) * W2, VH * 0.3 + Math.sin(fa) * 160 + 80); g.fill();
+    g.fillStyle = '#ecf0f1'; g.fillRect(cx - 20, VH * 0.3, 40, VH * 0.5); g.fillStyle = '#c0392b'; for (let k2 = 0; k2 < 4; k2++) g.fillRect(cx - 20, VH * 0.35 + k2 * VH * 0.12, 40, VH * 0.05);
+    g.fillStyle = '#ffe600'; g.beginPath(); g.arc(cx, VH * 0.3, 16, 0, 7); g.fill();
+    placa('FAROL DO SIMAS');
+  } else if (I.tipo === 'pesca') {
+    g.fillStyle = '#8e6b3e'; g.fillRect(0, VH * 0.62, W2, VH * 0.38); for (let k2 = 0; k2 < W2; k2 += 40) { g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(k2, VH * 0.62, 3, VH); }
+    g.strokeStyle = 'rgba(255,255,255,.25)'; g.lineWidth = 2; for (let k2 = 0; k2 < 8; k2++) { g.beginPath(); g.arc(cx + Math.sin(t + k2) * 200, VH * 0.25 + k2 * 40, 30 + k2 * 6, 0.2, 2.9); g.stroke(); }
+    const by = VH * 0.4 + Math.sin(t * 3) * 6; g.strokeStyle = '#ddd'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(cx - 40, VH * 0.7); g.quadraticCurveTo(cx + 40, VH * 0.2, cx + 90, by); g.stroke();
+    g.fillStyle = '#e74c3c'; g.beginPath(); g.arc(cx + 90, by, 7, Math.PI, 0); g.fill(); g.fillStyle = '#fff'; g.beginPath(); g.arc(cx + 90, by, 7, 0, Math.PI); g.fill();
+    boneco(g, { ...W.jog, a: -Math.PI / 2, anda: 0, nadando: false }, cx - 50, VH * 0.82, { nomes: false, escala: 2.4, jog: true });
+    if (I.peixe) { I.peixe.t += dt; if (I.peixe.t < 2.5) { g.font = `900 ${Math.min(28, VW / 30)}px system-ui`; g.textAlign = 'center'; textoContorno(g, I.peixe.txt, cx, VH * 0.18, '#fff', 5); } }
+    placa('PÍER DE PESCA');
   } else if (I.tipo === 'templo') {
     for (let k2 = 0; k2 < 3; k2++) { g.fillStyle = k2 % 2 ? '#a93226' : '#7b241c'; g.fillRect(cx - 200 + k2 * 40, cy - 140 + k2 * 40, 400 - k2 * 80, 300 - k2 * 80); }
     g.fillStyle = '#f1c40f'; g.beginPath(); g.arc(cx, cy + 10, 40 + Math.sin(t * 2) * 4, 0, 7); g.fill(); placa('PURA SIMAS');
@@ -4542,13 +4704,15 @@ function afundarCarro(c, dt) {
   }
 }
 // barcos parados nos píer
-const PIERS = [[8, 172], [190, 141], [190, 150], [242, 128], [100, 190]];
+const PIERS = [[8, 172], [190, 141], [190, 150], [242, 128], [100, 190], [180, 287]];
 function criarBarcos() {
   const tipos = ['lancha', 'jetski'];
   PIERS.forEach(([tx, ty], i) => {
     let p = null;
     for (let r = 0; r < 8 && !p; r++) for (let a = 0; a < 16; a++) { const x = tx + Math.cos(a / 16 * 7) * r, y = ty + Math.sin(a / 16 * 7) * r; if (tile(x | 0, y | 0) === TL.AGUA && tile((x + 1) | 0, y | 0) === TL.AGUA && tile((x - 1) | 0, y | 0) === TL.AGUA) { p = { x: x * T, y: y * T }; break; } }
-    if (p) W.carros.push(novoCarro(tipos[i % 2], p.x, p.y, 0, { fixo: true }));
+    if (p) { W.carros.push(novoCarro(tipos[i % 2], p.x, p.y, 0, { fixo: true })); LUGAR['marina' + i] = { x: p.x, y: p.y }; }
+    // ponto de pesca: chão firme mais perto do barco
+    if (p) { let m = null, md = 1e9; for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) { const x = Math.floor(p.x / T) + dx, y = Math.floor(p.y / T) + dy, tt = tile(x, y); if (tt === TL.AGUA || SOLIDO.has(tt)) continue; const d = Math.hypot(dx, dy); if (d < md) { md = d; m = { x: x * T + T / 2, y: y * T + T / 2 }; } } if (m) LUGAR['pesca' + i] = m; }
   });
 }
 function desenharBarco(g, c, t) {
@@ -4556,19 +4720,98 @@ function desenharBarco(g, c, t) {
   g.save(); g.translate(c.x, c.y); g.rotate(c.a);
   const v = Math.hypot(c.vx, c.vy);
   if (v > 60) { g.fillStyle = 'rgba(255,255,255,.35)'; g.beginPath(); g.moveTo(-L / 2, -Wd / 2); g.lineTo(-L / 2 - v * 0.35, -Wd * 1.4); g.lineTo(-L / 2 - v * 0.35, Wd * 1.4); g.lineTo(-L / 2, Wd / 2); g.fill(); }
+  if (c.neon) { g.save(); g.globalAlpha = 0.5; g.fillStyle = c.neon === 'arco' ? `hsl(${(W.tempo * 120) % 360},100%,55%)` : c.neon; g.beginPath(); g.ellipse(0, 0, L * 0.7, Wd, 0, 0, 7); g.fill(); g.restore(); }
   g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(4, 4, L / 2, Wd / 2, 0, 0, 7); g.fill();
   g.fillStyle = c.cor; g.beginPath(); g.moveTo(L / 2, 0); g.quadraticCurveTo(L * 0.2, -Wd / 2, -L / 2, -Wd / 2); g.lineTo(-L / 2, Wd / 2); g.quadraticCurveTo(L * 0.2, Wd / 2, L / 2, 0); g.fill();
   g.strokeStyle = escurecer(c.cor, 0.6); g.lineWidth = 2; g.stroke();
   g.fillStyle = '#ecf0f1'; if (t.jetski) g.fillRect(-L * 0.25, -Wd * 0.25, L * 0.35, Wd * 0.5); else { g.fillRect(-L * 0.15, -Wd * 0.35, L * 0.3, Wd * 0.7); g.fillStyle = 'rgba(150,200,255,.7)'; g.fillRect(L * 0.1, -Wd * 0.3, 6, Wd * 0.6); }
+  if (c.adesivo === 'chamas') { g.fillStyle = '#ff8c00'; for (let k = 0; k < 3; k++) { g.beginPath(); g.moveTo(L * 0.35, -Wd * 0.3 + k * Wd * 0.3); g.lineTo(L * 0.05, -Wd * 0.3 + k * Wd * 0.3 - 3); g.lineTo(L * 0.15, -Wd * 0.3 + k * Wd * 0.3 + 3); g.fill(); } }
+  else if (c.adesivo === 'arco') ['#e40303', '#ff8c00', '#ffed00', '#008026', '#004dff', '#750787'].forEach((cc, k) => { g.fillStyle = cc; g.fillRect(-L / 2 + 2, -Wd / 2 + 2 + k * (Wd - 4) / 6, L * 0.3, (Wd - 4) / 6); });
+  else if (c.adesivo) { g.fillStyle = '#fff'; g.fillRect(-L / 2 + 2, -2, L * 0.7, 4); }
+  if (c.nitroOn) { g.fillStyle = '#00e5ff'; g.beginPath(); g.arc(-L / 2 - 5, 0, 5 + Math.random() * 4, 0, 7); g.fill(); }
   const m = c.motorista;
-  if (m) { g.rotate(-c.a); const im = m.rosto && ROSTOS[m.rosto]; if (im && im.naturalWidth) { g.save(); g.beginPath(); g.arc(0, 0, 11, 0, 7); g.clip(); g.drawImage(im, -11, -11, 22, 22); g.restore(); g.strokeStyle = '#ffd23f'; g.lineWidth = 2; g.beginPath(); g.arc(0, 0, 11, 0, 7); g.stroke(); } else { g.fillStyle = m.pele || '#c68642'; g.beginPath(); g.arc(0, 0, 8, 0, 7); g.fill(); } }
   g.restore();
+  if (m) desenharPessoa(g, { ...m, x: c.x, y: c.y + 4, a: c.a, anda: 0, nome: null, nadando: false }, { semNome: true, jog: m === W.jog });
+  return;
 }
 
 function criarTesouro() {
   if ((W.stats || {}).bau) return;
   W.itens.push({ t: 'pacote', icone: '💰', x: 215.5 * T, y: 25.5 * T, fica: false, fn: () => { conta('bau'); W.jog.grana += 2000; pontuar(400); AVISO = { titulo: 'BAÚ DO PIRATA', sub: 'achou o tesouro da Ilha do Gelado: +R$ 2.000', cor: '#f1c40f', t: 0, dur: 4 }; SOM.missao(); salvar(); } });
 }
+// ---------- pesca no píer ----------
+const PEIXES = [
+  ['🐟 Tilápia de esgoto', 40, 30], ['🐠 Peixinho colorido', 80, 22], ['🐡 Baiacu (não come)', 120, 12], ['🦐 Camarão gigante', 200, 10],
+  ['🥾 Bota velha', 0, 12], ['📱 Celular do Ltzin (tem nudes do Luketa?)', 350, 4], ['🦈 TUBARÃO! (te mordeu)', -1, 4], ['💰 Saco de dinheiro boiando', 800, 3], ['🐔 Uma galinha?? (é o Galado)', 150, 3]
+];
+function menuPesca() {
+  const j = W.jog;
+  abrirMenu('🎣 PÍER DE PESCA', [
+    { txt: '🎣 Jogar a vara (isca)', preco: 10, fn: () => {
+      const tot = PEIXES.reduce((a, p) => a + p[2], 0); let r = rnd(tot), pe = PEIXES[0];
+      for (const p of PEIXES) { r -= p[2]; if (r <= 0) { pe = p; break; } }
+      if (INTERIOR) INTERIOR.peixe = { txt: pe[0], t: 0 };
+      if (pe[1] < 0) { ferirJogador(20); falar('luketa', 'TUBARÃO NO PÍER? isso é Recife, né', 2.5); }
+      else if (pe[1] > 0) { j.grana += pe[1]; pontuar(Math.round(pe[1] / 4)); conta('peixe'); }
+      CARRO_AVISO = { txt: pe[0] + (pe[1] > 0 ? ' · +' + fmt$(pe[1]) : ''), t: 0 };
+      SOM.pega(); menuPesca(); return false;
+    } },
+    { txt: '🍺 Ficar de boa olhando o mar (só pela vibe)', fn: () => { CORTINA = { t: 0, txt: 'o Nerivan ficou 2 horas olhando o mar e pensando na vida' }; } }
+  ], `peixe vende na hora · ${fmt$(j.grana)} no bolso`);
+}
+// ---------- baús no fundo d'água (bolhinhas): passa por cima nadando ou de barco ----------
+function criarBausSubmersos() {
+  W.baus = [];
+  let n = 0;
+  for (let k = 0; k < 4000 && n < 14; k++) {
+    const tx = rndi(2, MW - 3), ty = rndi(2, MH - 3);
+    if (tile(tx, ty) !== TL.AGUA || tile(tx + 2, ty) !== TL.AGUA || tile(tx - 2, ty) !== TL.AGUA || tile(tx, ty + 2) !== TL.AGUA || tile(tx, ty - 2) !== TL.AGUA) continue;
+    if (W.baus.some(b => Math.hypot(b.x - tx * T, b.y - ty * T) < 30 * T)) continue;
+    W.baus.push({ x: tx * T + T / 2, y: ty * T + T / 2, ok: false }); n++;
+  }
+}
+function atualizaBaus(dt) {
+  if (!W.baus) return;
+  const j = W.jog, al = j.carro || j;
+  for (const b of W.baus) {
+    if (b.ok) { b.volta = (b.volta || 300) - dt; if (b.volta <= 0) { b.ok = false; b.volta = 300; } continue; }
+    if (rnd() < dt * 2 && dist(b.x, b.y, al.x, al.y) < 900) W.efeitos.push({ t: 'onda', x: b.x + rnd(-10, 10), y: b.y + rnd(-10, 10), vida: 0.8, max: 0.8 });
+    if (dist(b.x, b.y, al.x, al.y) < 40 && (j.nadando || (j.carro && TIPOS_CARRO[j.carro.modelo].barco))) {
+      b.ok = true; const g = rndi(250, 900); j.grana += g; pontuar(150); conta('bauAgua'); SOM.grana();
+      AVISO = { titulo: '🏴‍☠️ BAÚ SUBMERSO', sub: `${fmt$(g)} que algum traficante perdeu`, t: 0, dur: 2.5 };
+    }
+  }
+}
+function desenharBaus(g) {
+  if (!W.baus) return;
+  for (const b of W.baus) if (!b.ok) {
+    g.fillStyle = 'rgba(255,255,255,.75)';
+    for (let k = 0; k < 4; k++) { const ph = (W.tempo * 1.4 + k * 0.7) % 2; g.beginPath(); g.arc(b.x + Math.sin(W.tempo * 3 + k) * 6, b.y - ph * 14, 2.5 + k * 0.6, 0, 7); g.fill(); }
+    g.fillStyle = 'rgba(120,80,20,.45)'; g.fillRect(b.x - 10, b.y - 6, 20, 12);
+  }
+}
+
+// ---------- farol: luneta mostra os baús do fundo d'água ----------
+let LUNETA_T = 0;
+function menuFarol() {
+  const j = W.jog;
+  abrirMenu('🗼 FAROL DO SIMAS', [
+    { txt: '🔭 Olhar o mar com a luneta (mostra os baús submersos no minimapa por 2 min)', preco: 80, fn: () => { LUNETA_T = 120; falar('luketa', 'tá vendo as bolhinhas no mapa? é baú. pega de barco ou nadando', 3.5); } },
+    { txt: '🌅 Ver o pôr do sol (vida cheia)', fn: () => { j.hp = 100; CORTINA = { t: 0, txt: 'o Nerivan viu o pôr do sol do farol e quase chorou. quase.' }; } }
+  ], 'o ponto mais alto do litoral');
+}
+// ---------- corrida contra o tempo no autódromo ----------
+const CORRIDA_AUTODROMO = { id: 'autodromo', extra: true, sub: 'corrida contra o tempo', nome: 'Volta no Autódromo', quem: 'luketa', libera: () => false, fn: async () => {
+  const pts = LUGAR.pistaPts, t0 = W.tempo;
+  falar('luketa', '3... 2... 1... VAI! duas voltas no circuito', 2.5);
+  limiteTempo(110, 'muito lento! tenta de novo');
+  for (let v = 0; v < 2; v++) for (let k = 0; k < pts.length; k++) await vai(pts[k].x, pts[k].y, { r: 130, texto: `volta ${v + 1}/2 · ponto ${k + 1}/${pts.length}`, cor: '#ff6ec7' });
+  semLimite();
+  const tt = W.tempo - t0, rec = (W.stats || {}).recAuto || 0;
+  const pr = Math.max(300, Math.round(3000 - tt * 25)); CORRIDA_AUTODROMO.premio = pr; MISSAO.ativa.premio = pr; premio(pr);
+  if (!rec || tt < rec) { W.stats.recAuto = tt; AVISO = { titulo: '🏁 RECORDE DO AUTÓDROMO', sub: tt.toFixed(1) + 's', cor: '#ff6ec7', t: 0, dur: 3 }; }
+  falar('luketa', `${tt.toFixed(1)} segundos! ${tt < 60 ? 'tu é o Ayrton Simas' : 'dá pra melhorar, tartaruga'}`, 3.5);
+} };
 
 // =========================================================
 // GTA 7 ONLINE: todo mundo na mesma cidade (PeerJS, sem servidor pago)
@@ -4659,7 +4902,7 @@ const ONLINE = {
       const c = j.carro;
       this.enviar({ t: 'st', n: RANK.nome() || 'sem nome', sk: this.skin, cor: this.cor, x: Math.round(j.x), y: Math.round(j.y), a: +(c ? c.a : j.a).toFixed(2), ar: j.arma, hp: Math.round(j.hp), m: j.morto ? 1 : 0, ab: this.abates,
         c: c ? { m: c.modelo, cor: c.cor, l: c.listra || 0, v: Math.round(Math.hypot(c.vx, c.vy)) } : null,
-        r: { ca: j.camisa, cl: j.calca, ch: j.chapeu, ct: j.chapeuTipo, o: j.oculos ? 1 : 0, e: j.estampa, ja: j.jaqueta, co: j.corrente ? 1 : 0, mo: j.mochila, tc: j.tenisCor, ro: j.rodaAtiva, ot: j.oculosTipo, ma: j.mascara, cs: j.costas, cc: j.costasCor, ci: j.cintura, fa: j.fantasia, cr: j.corte, cb: j.cabelo, ba: j.barba ? 1 : 0, pe: j.pele } });
+        r: { ca: j.camisa, cl: j.calca, ch: j.chapeu, ct: j.chapeuTipo, o: j.oculos ? 1 : 0, e: j.estampa, ja: j.jaqueta, co: j.corrente ? 1 : 0, mo: j.mochila, tc: j.tenisCor, ro: j.rodaAtiva, ot: j.oculosTipo, ma: j.mascara, cs: j.costas, cc: j.costasCor, ci: j.cintura, fa: j.fantasia, cr: j.corte, cb: j.cabelo, ba: j.barba ? 1 : 0, pe: j.pele, ga: j.galinha ? 1 : 0 } });
     }
     const agora = performance.now();
     for (const [id, o] of this.outros) {
@@ -4689,6 +4932,7 @@ const ONLINE = {
       const r = o.r || {};
       const pessoa = { x: o.x, y: o.y, a: o.a, anda: o.anda, rosto: o.sk, pele: '#c68642', camisa: r.ca || '#ff6ec7', calca: r.cl || '#1a1a2e', chapeu: r.ch, chapeuTipo: r.ct, oculos: !!r.o, estampa: r.e, jaqueta: r.ja, corrente: !!r.co, mochila: r.mo, tenisCor: r.tc, rodaAtiva: r.ro, corNome: o.cor, oculosTipo: r.ot, mascara: r.ma, costas: r.cs, costasCor: r.cc, cintura: r.ci, fantasia: r.fa, corte: r.cr, cabelo: r.cb, barba: !!r.ba };
       if (r.pe) pessoa.pele = r.pe;
+      if (r.ga) pessoa.galinha = true;
       if (o.c) {
         const tc = TIPOS_CARRO[o.c.m] || TIPOS_CARRO.sedan;
         desenharCarro(g, { modelo: TIPOS_CARRO[o.c.m] ? o.c.m : 'sedan', x: o.x, y: o.y, a: o.a, w: tc.w, l: tc.l, hp: 1, hpMax: 1, cor: o.c.cor || '#888', listra: o.c.l || null, vx: Math.cos(o.a) * o.c.v, vy: Math.sin(o.a) * o.c.v, motor: 0, blind: 0, sirene: false, motorista: pessoa });
@@ -4814,7 +5058,7 @@ function aplicarPersonagemOnline(id) {
 }
 function fichaPersonagem(id) {
   const p = PERSONAGENS[id] || PERSONAGENS.nerivan, foto = (typeof FOTOS !== 'undefined' && FOTOS[id]) || '';
-  return `<img src="${foto}"><div><h3>${p.nomes[0]}</h3><b>${p.titulo}</b><p>${p.lore}</p><p class="poder">⚡ PODER: ${p.poder}</p></div>`;
+  return `<img src="${foto}"><div><h3>${p.nomes[0]}</h3><b>${p.titulo}</b><p>${p.lore}</p><p class="poder">⚡ PODER: ${p.poder}</p><p class="poder">🎮 HABILIDADE (X): ${HABILIDADES[id] ? HABILIDADES[id].ic + ' ' + HABILIDADES[id].nome + ' — ' + HABILIDADES[id].desc : ''}</p></div>`;
 }
 function telaPersonagens(aoEscolher) {
   const el = document.getElementById('lobby'); el.style.display = 'flex';
@@ -4832,6 +5076,73 @@ function telaPersonagens(aoEscolher) {
   el.querySelector('.volta').onclick = () => { el.style.display = 'none'; };
   el.querySelector('.vai').onclick = () => { el.style.display = 'none'; aoEscolher(sel); };
   mostra();
+}
+// =========================================================
+// HABILIDADE ESPECIAL (tecla X / botão ⚡): uma única pra cada personagem
+// =========================================================
+const HABILIDADES = {
+  nerivan: { nome: 'Ligação da Vovó', ic: '📞', cd: 40, desc: 'liga pra uma vovó e cai um PIX na hora' },
+  luketa: { nome: 'Atalho do GPS', ic: '🧭', cd: 18, desc: 'se teletransporta uns metros pra onde tá olhando' },
+  dudu: { nome: 'Hackeia a Polícia', ic: '💻', cd: 60, desc: 'zera as estrelas e trava as viaturas perto' },
+  cas: { nome: 'Soneca na Cadeira', ic: '😴', cd: 45, desc: 'vida e colete cheios na hora' },
+  alan: { nome: 'Manobra de Skate', ic: '🛹', cd: 25, desc: 'skate turbo por 6 segundos (atropela e derruba)' },
+  yori: { nome: 'Chama a Hilux', ic: '🛻', cd: 50, desc: 'a Hilux de manga aparece do teu lado' },
+  nauj: { nome: 'Incenso da Paz', ic: '🌿', cd: 40, desc: 'todo mundo em volta fica zen e para de brigar (tira 2 estrelas)' },
+  meco: { nome: 'Arrancada do Neymar', ic: '⚡', cd: 20, desc: 'corre o dobro por 5 segundos (vai que não lesiona)' },
+  gelado: { nome: 'Modo Galinha', ic: '🐔', cd: 50, desc: 'vira o Galado por 10s: a polícia não te reconhece' },
+  matt: { nome: 'Laser do CLAUDE-BOT', ic: '🤖', cd: 22, desc: 'dispara uma rajada de laser pra onde mira' },
+  ltzin: { nome: 'Choque Real', ic: '👑', cd: 25, desc: 'solta um choque em volta e derruba geral' },
+  poli: { nome: 'Buzina do Sample', ic: '📯', cd: 30, desc: 'buzina absurda: carros freiam e o povo foge' }
+};
+function anguloMira() {
+  const j = W.jog;
+  if (MOUSE.used && !TOQUE.ativo) { const mw = telaPraMundo(MOUSE.x, MOUSE.y); return Math.atan2(mw.y - j.y, mw.x - j.x); }
+  return j.carro ? j.carro.a : j.a;
+}
+function balaHab(x, y, ang, vel, dano, vida) { const j = W.jog, bl = { x, y, vx: Math.cos(ang) * vel, vy: Math.sin(ang) * vel, vida, dano, dono: j }; W.balas.push(bl); ONLINE.tiro(bl); }
+function usarHabilidade() {
+  const j = W.jog, h = HABILIDADES[PERS]; if (!h || j.morto) return;
+  if ((j.habCd || 0) > 0) { CARRO_AVISO = { txt: `${h.ic} ${h.nome}: espera ${Math.ceil(j.habCd)}s`, t: 0 }; return; }
+  const al = j.carro || j;
+  let ok = true;
+  switch (PERS) {
+    case 'nerivan': { const g = rndi(300, 900); j.grana += g; SOM.grana(); falar('nerivan', pick(['alô vó? aqui é do banco...', 'vovó, teu neto tá preso, manda um PIX', 'oi tia, é o rapaz da Claro']), 2.5); W.efeitos.push({ t: 'texto', x: j.x, y: j.y - 40, txt: '+' + fmt$(g), vida: 1.6, max: 1.6, cor: '#7CFC00' }); break; }
+    case 'luketa': {
+      if (j.carro) { ok = false; break; }
+      const a = anguloMira(); let d = 0; for (let k = 20; k <= 340; k += 20) { if (solidoEm(j.x + Math.cos(a) * k, j.y + Math.sin(a) * k)) break; d = k; }
+      if (d < 40) { ok = false; break; }
+      W.efeitos.push({ t: 'anel', x: j.x, y: j.y, r: 40, vida: 0.35, max: 0.35 }); j.x += Math.cos(a) * d; j.y += Math.sin(a) * d; W.efeitos.push({ t: 'anel', x: j.x, y: j.y, r: 40, vida: 0.35, max: 0.35 }); SOM.pega(); break;
+    }
+    case 'dudu': W.procurado = 0; W.calor = 0; for (const c of W.carros) if (c.ia && c.ia.tipo === 'policia' && dist(c.x, c.y, al.x, al.y) < 900) { c.vel = 0; c.vx = c.vy = 0; c.ia.hack = 8; W.efeitos.push({ t: 'texto', x: c.x, y: c.y - 30, txt: '💻 HACKEADO', vida: 2, max: 2, cor: '#00ff9c' }); } falar('dudu', 'sistema da polícia: deletado. princesa nunca falha', 2.5); break;
+    case 'cas': j.hp = 100; j.colete = 100; if (j.carro) j.carro.hp = Math.max(j.carro.hp, j.carro.hpMax * 0.5); W.efeitos.push({ t: 'texto', x: j.x, y: j.y - 40, txt: '😴 zzz... recarregado', vida: 1.8, max: 1.8, cor: '#9fe' }); break;
+    case 'alan': if (j.carro) { ok = false; break; } j.rodaAtiva = 'skate'; j.turbo = 6; j.turboMult = 1.7; j.atropela = 6; break;
+    case 'yori': { const a = j.a + Math.PI / 2; let x = al.x + Math.cos(a) * 70, y = al.y + Math.sin(a) * 70; if (solidoEm(x, y)) { x = al.x - Math.cos(a) * 70; y = al.y - Math.sin(a) * 70; } if (solidoEm(x, y)) { ok = false; break; } const c = novoCarro('pickup', x, y, j.a, { cor: '#f1c40f', doJogador: true, motor: 2, blind: 1 }); c.nome = 'Hilux do Yori'; W.carros.push(c); W.efeitos.push({ t: 'fumaca', x, y, r: 30, vida: 0.6, max: 0.6 }); falar('yori', 'chegou a Hilux, sô. tem manga na caçamba', 2.5); break; }
+    case 'nauj': W.procurado = Math.max(0, W.procurado - 2); W.calor = Math.min(W.calor, W.procurado * 10); for (const p of W.peds) if (!p.morto && dist(p.x, p.y, al.x, al.y) < 380) { p.hostil = false; p.bravo = false; p.medo = 0; p.zen = 8; } for (let k = 0; k < 8; k++) W.efeitos.push({ t: 'fumaca', x: al.x + rnd(-120, 120), y: al.y + rnd(-120, 120), r: rnd(18, 30), vida: 2, max: 2 }); W.efeitos.push({ t: 'texto', x: al.x, y: al.y - 40, txt: '🌿 paz e amor', vida: 2, max: 2, cor: '#a3e635' }); break;
+    case 'meco': if (j.carro) { j.carro.nitroOn = true; j.carro.vel += 300; const c = j.carro; c.vx += Math.cos(c.a) * 400; c.vy += Math.sin(c.a) * 400; break; } j.turbo = 5; j.turboMult = 2; break;
+    case 'gelado': if (j.carro) { ok = false; break; } j.galinha = true; j.galinhaT = 10; W.procurado = 0; W.calor = 0; W.efeitos.push({ t: 'fumaca', x: j.x, y: j.y, r: 30, vida: 0.6, max: 0.6 }); falar('gelado', 'pó pó pó... polícia? que polícia?', 2.5); break;
+    case 'matt': { const a = anguloMira(); for (let k = -2; k <= 2; k++) balaHab(al.x + Math.cos(a) * 24, al.y + Math.sin(a) * 24, a + k * 0.07, 1300, 45, 0.5); W.efeitos.push({ t: 'laser', x: al.x, y: al.y - ALT_TIRO / INCL, x2: al.x + Math.cos(a) * 600, y2: al.y + Math.sin(a) * 600 - ALT_TIRO / INCL, vida: 0.25, max: 0.25 }); SOM.tiro('fuzil'); break; }
+    case 'ltzin': for (let k = 0; k < 18; k++) { const a = k / 18 * Math.PI * 2; balaHab(al.x + Math.cos(a) * 30, al.y + Math.sin(a) * 30, a, 700, 34, 0.32); } W.efeitos.push({ t: 'anel', x: al.x, y: al.y, r: 220, vida: 0.4, max: 0.4 }); for (let k = 0; k < 6; k++) { const a = rnd(Math.PI * 2); W.efeitos.push({ t: 'raio', x: al.x, y: al.y, x2: al.x + Math.cos(a) * 200, y2: al.y + Math.sin(a) * 200, vida: 0.25, max: 0.25 }); } break;
+    case 'poli': SOM.buzina('caminhao'); SOM.buzina('corneta'); for (let k = 0; k < 3; k++) W.efeitos.push({ t: 'onda', x: al.x, y: al.y, vida: 0.6 + k * 0.25, max: 0.6 + k * 0.25 }); for (const p of W.peds) if (!p.morto && dist(p.x, p.y, al.x, al.y) < 420) { p.medo = 6; p.perigoX = al.x; p.perigoY = al.y; if (p.hostil && dist(p.x, p.y, al.x, al.y) < 220) feriPed(p, 25, j); } for (const c of W.carros) if (c !== j.carro && c.ia && dist(c.x, c.y, al.x, al.y) < 420) { c.vel *= 0.1; c.vx *= 0.1; c.vy *= 0.1; } for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; balaHab(al.x, al.y, a, 500, 12, 0.35); } break;
+  }
+  if (!ok) { CARRO_AVISO = { txt: `${h.ic} ${h.nome}: não dá agora`, t: 0 }; return; }
+  j.habCd = h.cd; CARRO_AVISO = { txt: `${h.ic} ${h.nome}!`, t: 0 }; SOM.pega();
+}
+function atualizaHabilidade(dt) {
+  const j = W.jog;
+  if (j.habCd > 0) j.habCd -= dt;
+  if (j.turbo > 0) { j.turbo -= dt; if (j.turbo <= 0) { j.turboMult = 1; j.atropela = 0; } }
+  if (j.galinhaT > 0) { j.galinhaT -= dt; W.procurado = 0; W.calor = 0; if (j.galinhaT <= 0) { j.galinha = false; W.efeitos.push({ t: 'fumaca', x: j.x, y: j.y, r: 30, vida: 0.6, max: 0.6 }); } }
+  // skate turbo do Alan derruba quem tá no caminho
+  if (j.atropela > 0 && !j.carro) for (const p of W.peds) if (!p.morto && dist(p.x, p.y, j.x, j.y) < 22) feriPed(p, 30, j);
+  for (const c of W.carros) if (c.ia && c.ia.hack > 0) { c.ia.hack -= dt; c.vel = 0; c.vx *= 0.5; c.vy *= 0.5; }
+}
+function hudHabilidade(g, x, y, peq) {
+  const h = HABILIDADES[PERS]; if (!h) return;
+  const j = W.jog, pronto = !(j.habCd > 0), w = peq ? 132 : 164, hh = peq ? 22 : 26;
+  g.fillStyle = 'rgba(10,8,20,.78)'; rr(g, x, y, w, hh, 8); g.fill(); g.strokeStyle = pronto ? '#00e5ff' : '#555'; g.lineWidth = 2; g.stroke();
+  if (!pronto) { g.fillStyle = 'rgba(0,229,255,.25)'; rr(g, x, y, w * (1 - j.habCd / h.cd), hh, 8); g.fill(); }
+  g.font = `bold ${peq ? 10 : 11}px system-ui`; g.textAlign = 'left';
+  textoContorno(g, `${ehToque() ? '⚡' : 'X'} ${h.ic} ${pronto ? h.nome : Math.ceil(j.habCd) + 's'}`, x + 7, y + hh / 2 + 4, pronto ? '#fff' : '#999', 3);
 }
 
 </script>

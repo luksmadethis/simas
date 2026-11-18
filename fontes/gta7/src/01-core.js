@@ -4,7 +4,7 @@
    jogo de mundo aberto visto de cima (estilo GTA de PS1)
    ========================================================= */
 const T = 64;                 // tamanho do bloquinho (tile) em pixels do mundo
-const MW = 248, MH = 240;     // mapa em tiles (cidade em 0..191, Indonésia a leste, Serra ao sul)
+const MW = 320, MH = 300;     // mapa em tiles (cidade em 0..191, Indonésia a leste, Serra ao sul)
 const CIDADE = 192;
 const GRID = 12;              // ruas a cada 12 tiles
 const LAND0 = 6, LAND1 = MW - 7;

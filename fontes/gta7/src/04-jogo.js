@@ -177,7 +177,7 @@ function atualizaJogadorPe(dt) {
   const corre = segura('shift') || (TOQUE.ativo && Math.hypot(mx, my) > 0.9);
   const roda = j.skate ? 'skate' : j.rodaAtiva;
   const tn = TENIS[j.tenis] || TENIS.chinelo;
-  const vel = (roda === 'skate' ? (corre ? 430 : 360) * (PERS === 'alan' ? 1.15 : 1) : roda === 'patins' ? (corre ? 500 : 410) : (corre ? 250 : 160) * tn.vel) * (PERS === 'meco' ? 1.25 : 1);
+  const vel = (roda === 'skate' ? (corre ? 430 : 360) * (PERS === 'alan' ? 1.15 : 1) : roda === 'patins' ? (corre ? 500 : 410) : (corre ? 250 : 160) * tn.vel) * (PERS === 'meco' ? 1.25 : 1) * (j.turbo > 0 ? j.turboMult || 1 : 1) * (j.galinha ? 1.3 : 1);
   const len = Math.hypot(mx, my);
   if (len > 0.1) {
     const nx = mx / Math.max(1, len), ny = my / Math.max(1, len);
