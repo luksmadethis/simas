@@ -116,3 +116,27 @@ def baixar(jid: str):
     if not j or j.get('fase') != 'pronto': raise HTTPException(404, 'ainda nao ta pronto')
     mt = 'audio/mpeg' if j['nome'].endswith('.mp3') else 'video/mp4'
     return FileResponse(j['arquivo'], media_type=mt, filename=j['nome'])
+
+@app.get('/diag')
+def diag():
+    """diagnóstico: o gerador de token tá vivo? o que o yt-dlp fala do youtube?"""
+    import urllib.request, io, contextlib
+    out = {}
+    try:
+        out['bgutil'] = urllib.request.urlopen('http://127.0.0.1:4416/ping', timeout=5).read().decode()[:200]
+    except Exception as e:
+        out['bgutil'] = 'erro: ' + str(e)[:200]
+    try: out['bgutil_log'] = open('/tmp/bgutil.log').read()[-600:]
+    except Exception: pass
+    buf = io.StringIO()
+    class L:
+        def debug(self, m): buf.write(m + '\n')
+        info = warning = error = debug
+    try:
+        with yt_dlp.YoutubeDL({'quiet': False, 'verbose': True, 'logger': L(), 'skip_download': True, 'noplaylist': True}) as y:
+            i = y.extract_info('https://www.youtube.com/watch?v=jNQXAC9IVRk', download=False)
+            out['yt'] = 'ok: ' + str(i.get('title'))
+    except Exception as e:
+        out['yt'] = 'erro: ' + str(e)[:300]
+    out['log'] = '\n'.join(l for l in buf.getvalue().splitlines() if any(k in l.lower() for k in ('pot', 'plugin', 'bgutil', 'client', 'error', 'warning')))[-2500:]
+    return out
