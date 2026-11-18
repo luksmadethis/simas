@@ -93,6 +93,13 @@
 
   .topbtns{position:absolute;top:70px;right:12px;z-index:20;display:flex;gap:8px}
   .rbtn{border:0;color:#fff;font-weight:900;border-radius:999px;padding:10px 16px;background:linear-gradient(90deg,var(--r),var(--o) 25%,var(--g) 55%,var(--b) 80%,var(--v));box-shadow:0 4px 18px rgba(0,0,0,.5)}
+  /* volume: no PC a barrinha abre ao passar o mouse */
+  .vol{display:flex;align-items:center;gap:0;border-radius:999px;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.25);transition:padding .2s}
+  .vol .gbtn{border:0;background:none;backdrop-filter:none}
+  .vol input{width:0;opacity:0;margin:0;transition:width .2s,opacity .2s,margin .2s;-webkit-appearance:none;appearance:none;height:6px;border-radius:6px;background:linear-gradient(90deg,#fff var(--p,80%),rgba(255,255,255,.25) var(--p,80%));cursor:pointer}
+  .vol input::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 0 6px rgba(0,0,0,.5)}
+  .vol input::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:#fff}
+  @media (pointer:fine){.vol:hover input,.vol:focus-within input{width:110px;opacity:1;margin:0 14px 0 2px}}
   .gbtn{border:1px solid rgba(255,255,255,.25);color:#fff;font-weight:800;border-radius:999px;padding:10px 14px;background:rgba(0,0,0,.45);backdrop-filter:blur(6px)}
   .empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:30px;color:var(--mut)}
   .empty h1{color:var(--txt);font-size:clamp(34px,7vw,56px);letter-spacing:-1px}
@@ -225,7 +232,7 @@
 </div>
 <div class="abas" id="abas"><button data-o="novos" class="on">Pra você</button><button data-o="alta">Em alta</button></div>
 <div class="topbtns">
-  <button class="gbtn" id="muteBtn" title="som">🔇</button>
+  <div class="vol" id="vol"><button class="gbtn" id="muteBtn" title="som (M)">🔇</button><input type="range" id="volR" min="0" max="100" value="80" aria-label="volume"></div>
   <button class="rbtn" id="upBtn">＋ postar</button>
 </div>
 
@@ -304,7 +311,19 @@ const purl = v => `https://res.cloudinary.com/${v.cloud}/video/upload/so_0,w_480
 
 let uid = null, admin = false, aprovadores = [], vids = [], items = new Map(), atual = null;
 let mudo = true; try { mudo = localStorage.getItem('simastok-som') !== '1'; } catch (e) {}
-const updMute = () => { $('muteBtn').textContent = mudo ? '🔇' : '🔊'; for (const it of items.values()) it.video.muted = mudo; };
+let volume = 0.8; try { const vv = parseFloat(localStorage.getItem('simastok-vol')); if (vv >= 0 && vv <= 1) volume = vv; } catch (e) {}
+const updMute = () => {
+  $('muteBtn').textContent = mudo || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊';
+  $('volR').value = Math.round((mudo ? 0 : volume) * 100); $('volR').style.setProperty('--p', (mudo ? 0 : volume * 100) + '%');
+  for (const it of items.values()) { it.video.muted = mudo; it.video.volume = volume; }
+};
+$('volR').addEventListener('input', () => {
+  volume = $('volR').value / 100; try { localStorage.setItem('simastok-vol', volume); } catch (e) {}
+  const m = volume === 0; if (m !== mudo) { mudo = m; try { localStorage.setItem('simastok-som', mudo ? '0' : '1'); } catch (e) {} }
+  updMute(); if (atual && !mudo) atual.video.play().catch(() => {});
+});
+// rodinha do mouse em cima do som muda o volume
+$('vol').addEventListener('wheel', e => { e.preventDefault(); e.stopPropagation(); volume = Math.min(1, Math.max(0, volume + (e.deltaY < 0 ? 0.05 : -0.05))); mudo = volume === 0; try { localStorage.setItem('simastok-vol', volume); } catch (er) {} updMute(); }, { passive: false });
 $('muteBtn').onclick = () => { mudo = !mudo; try { localStorage.setItem('simastok-som', mudo ? '0' : '1'); } catch (e) {} updMute(); if (atual) atual.video.play().catch(() => {}); };
 updMute();
 // navegador não deixa começar com som; no primeiro toque na tela o som liga sozinho (se a pessoa não tiver mutado de propósito)
@@ -375,7 +394,7 @@ function criar(v) {
   const bg = document.createElement('div'); bg.className = 'bg'; bg.style.backgroundImage = `url("${purl(v)}")`;
   const stage = document.createElement('div'); stage.className = 'stage';
   const video = document.createElement('video'); video.loop = true; video.playsInline = true; video.muted = mudo; video.preload = 'none'; video.poster = purl(v);
-  video.setAttribute('playsinline', ''); video.setAttribute('webkit-playsinline', '');
+  video.volume = volume; video.setAttribute('playsinline', ''); video.setAttribute('webkit-playsinline', '');
   const tap = document.createElement('div'); tap.className = 'tapzone';
   const pic = document.createElement('div'); pic.className = 'playic'; pic.textContent = '▶';
   stage.append(video, tap, pic);
