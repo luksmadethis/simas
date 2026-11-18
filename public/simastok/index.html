@@ -94,6 +94,12 @@
   .perfil .nums b{display:block;color:var(--txt);font-size:17px}
 
   .topbtns{position:absolute;top:70px;right:12px;z-index:20;display:flex;gap:8px}
+  .autobtn{position:absolute;top:120px;right:12px;z-index:20;display:flex;align-items:center;gap:8px;padding:8px 12px 8px 10px;font-size:13px}
+  .autobtn .chave{width:30px;height:17px;border-radius:999px;background:rgba(255,255,255,.3);position:relative;transition:background .2s}
+  .autobtn .chave::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:left .2s}
+  .autobtn.on{border-color:transparent;background:linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.55)) padding-box,var(--rainbow) border-box;border:1.5px solid transparent}
+  .autobtn.on .chave{background:#21c35a}
+  .autobtn.on .chave::after{left:15px}
   .rbtn{border:0;color:#fff;font-weight:900;border-radius:999px;padding:10px 16px;background:linear-gradient(90deg,var(--r),var(--o) 25%,var(--g) 55%,var(--b) 80%,var(--v));box-shadow:0 4px 18px rgba(0,0,0,.5)}
   /* volume: no PC a barrinha abre ao passar o mouse */
   .vol{display:flex;align-items:center;gap:0;border-radius:999px;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.25);transition:padding .2s}
@@ -250,6 +256,7 @@
   <div class="vol" id="vol"><button class="gbtn" id="muteBtn" title="som (M)">🔇</button><input type="range" id="volR" min="0" max="100" value="80" aria-label="volume"></div>
   <button class="rbtn" id="upBtn">＋ postar</button>
 </div>
+<button class="gbtn autobtn" id="autoBtn" title="auto scroll: quando o video acaba, desce pro proximo" aria-pressed="false"><span class="chave"></span><span id="autoTxt">auto scroll</span></button>
 
 <!-- postar -->
 <div class="modal" id="mUp" hidden>
@@ -556,9 +563,34 @@ function tocaVinheta(it) {
 function fimVinheta() {
   vinheta.classList.remove('on'); vinheta.pause();
   const it = vinhetaDe; vinhetaDe = null;
-  if (it && atual === it && !it.el.classList.contains('paused')) { it.video.currentTime = 0; it.video.play().catch(() => {}); }
+  if (it && atual === it && !it.el.classList.contains('paused')) {
+    if (autoScroll && proximoVideo(it)) return;
+    it.video.currentTime = 0; it.video.play().catch(() => {});
+  }
 }
 vinheta.addEventListener('ended', fimVinheta);
+// ---- auto scroll: quando o vídeo (e a vinheta) acaba, desce sozinho pro próximo ----
+let autoScroll = false;
+try { autoScroll = localStorage.getItem('simastok-auto') === '1'; } catch (e) {}
+function updAuto() {
+  $('autoBtn').classList.toggle('on', autoScroll);
+  $('autoBtn').setAttribute('aria-pressed', autoScroll ? 'true' : 'false');
+}
+updAuto();
+$('autoBtn').onclick = e => {
+  e.stopPropagation();
+  autoScroll = !autoScroll;
+  try { localStorage.setItem('simastok-auto', autoScroll ? '1' : '0'); } catch (er) {}
+  updAuto();
+  toast(autoScroll ? 'auto scroll LIGADO ⏬ acabou o video, desce pro proximo' : 'auto scroll desligado');
+};
+function proximoVideo(it) {
+  let nx = it.el.nextElementSibling;
+  while (nx && !nx.classList.contains('item')) nx = nx.nextElementSibling;
+  if (!nx) { toast('acabou os video, posta mais ai porra'); return false; }
+  nx.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  return true;
+}
 vinheta.addEventListener('click', fimVinheta);
 function ativar(it) {
   if (vinhetaDe && vinhetaDe !== it) { vinheta.classList.remove('on'); vinheta.pause(); vinhetaDe = null; }
