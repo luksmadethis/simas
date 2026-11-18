@@ -98,10 +98,14 @@
   /* volume: no PC a barrinha abre ao passar o mouse */
   .vol{display:flex;align-items:center;gap:0;border-radius:999px;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.25);transition:padding .2s}
   .vol .gbtn{border:0;background:none;backdrop-filter:none}
-  .vol input{width:0;opacity:0;margin:0;transition:width .2s,opacity .2s,margin .2s;-webkit-appearance:none;appearance:none;height:6px;border-radius:6px;background:linear-gradient(90deg,#fff var(--p,80%),rgba(255,255,255,.25) var(--p,80%));cursor:pointer}
-  .vol input::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 0 6px rgba(0,0,0,.5)}
-  .vol input::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:#fff}
-  @media (pointer:fine){.vol:hover input,.vol:focus-within input{width:110px;opacity:1;margin:0 14px 0 2px}}
+  .vol input{width:0;opacity:0;margin:0;height:20px;background:transparent;-webkit-appearance:none;appearance:none;cursor:pointer;transition:width .2s,opacity .2s,margin .2s}
+  .vol input::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,#fff var(--p,80%),rgba(255,255,255,.3) var(--p,80%))}
+  .vol input::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;margin-top:-4px;border-radius:50%;background:#fff;border:0}
+  .vol input::-moz-range-track{height:4px;border-radius:4px;background:rgba(255,255,255,.3)}
+  .vol input::-moz-range-progress{height:4px;border-radius:4px;background:#fff}
+  .vol input::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:#fff}
+  .vol input:focus{outline:none}
+  @media (pointer:fine){.vol:hover input,.vol:focus-within input{width:90px;opacity:1;margin:0 14px 0 0}}
   .gbtn{border:1px solid rgba(255,255,255,.25);color:#fff;font-weight:800;border-radius:999px;padding:10px 14px;background:rgba(0,0,0,.45);backdrop-filter:blur(6px)}
   .empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:30px;color:var(--mut)}
   .empty h1{color:var(--txt);font-size:clamp(34px,7vw,56px);letter-spacing:-1px}
