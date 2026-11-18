@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>GTA 7: Simas Edition · Simas</title>
+<meta name="description" content="o GTA da galera: Nerivan contra o Rei de Recife. mundo aberto, carro pra roubar, garagem, missão e a Rádio Poli FM.">
+<meta property="og:title" content="GTA 7: Simas Edition 🚗">
+<meta property="og:description" content="Nerivan saiu da saidinha. O Ltzin virou Rei de Recife. Só tu pode resolver essa porra.">
+<meta property="og:image" content="https://ofisimas.web.app/jogos/gta7/capa.jpg">
+<script src="/jogos/som-midia.js?v=1"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:#0d0c12;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
+canvas{display:block;cursor:crosshair}
+#titulo{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:20px;
+  background:radial-gradient(ellipse at 50% 30%,#3a1450 0%,#0d0c12 70%);transition:opacity .5s}
+#titulo.some{opacity:0;pointer-events:none}
+#titulo .logo{font:900 clamp(64px,16vw,170px)/0.9 Impact,"Arial Black",sans-serif;letter-spacing:-2px;
+  background:linear-gradient(180deg,#fff 0%,#ffd23f 45%,#ff6ec7 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(6px 6px 0 #000) drop-shadow(0 0 30px rgba(255,110,199,.5));transform:rotate(-4deg)}
+#titulo .sub{font:900 clamp(20px,4.5vw,42px) "Arial Black",sans-serif;color:#fff;text-shadow:3px 3px 0 #000;letter-spacing:4px;transform:rotate(-4deg);margin-top:-6px}
+#titulo .arco{height:8px;width:min(520px,80vw);border-radius:4px;background:linear-gradient(90deg,#e40303,#ff8c00,#ffed00,#008026,#004dff,#750787);margin:8px 0}
+#titulo .tag{color:#bbb;font-size:15px;max-width:560px}
+#titulo button{font:900 22px "Arial Black",sans-serif;padding:14px 34px;border-radius:14px;border:3px solid #000;background:#ffd23f;color:#111;cursor:pointer;box-shadow:5px 5px 0 #000;transition:transform .1s}
+#titulo button:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 #000}
+#titulo button.novo{background:#333;color:#fff;font-size:14px;padding:8px 18px;box-shadow:3px 3px 0 #000}
+#titulo .volta{color:#ff8c00;font-weight:800;text-decoration:none;font-size:14px}
+#dicas-ctrl{color:#888;font-size:12px;max-width:640px;line-height:1.5}
+#menu{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);padding:12px}
+#menu.aberto{display:flex}
+#menu .caixa{background:#15121f;border:3px solid #ff6ec7;border-radius:18px;padding:18px;width:min(460px,100%);max-height:92vh;overflow:auto;box-shadow:8px 8px 0 #000}
+#menu h2{font:900 22px "Arial Black",sans-serif;color:#ffd23f;margin-bottom:4px}
+#menu .sub{color:#aaa;font-size:12px;margin-bottom:12px;line-height:1.5}
+#menu .lista{display:flex;flex-direction:column;gap:7px}
+#menu .item{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;padding:11px 13px;border-radius:10px;border:2px solid #2c2838;background:#1f1b2c;color:#fff;font-size:15px;cursor:pointer}
+#menu .item:hover{background:#2a2540;border-color:#ff6ec7}
+#menu .item b{color:#7CFC00;white-space:nowrap}
+#menu .item.off{opacity:.4;cursor:default}
+#menu .item.pobre{border-color:#e74c3c}
+#menu .fechar{margin-top:12px;width:100%;padding:10px;border-radius:10px;border:0;background:#333;color:#fff;font-weight:700;cursor:pointer}
+#toque{display:none;position:fixed;inset:0;z-index:30;pointer-events:none}
+#toque.on{display:block}
+#toque .jo{position:absolute;left:calc(22px + env(safe-area-inset-left));bottom:calc(22px + env(safe-area-inset-bottom));width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.25);pointer-events:auto}
+#toque .bola{position:absolute;left:45px;top:45px;width:60px;height:60px;border-radius:50%;background:rgba(255,110,199,.55);border:2px solid #fff}
+#toque button{position:absolute;pointer-events:auto;border-radius:50%;border:2px solid rgba(255,255,255,.5);background:rgba(20,18,30,.55);color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center}
+#toque button.ap{background:rgba(255,110,199,.6)}
+#toque .b-tiro{right:calc(24px + env(safe-area-inset-right));bottom:calc(30px + env(safe-area-inset-bottom));width:86px;height:86px;font-size:34px;background:rgba(200,30,40,.5)}
+#toque .b-carro{right:calc(122px + env(safe-area-inset-right));bottom:calc(24px + env(safe-area-inset-bottom));width:64px;height:64px}
+#toque .b-freio{right:calc(28px + env(safe-area-inset-right));bottom:calc(130px + env(safe-area-inset-bottom));width:58px;height:58px;font-size:15px;font-weight:900}
+#toque .b-arma{right:calc(110px + env(safe-area-inset-right));bottom:calc(104px + env(safe-area-inset-bottom));width:54px;height:54px;font-size:20px}
+#toque .b-radio{right:calc(14px + env(safe-area-inset-right));top:calc(182px + env(safe-area-inset-top));width:44px;height:44px;font-size:18px}
+#toque .b-mapa{right:calc(64px + env(safe-area-inset-right));top:calc(182px + env(safe-area-inset-top));width:44px;height:44px;font-size:18px}
+#toque .b-pausa{right:calc(114px + env(safe-area-inset-right));top:calc(182px + env(safe-area-inset-top));width:44px;height:44px;font-size:16px}
+#radio{position:fixed;right:16px;bottom:16px;z-index:35;width:212px;padding:0 6px 6px;border-radius:12px;background:#15121f;border:3px solid #a29bfe;box-shadow:5px 5px 0 #000;opacity:0;pointer-events:none;transform:translateY(20px);transition:opacity .3s,transform .3s}
+#radio.on{opacity:1;pointer-events:auto;transform:none}
+#radio .topo{font:900 12px "Arial Black",sans-serif;color:#c9b6ff;padding:6px 2px;display:flex;justify-content:space-between}
+#radio .topo span{color:#777;font:700 10px system-ui}
+#radio iframe{display:block;border-radius:6px}
+body.titulo-on #radio{right:auto;left:50%;transform:translateX(-50%);bottom:12px}
+#retry{display:none;position:fixed;left:50%;top:58%;transform:translateX(-50%);z-index:36;font:900 20px "Arial Black",sans-serif;padding:12px 26px;border-radius:12px;border:3px solid #000;background:#ff4d4d;color:#fff;box-shadow:5px 5px 0 #000;cursor:pointer}
+@media (max-height:500px){#radio{right:auto;left:190px;bottom:8px}}
+#menu .caixa{background:linear-gradient(#1a1626,#100d18);border:3px solid #ffd23f;border-radius:6px;padding:0;overflow:hidden}
+#menu h2{background:linear-gradient(90deg,#ff8c00,#ffd23f);color:#111;padding:10px 16px;font:900 22px "Arial Black",Impact,sans-serif;letter-spacing:1px;text-transform:uppercase;margin:0}
+#menu .sub{padding:8px 16px 0}
+#menu .lista{padding:10px 14px}
+#menu .fechar{margin:0 14px 14px;width:calc(100% - 28px)}
+#menu .item{border-radius:4px;font-weight:700}
+#menu .item:focus{outline:none;background:#ffd23f;color:#111;border-color:#fff;transform:translateX(4px)}
+#menu .item:focus b{color:#0b6b0b}
+#gire{display:none}
+@media (orientation:portrait) and (max-width:700px){#gire{display:flex;position:fixed;inset:auto 0 0 0;z-index:60;justify-content:center;padding:6px;background:#ff6ec7;color:#111;font-weight:800;font-size:13px;pointer-events:none}}
+</style>
+</head>
+<body class="titulo-on">
+<canvas id="jogo"></canvas>
+<div id="titulo">
+  <div class="logo">GTA 7</div>
+  <div class="sub">SIMAS EDITION</div>
+  <div class="arco"></div>
+  <p class="tag">Nerivan saiu da saidinha. O Ltzin virou Rei de Recife e deu choque no sistema de todo mundo. Só tu pode resolver essa porra.</p>
+  <button class="jogar">▶ JOGAR</button>
+  <button class="novo" style="display:none">começar do zero</button>
+  <p id="dicas-ctrl"></p>
+  <a class="volta" href="/jogos/">← voltar pros jogos</a>
+</div>
+<div id="menu"></div>
+<div id="toque">
+  <div class="jo"><div class="bola"></div></div>
+  <button class="b-tiro">🔫</button><button class="b-carro">🚗</button><button class="b-freio">FREIO</button><button class="b-arma">🔄</button>
+  <button class="b-radio">📻</button><button class="b-mapa">🗺️</button><button class="b-pausa">⏸️</button>
+</div>
+<div id="radio"><div class="topo">📻 RÁDIO POLI FM <span>R troca</span></div><div id="yt"></div></div>
+<button id="retry">↻ TENTAR DE NOVO</button>
+<div id="gire">📱 vira o celular de lado pra jogar melhor</div>
+<script>
+/*FOTOS*/
+/*JOGO*/
+</script>
+</body>
+</html>

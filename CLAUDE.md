@@ -12,7 +12,7 @@ Site do grupo de amigos **Simas** em **https://ofisimas.web.app**, hospedado no 
 - `/simastok/`: SimasTok, vídeos verticais tipo TikTok
 - `/simastv/`: SimasTV, player onde cola um link (m3u8, mp4/webm/mp3 ou YouTube) e assiste direto no site
 - `/conversimas/`: ConverSimas, baixa vídeo do TikTok/Instagram/X em MP4 (até 1080p) ou MP3
-- `/jogos/`: aba de joguinhos (hoje: `/jogos/galado-pula/`, `/jogos/dorme-patroa/` e `/jogos/malandro-hero/`)
+- `/jogos/`: aba de joguinhos (hoje: `/jogos/gta7/`, `/jogos/galado-pula/`, `/jogos/dorme-patroa/` e `/jogos/malandro-hero/`)
 
 O site é interno da galera. O tom dos textos é **escrachado de propósito**: palavrão, português chucro, minúsculo com erros e CAPS em palavras de destaque, e piada interna.
 **Nunca usar a palavra "panela"** (pedido do dono).
@@ -94,6 +94,12 @@ Piadas internas já usadas: "aqui pagou papai #constancia", "duas serie de levan
   - As notas (`charts.json`) foram geradas analisando o áudio (librosa: batidas a ~129 BPM + ataques por faixa de frequência; grave = esquerda, médio = meio, agudo = direita), nível médio ~2 notas/s. Pra música nova: pôr o mp3 em `musicas/`, gerar as notas do mesmo jeito e adicionar o slug em `MUSICAS` no `index.html`.
   - Ranking: Firestore `hero/{musica}/pts/{uid}` (regra `galadoOk()`), mesmo nome salvo dos outros jogos (`galado-nome`); recorde local `hero-rec-<musica>`.
 
+- **GTA 7: Simas Edition** (`/jogos/gta7/`): mundo aberto visto de cima estilo GTA 1/2 (canvas 2D). **Fonte em `fontes/gta7/`** (`src/01..09-*.js` + `template.html`); o `public/jogos/gta7/index.html` é GERADO: depois de mexer, rodar `python3 fontes/gta7/build.py` (embute as fotos de `public/galera/` como rosto dos personagens). Capa do card: `public/jogos/gta7/capa.jpg`.
+  - História: Nerivan (jogador) contra o Ltzin, Rei de Recife. Luketa = guia/narrador (seta amarela, falas no "pager"). 10 missões em `06-missoes.js` (intro, Dudu caixa eletrônico, Tio Cas + Ana pão/gás, racha do Alan, Hilux de manga do Yori em Juazeiro, rolê do Nauj no Rio, Kombi do Popai que roubou o paredão do Meco em BH, HD do Segurança Gelado, robô CLAUDE-BOT 3000 do Matheus (Matt), chefão Ltzin com o Choque-Móvel) + créditos. Popai faz trollagem aleatória. Poli = DJ da Rádio Poli FM. Missão começa no orelhão tocando; falhou = botão "tentar de novo".
+  - Polícia de 1 a 5 estrelas; com 3+ vem o **Segurança Gelado** (SUV com a cara dele, faixa "NA COLA" e seta vermelha). Garagem (pinta e zera polícia, conserta, motor, blindagem, guarda 4 carros), Simas Store (roupa), Arsenal (munição), Desmanche do Popai (vende carro). Save em localStorage `gta7-save`.
+  - Dificuldade foi reduzida a pedido do dono: `DIFIC` (0.45) em `04-jogo.js` multiplica o dano que o jogador leva; vida regenera.
+  - Mapa gerado por código (`02-mapa.js`, semente fixa): grade de ruas a cada 12 tiles com segmentos removidos, rio com pontes, regiões São Simas/Juazeiro/Rio/BH/Recife/Subúrbio. Ruas usadas por missão ficam protegidas em `decidirRuas`.
+  - **Rádio Poli FM** toca a playlist do YouTube `PLBEAC-rzONdU7x12z0eO76SSCLHIx-lhL` pelo player oficial (quadrado 200x200 visível, `#radio`), na tela inicial e no carro com a Poli FM. Sem YouTube (arquivo local) cai numa batida de funk gerada. As outras rádios são geradas na hora (WebAudio).
 - **Som no celular como mídia** (os 3 jogos): `public/jogos/som-midia.js` faz o som tocar mesmo com o iPhone no silencioso (pede `navigator.audioSession.type = 'playback'` e, no primeiro toque, toca um `<audio>` de silêncio em loop que passa a página pro canal de mídia). Jogo novo precisa incluir esse script.
 
 ## Visual
