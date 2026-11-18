@@ -125,9 +125,12 @@ service cloud.firestore {
         && request.resource.data.likes == [] && request.resource.data.coms == 0
         && request.resource.data.t == request.time;
       allow update: if signedIn()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["likes", "coms"])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["likes", "coms", "salvos", "views"])
         && request.resource.data.likes is list && request.resource.data.likes.size() <= 500
-        && request.resource.data.coms is int && request.resource.data.coms >= 0;
+        && request.resource.data.coms is int && request.resource.data.coms >= 0
+        && request.resource.data.get("salvos", []) is list && request.resource.data.get("salvos", []).size() <= 500
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["views"])
+            || request.resource.data.views == resource.data.get("views", 0) + 1);
       allow delete: if aprovador() || (signedIn() && resource.data.autor == request.auth.uid);
     }
     match /tokcom/{id} {

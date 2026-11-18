@@ -22,6 +22,8 @@ O site é interno da galera. O tom dos textos é **escrachado de propósito**: p
   - `public/simasfitness/index.html` + ícones/og: app Simas Fitness
   - `public/sugestoes/index.html`: caixinha de sugestões
   - `public/simastok/index.html`: SimasTok (vídeos estilo TikTok; arquivos no Cloudinary, dados em `tok` e `tokcom` no Firestore; `CLOUD`/`PRESET` no topo do script)
+    - Link de cada vídeo é `/v/<id>/` (rewrite pro SimasTok). `scripts/gerar-previas.js` cria `public/v/<id>/index.html` com og:image/og:video do próprio vídeo; roda no deploy e no workflow `tok-previas.yml` a cada 5 min (só publica se mudou, compara com `/v/manifest.json`). Vídeo recém-postado pode levar uns minutos pra ter a prévia própria.
+    - Player: barra arrastável (scrub), segurar = 2x, toque duplo curte, salvar 🔖 (`salvos`), visualizações (`views`, +1 depois de 2s), disco girando + "som original", abas "Pra você"/"Em alta", perfil em grade ao tocar no @nome, som liga sozinho no 1º toque.
   - `public/jogos/index.html`: página da aba Jogos (lista os jogos)
   - `public/jogos/galado-pula/`: jogo Galado Pula (`index.html`, `galado.js` = desenho do personagem, `cabeca.webp` = rosto do Gelado recortado)
   - `firestore.rules`: regras de segurança do banco (Firestore) do projeto

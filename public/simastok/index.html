@@ -55,8 +55,41 @@
   .info .who{font-weight:900;font-size:16px}
   .info .cap{font-size:14px;margin-top:4px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:4.5em;overflow:hidden}
   .info .when{font-size:12px;color:#ccc;margin-top:4px}
-  .prog{position:absolute;left:0;right:0;bottom:0;height:3px;z-index:6;background:rgba(255,255,255,.15)}
-  .prog i{display:block;height:100%;width:0;background:var(--rainbow)}
+  /* barra de progresso arrastável */
+  .prog{position:absolute;left:0;right:0;bottom:0;height:22px;z-index:8;cursor:pointer;touch-action:none;display:flex;align-items:flex-end}
+  .prog .trk{position:relative;width:100%;height:3px;background:rgba(255,255,255,.18);transition:height .15s}
+  .prog .trk i{display:block;height:100%;width:0;background:var(--rainbow)}
+  .prog .trk b{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#fff;box-shadow:0 0 8px rgba(0,0,0,.6);opacity:0;transition:opacity .15s}
+  .prog:hover .trk,.item.scrub .prog .trk{height:6px}
+  .prog:hover .trk b,.item.scrub .prog .trk b{opacity:1}
+  .tempo{position:absolute;left:50%;bottom:70px;transform:translateX(-50%);z-index:9;font-size:30px;font-weight:900;text-shadow:0 2px 12px #000;pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap}
+  .tempo small{color:#bbb;font-size:22px}
+  .item.scrub .tempo{opacity:1}
+  .item.scrub .info,.item.scrub .side{opacity:.15}
+  .vel{position:absolute;top:70px;left:50%;transform:translateX(-50%);z-index:9;background:rgba(0,0,0,.55);border-radius:999px;padding:6px 14px;font-weight:900;opacity:0;transition:opacity .15s;pointer-events:none}
+  .item.rapido .vel{opacity:1}
+  .info .cap{cursor:pointer}
+  .info .cap.aberta{max-height:none}
+  .info .som{font-size:13px;margin-top:6px;display:flex;gap:6px;align-items:center;overflow:hidden;white-space:nowrap;max-width:240px}
+  .info .som span{display:inline-block;animation:letreiro 9s linear infinite;padding-left:100%}
+  @keyframes letreiro{to{transform:translateX(-100%)}}
+  .info .views{font-size:12px;color:#ddd;margin-top:2px}
+  .disco{width:46px;height:46px;border-radius:50%;background:radial-gradient(circle,#222 0 30%,#111 31% 100%);border:8px solid #1b1b1b;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#fff;animation:gira 4s linear infinite;box-shadow:0 0 0 2px rgba(255,255,255,.15)}
+  .item.paused .disco{animation-play-state:paused}
+  @keyframes gira{to{transform:rotate(360deg)}}
+  .av,.who{cursor:pointer}
+  .abas{position:absolute;top:58px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:18px;font-weight:900;font-size:16px;text-shadow:0 1px 8px #000}
+  .abas button{background:none;border:0;color:rgba(255,255,255,.6);padding:4px 0;position:relative}
+  .abas button.on{color:#fff}
+  .abas button.on::after{content:"";position:absolute;left:25%;right:25%;bottom:-3px;height:3px;border-radius:3px;background:var(--rainbow)}
+  @media(max-width:520px){.abas{left:14px;transform:none;gap:14px;font-size:15px}}
+  .grade{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
+  .grade button{position:relative;aspect-ratio:9/16;border:0;padding:0;background:#000 center/cover;border-radius:4px;overflow:hidden}
+  .grade button span{position:absolute;left:5px;bottom:4px;font-size:12px;font-weight:800;text-shadow:0 1px 4px #000;color:#fff}
+  .perfil{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+  .perfil .av{width:64px;height:64px;font-size:26px}
+  .perfil .nums{display:flex;gap:16px;font-size:13px;color:var(--mut)}
+  .perfil .nums b{display:block;color:var(--txt);font-size:17px}
 
   .topbtns{position:absolute;top:56px;right:12px;z-index:20;display:flex;gap:8px}
   .rbtn{border:0;color:#fff;font-weight:900;border-radius:999px;padding:10px 16px;background:linear-gradient(90deg,var(--r),var(--o) 25%,var(--g) 55%,var(--b) 80%,var(--v));box-shadow:0 4px 18px rgba(0,0,0,.5)}
@@ -122,6 +155,7 @@
 <div class="feed" id="feed">
   <div class="empty" id="empty"><div class="spinner"></div>carregando os video…</div>
 </div>
+<div class="abas" id="abas"><button data-o="novos" class="on">Pra você</button><button data-o="alta">Em alta</button></div>
 <div class="topbtns">
   <button class="gbtn" id="muteBtn" title="som">🔇</button>
   <button class="rbtn" id="upBtn">＋ postar</button>
@@ -141,6 +175,14 @@
       <div class="err" id="upErr"></div>
       <button class="send" id="sendBtn">postar</button>
     </div>
+  </div>
+</div>
+
+<!-- perfil -->
+<div class="modal" id="mPerfil" hidden>
+  <div class="sheet">
+    <header><span id="pfTitulo">perfil</span> <button data-close>✕</button></header>
+    <div class="body" id="pfBody"></div>
   </div>
 </div>
 
@@ -182,6 +224,12 @@ let mudo = true; try { mudo = localStorage.getItem('simastok-som') !== '1'; } ca
 const updMute = () => { $('muteBtn').textContent = mudo ? '🔇' : '🔊'; for (const it of items.values()) it.video.muted = mudo; };
 $('muteBtn').onclick = () => { mudo = !mudo; try { localStorage.setItem('simastok-som', mudo ? '0' : '1'); } catch (e) {} updMute(); if (atual) atual.video.play().catch(() => {}); };
 updMute();
+// navegador não deixa começar com som; no primeiro toque na tela o som liga sozinho (se a pessoa não tiver mutado de propósito)
+let mutouDeProposito = false; try { mutouDeProposito = localStorage.getItem('simastok-som') === '0'; } catch (e) {}
+document.addEventListener('pointerdown', function primeiro(e) {
+  document.removeEventListener('pointerdown', primeiro, true);
+  if (mudo && !mutouDeProposito && !e.target.closest('#muteBtn')) { mudo = false; updMute(); if (atual) atual.video.play().catch(() => {}); }
+}, true);
 
 auth.onAuthStateChanged(async u => {
   if (!u) { try { await auth.signInAnonymously(); } catch (e) { $('empty').textContent = 'deu pau pra conectar, recarrega a pagina'; } return; }
@@ -203,6 +251,14 @@ const io = new IntersectionObserver(es => {
   }
 }, { root: $('feed'), threshold: [0, 0.6, 1] });
 
+let ordem = 'novos';
+document.querySelectorAll('#abas button').forEach(bt => bt.onclick = () => {
+  ordem = bt.dataset.o; document.querySelectorAll('#abas button').forEach(x => x.classList.toggle('on', x === bt));
+  render(); $('feed').scrollTo({ top: 0 });
+});
+const ordenados = () => ordem === 'alta'
+  ? [...vids].sort((a, b) => ((b.likes || []).length * 3 + (b.views || 0)) - ((a.likes || []).length * 3 + (a.views || 0)))
+  : vids;
 function render() {
   const feed = $('feed');
   if (!vids.length) {
@@ -216,7 +272,7 @@ function render() {
   $('empty') && $('empty').remove();
   const ids = new Set(vids.map(v => v.id));
   for (const [id, it] of items) if (!ids.has(id)) { io.unobserve(it.el); it.el.remove(); items.delete(id); if (atual === it) atual = null; }
-  vids.forEach((v, i) => {
+  ordenados().forEach((v, i) => {
     let it = items.get(v.id);
     if (!it) { it = criar(v); items.set(v.id, it); io.observe(it.el); }
     it.v = v; atualizar(it);
@@ -240,19 +296,55 @@ function criar(v) {
   const like = document.createElement('button'); like.className = 'act'; like.innerHTML = '<span class="ic">🤍</span><span class="n">0</span>';
   const com = document.createElement('button'); com.className = 'act'; com.innerHTML = '<span class="ic">💬</span><span class="n">💬</span>';
   const share = document.createElement('button'); share.className = 'act'; share.innerHTML = '<span class="ic">↗️</span><span>link</span>';
+  const salva = document.createElement('button'); salva.className = 'act'; salva.innerHTML = '<span class="ic">🔖</span><span class="n">0</span>';
   const mais = document.createElement('button'); mais.className = 'act'; mais.innerHTML = '<span class="ic">⋯</span>';
-  side.append(av, like, com, share, mais);
+  const disco = document.createElement('div'); disco.className = 'disco'; disco.textContent = ([...(v.nome || '?')][0] || '?').toUpperCase();
+  side.append(av, like, com, salva, share, mais, disco);
   const info = document.createElement('div'); info.className = 'info';
   const who = document.createElement('div'); who.className = 'who';
   const cap = document.createElement('div'); cap.className = 'cap';
   const when = document.createElement('div'); when.className = 'when';
-  info.append(who, cap, when);
-  const prog = document.createElement('div'); prog.className = 'prog'; prog.innerHTML = '<i></i>';
-  el.append(bg, stage, side, info, prog);
-  const it = { el, video, like, com, who, cap, when, prog: prog.firstChild, v };
+  const views = document.createElement('div'); views.className = 'views';
+  const som = document.createElement('div'); som.className = 'som'; som.innerHTML = '♫ <span></span>';
+  info.append(who, cap, som, views, when);
+  cap.onclick = () => cap.classList.toggle('aberta');
+  const prog = document.createElement('div'); prog.className = 'prog'; prog.innerHTML = '<div class="trk"><i></i><b></b></div>';
+  const tempo = document.createElement('div'); tempo.className = 'tempo';
+  const vel = document.createElement('div'); vel.className = 'vel'; vel.textContent = '2x ⏩';
+  el.append(bg, stage, side, info, prog, tempo, vel);
+  const it = { el, video, like, com, salva, who, cap, when, views, som: som.querySelector('span'), prog: prog.querySelector('i'), bola: prog.querySelector('b'), v };
+  av.onclick = () => abrirPerfil(it.v.nome); who.onclick = () => abrirPerfil(it.v.nome);
+  salva.onclick = () => salvar(it);
+
+  // barra arrastável: segura e arrasta pra voltar/avançar
+  const fmt = t => { t = Math.max(0, Math.floor(t || 0)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+  let arrastando = false, tocavaAntes = false;
+  const posPara = e => { const r = prog.getBoundingClientRect(); return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); };
+  const mostra = f => { const d = video.duration || 0; it.prog.style.width = (f * 100) + '%'; it.bola.style.left = (f * 100) + '%'; tempo.innerHTML = fmt(f * d) + ' <small>/ ' + fmt(d) + '</small>'; };
+  prog.addEventListener('pointerdown', e => {
+    if (!video.duration) return;
+    arrastando = true; tocavaAntes = !video.paused; video.pause(); el.classList.add('scrub');
+    prog.setPointerCapture(e.pointerId); const f = posPara(e); mostra(f); video.currentTime = f * video.duration; e.preventDefault(); e.stopPropagation();
+  });
+  prog.addEventListener('pointermove', e => { if (!arrastando) return; const f = posPara(e); mostra(f); video.currentTime = f * video.duration; });
+  const solta = () => { if (!arrastando) return; arrastando = false; el.classList.remove('scrub'); if (tocavaAntes) { video.play().catch(() => {}); el.classList.remove('paused'); } };
+  prog.addEventListener('pointerup', solta); prog.addEventListener('pointercancel', solta);
+
+  // segurar o dedo/mouse no vídeo = 2x (igual tiktok)
+  let segT = null, rapido = false;
+  tap.addEventListener('pointerdown', () => { segT = setTimeout(() => { rapido = true; video.playbackRate = 2; el.classList.add('rapido'); if (video.paused) { video.play().catch(() => {}); el.classList.remove('paused'); } }, 450); });
+  const fimSeg = () => { clearTimeout(segT); if (rapido) { video.playbackRate = 1; el.classList.remove('rapido'); setTimeout(() => { rapido = false; }, 50); } };
+  tap.addEventListener('pointerup', fimSeg); tap.addEventListener('pointercancel', fimSeg); tap.addEventListener('pointerleave', fimSeg);
+  tap.addEventListener('contextmenu', e => e.preventDefault());
+
+  // conta visualização depois de 2s assistindo (uma vez por vídeo nesta aba)
+  video.addEventListener('timeupdate', () => {
+    if (!it.contou && video.currentTime > 2) { it.contou = true; db.doc('tok/' + it.v.id).update({ views: (it.v.views || 0) + 1 }).catch(() => {}); }
+  });
 
   let lastTap = 0, tapT = null;
   tap.addEventListener('click', ev => {
+    if (rapido) return;
     const now = Date.now();
     if (now - lastTap < 300) { clearTimeout(tapT); lastTap = 0; curtir(it, true); coracao(ev, stage); return; }
     lastTap = now;
@@ -269,7 +361,7 @@ function criar(v) {
     if (podeApagar(it.v)) { const b2 = document.createElement('button'); b2.textContent = '🗑️ apagar'; b2.onclick = () => { m.remove(); if (confirm('apagar esse video?')) db.doc('tok/' + it.v.id).delete().then(() => toast('apagado')).catch(() => toast('sem permissao')); }; m.appendChild(b2); }
     el.appendChild(m); setTimeout(() => document.addEventListener('click', function f(e) { if (!m.contains(e.target)) { m.remove(); document.removeEventListener('click', f); } }), 0);
   };
-  video.addEventListener('timeupdate', () => { if (video.duration) it.prog.style.width = (video.currentTime / video.duration * 100) + '%'; });
+  video.addEventListener('timeupdate', () => { if (video.duration && !arrastando) { const f = video.currentTime / video.duration; it.prog.style.width = (f * 100) + '%'; it.bola.style.left = (f * 100) + '%'; } });
   return it;
 }
 
@@ -281,6 +373,35 @@ function atualizar(it) {
   it.who.textContent = '@' + (v.nome || '?');
   it.cap.textContent = v.legenda || '';
   it.when.textContent = quando(v.t);
+  const sv = v.salvos || [];
+  it.salva.querySelector('.ic').textContent = sv.includes(uid) ? '📌' : '🔖';
+  it.salva.querySelector('.n').textContent = sv.length;
+  it.views.textContent = '▶ ' + (v.views || 0) + ' visualizaç' + ((v.views || 0) === 1 ? 'ão' : 'ões');
+  it.som.textContent = 'som original - @' + (v.nome || '?');
+}
+function salvar(it) {
+  const meu = (it.v.salvos || []).includes(uid);
+  it.salva.classList.remove('on'); void it.salva.offsetWidth; it.salva.classList.add('on');
+  db.doc('tok/' + it.v.id).update({ salvos: meu ? FV.arrayRemove(uid) : FV.arrayUnion(uid) }).then(() => toast(meu ? 'tirado dos salvos' : 'salvo 📌')).catch(() => toast('nao deu pra salvar'));
+}
+// perfil: todos os vídeos da pessoa em grade
+function abrirPerfil(nome) {
+  const dele = vids.filter(x => (x.nome || '') === nome);
+  const curt = dele.reduce((s, x) => s + (x.likes || []).length, 0), vis = dele.reduce((s, x) => s + (x.views || 0), 0);
+  $('pfTitulo').textContent = '@' + nome;
+  const b = $('pfBody'); b.innerHTML = '';
+  const topo = document.createElement('div'); topo.className = 'perfil';
+  const nums = document.createElement('div'); nums.className = 'nums';
+  nums.innerHTML = `<div><b>${dele.length}</b>videos</div><div><b>${curt}</b>curtidas</div><div><b>${vis}</b>views</div>`;
+  topo.append(avatar(nome), nums); b.appendChild(topo);
+  const g = document.createElement('div'); g.className = 'grade';
+  for (const x of dele) {
+    const bt = document.createElement('button'); bt.style.backgroundImage = `url("${purl(x)}")`;
+    const sp = document.createElement('span'); sp.textContent = '▶ ' + (x.views || 0); bt.appendChild(sp);
+    bt.onclick = () => { $('mPerfil').hidden = true; const t = items.get(x.id); if (t) t.el.scrollIntoView({ behavior: 'smooth' }); };
+    g.appendChild(bt);
+  }
+  b.appendChild(g); $('mPerfil').hidden = false;
 }
 
 function curtir(it, soLike) {
