@@ -98,7 +98,7 @@ const SOM = {
 
 // ---------- rádio (música gerada) ----------
 const RADIOS = [
-  { nome: 'Rádio Poli FM', sub: 'o rei do entretenimento', bpm: 130, estilo: 'funk' },
+  { nome: 'Rádio Poli FM', sub: 'só as do Popai 🎤', bpm: 130, estilo: 'funk' },
   { nome: 'Sertanejo do Yori', sub: 'direto de Juazeiro 🤠', bpm: 96, estilo: 'sertanejo' },
   { nome: 'Simas Trap', sub: 'só os grave 🔊', bpm: 140, estilo: 'trap' },
   { nome: 'Rádio Desligada', sub: '', bpm: 0, estilo: 'off' }

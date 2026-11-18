@@ -331,6 +331,7 @@ function desenharPredio(g, p, ccx, ccy) {
     else { g.fillStyle = 'rgba(130,190,230,.35)'; g.fillRect(rx0 + 10, ry0 + 10, p.w - 20, p.h - 20); g.strokeStyle = 'rgba(255,255,255,.25)'; g.lineWidth = 2; for (let xx = rx0 + 10; xx < rx1 - 10; xx += 20) { g.beginPath(); g.moveTo(xx, ry0 + 10); g.lineTo(xx, ry1 - 10); g.stroke(); } }
     if (ex === 0) { g.fillStyle = '#c0392b'; g.beginPath(); g.arc(rx1 - 10, ry1 - 10, 4, 0, 7); g.fill(); }
   }
+  if (p.antena) { const ax = rx0 + p.w * 0.75, ay = ry0 + p.h * 0.3; g.strokeStyle = '#bdc3c7'; g.lineWidth = 3; g.beginPath(); g.moveTo(ax - 14, ay + 14); g.lineTo(ax, ay - 30); g.lineTo(ax + 14, ay + 14); g.moveTo(ax - 8, ay); g.lineTo(ax + 8, ay); g.stroke(); g.fillStyle = (W.tempo * 2 | 0) % 2 ? '#ff2b2b' : '#5a0a0a'; g.beginPath(); g.arc(ax, ay - 32, 5, 0, 7); g.fill(); }
   if (p.cruz) { g.fillStyle = '#e74c3c'; const cx = rx0 + p.w / 2, cy = ry0 + p.h / 2; g.fillRect(cx - 40, cy - 12, 80, 24); g.fillRect(cx - 12, cy - 40, 24, 80); }
   if (p.placa) {
     const cx = rx0 + p.w / 2, cy = ry0 + p.h / 2 + (p.cruz ? 70 : 0);

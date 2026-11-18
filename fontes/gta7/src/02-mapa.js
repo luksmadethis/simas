@@ -34,7 +34,7 @@ const portaBloco = (i, j) => ({ x: (GRID * i + 7) * T, y: (GRID * j + 2.5) * T }
 const ESPECIAIS = {
   dudu: [6, 6], garagem: [7, 7], garagemBH: [12, 6], hospital: [5, 7], policia: [8, 5], cas: [3, 4],
   skate: [4, 8], padaria: [5, 5], mercado: [8, 8], yori: [6, 1], nauj: [2, 13], baile: [13, 7],
-  matheus: [9, 10], ltzin: [13, 13], armas: [6, 8], roupas: [7, 5], gelado: [9, 6], desmanche: [12, 12]
+  matheus: [9, 10], ltzin: [13, 13], armas: [6, 8], roupas: [7, 5], gelado: [9, 6], desmanche: [12, 12], poli: [8, 6]
 };
 const CORES_PREDIO = ['#5b5f73', '#6e6058', '#4f6670', '#77705f', '#5d566e', '#666', '#5a6b5a', '#7a6a7e'];
 const CORES_BH = ['#c0573e', '#d39b3a', '#5c8fb3', '#7bab5a', '#c46f99', '#e0c25b', '#8a6bc2', '#b5734e'];
@@ -73,7 +73,7 @@ function decidirRuas(r) {
   const prot = new Set();
   const protBloco = (i, j) => { prot.add('H' + kH(i, j)); prot.add('H' + kH(i, j + 1)); prot.add('V' + kH(i, j)); prot.add('V' + kH(i + 1, j)); };
   for (const k in ESPECIAIS) protBloco(...ESPECIAIS[k]);
-  // ruas usadas nas missões (racha do Alan, rolê do Nauj, caixas do Dudu, Kombi do Popai)
+  // ruas usadas nas missões (racha do Alan, rolê do Nauj, caixas do Dudu, Kombi dos capangas)
   for (const [i, j] of [[4, 8], [6, 8], [8, 5], [6, 4], [1, 13], [4, 11], [5, 4], [9, 8], [6, 10]]) prot.add('H' + kH(i, j));
   prot.add('V' + kH(9, 7)); prot.add('V' + kH(4, 6)); prot.add('H' + kH(3, 15)); prot.add('H' + kH(12, 10));
   // parque grande no meio da cidade
@@ -297,11 +297,15 @@ function montarEspecial(nome, i, j, x0, y0, n, r) {
     case 'matheus':
       for (let y = y0 - 1; y < y0 + n + 1; y++) for (let x = x0 - 1; x < x0 + n + 1; x++) setTile(x, y, TL.PISTA);
       LUGAR.matheus = { x: c.x, y: c.y, nome: 'Laboratório do Matheus' }; break;
+    case 'poli':
+      addPredio(x0 + 1, y0 + 2, 6, 6, 1.1, '#3c2a6b', { teto: '#2a1d4d', placa: 'RÁDIO POLI FM', neon: '#a29bfe', antena: true });
+      for (let x = x0; x < x0 + n; x++) for (let y = y0; y < y0 + 2; y++) setTile(x, y, TL.PRACA);
+      LUGAR.poli = { x: porta.x, y: (y0 + 1) * T, nome: 'Rádio Poli FM' }; break;
     case 'desmanche':
       for (let y = y0; y < y0 + n; y++) for (let x = x0; x < x0 + n; x++) setTile(x, y, TL.CAIS);
-      addPredio(x0 + 1, y0 + 4, 6, 4, 0.6, '#6e2c00', { teto: '#4a2000', placa: 'DESMANCHE DO POPAI', neon: '#fd79a8' });
+      addPredio(x0 + 1, y0 + 4, 6, 4, 0.6, '#6e2c00', { teto: '#4a2000', placa: 'DESMANCHE', neon: '#fd79a8' });
       for (let k = 0; k < 3; k++) deco.push({ t: 'sucata', x: (x0 + 1 + k * 2.5) * T, y: (y0 + 1.2) * T });
-      LUGAR.desmanche = { x: porta.x, y: (y0 + 2.6) * T, nome: 'Desmanche do Popai' }; break;
+      LUGAR.desmanche = { x: porta.x, y: (y0 + 2.6) * T, nome: 'Desmanche' }; break;
     case 'ltzin':
       for (let y = y0; y < y0 + n; y++) for (let x = x0; x < x0 + n; x++) setTile(x, y, TL.CAIS);
       addPredio(x0 + 1, y0 + 4, 6, 4, 1.2, '#b8860b', { teto: '#8b6508', placa: 'REI DE RECIFE', neon: '#f1c40f' });

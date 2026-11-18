@@ -152,7 +152,7 @@ function moverCarro(c, dt) {
     c.x = ox + c.vx * dt; c.y = oy;
     if (bateuPredio(c)) { c.x = ox; c.y = oy + c.vy * dt; if (bateuPredio(c)) { c.x = ox; c.y = oy; c.vx *= -0.3; c.vy *= -0.3; } else c.vx *= -0.3; }
     else c.vy *= -0.3;
-    if (v > 120) { danoCarro(c, v * 0.05); SOM.batida(v / 700); if (v > 300) tremer(4); }
+    if (v > 120) { danoCarro(c, v * 0.05); SOM.batida(v / 700); if (v > 300) tremer(4); if (c === W.jog.carro) { W.ultBatida = W.tempo; W.forcaBatida = v; } }
   }
   // tá na água? afunda
   if (tileEm(c.x, c.y) === TL.AGUA) danoCarro(c, 999);
@@ -272,7 +272,7 @@ function iaTransito(c, dt) {
   if (bateuPredio(c)) { c.x -= c.vx * dt; c.y -= c.vy * dt; ia.dir = (ia.dir + 2) % 4; }
 }
 
-// ---------- IA de perseguição (polícia, chefes, Popai fugindo) ----------
+// ---------- IA de perseguição (polícia, chefes, quem foge) ----------
 function iaPersegue(c, dt, alvoX, alvoY, agressivo = 1, fugir = false) {
   let ang = Math.atan2(alvoY - c.y, alvoX - c.x); if (fugir) ang += Math.PI;
   // antenas pra desviar de prédio
@@ -311,7 +311,7 @@ function colisoes(dt) {
           const quem = (A === W.jog.carro || B === W.jog.carro) ? W.jog : null;
           danoCarro(A, rel * 0.04, quem === W.jog && A !== W.jog.carro ? W.jog : null);
           danoCarro(B, rel * 0.04, quem === W.jog && B !== W.jog.carro ? W.jog : null);
-          SOM.batida(rel / 600); if (quem) tremer(rel / 80);
+          SOM.batida(rel / 600); if (quem) { tremer(rel / 80); W.ultBatida = W.tempo; W.forcaBatida = rel * 1.4; }
           if (A.ia && A.ia.tipo === 'transito' && quem && A !== W.jog.carro && A.motorista) A.motorista.medo = 4;
           if (B.ia && B.ia.tipo === 'transito' && quem && B !== W.jog.carro && B.motorista) B.motorista.medo = 4;
         }

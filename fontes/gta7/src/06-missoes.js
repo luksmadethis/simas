@@ -2,8 +2,8 @@
 // HISTÓRIA E MISSÕES
 // =========================================================
 class Aborta extends Error {}
-const NOMES = { nerivan: 'Nerivan', luketa: 'Luketa', dudu: 'Dudu', cas: 'Tio Cas', ana: 'Ana (patroa do Cas)', alan: 'Alan', yori: 'Yori', nauj: 'Nauj', meco: 'Meco', popai: 'Popai', gelado: 'Segurança Gelado', matt: 'Matheus', ltzin: 'Ltzin, Rei de Recife', poli: 'Poli (Rádio Poli FM)' };
-const COR_NOME = { luketa: '#ff6ec7', dudu: '#00ff9c', cas: '#ffb347', ana: '#ff7675', alan: '#74b9ff', yori: '#a3e635', nauj: '#2ecc71', meco: '#f1c40f', popai: '#fd79a8', gelado: '#5dade2', matt: '#e17055', ltzin: '#f1c40f', poli: '#a29bfe', nerivan: '#ffd23f' };
+const NOMES = { nerivan: 'Nerivan', luketa: 'Luketa', dudu: 'Dudu', cas: 'Tio Cas', ana: 'Ana (patroa do Cas)', alan: 'Alan', yori: 'Yori', nauj: 'Nauj', meco: 'Meco', gelado: 'Segurança Gelado', matt: 'Matheus', ltzin: 'Ltzin, Rei de Recife', poli: 'Poli (Rádio Poli FM)' };
+const COR_NOME = { luketa: '#ff6ec7', dudu: '#00ff9c', cas: '#ffb347', ana: '#ff7675', alan: '#74b9ff', yori: '#a3e635', nauj: '#2ecc71', meco: '#f1c40f', gelado: '#5dade2', matt: '#e17055', ltzin: '#f1c40f', poli: '#a29bfe', nerivan: '#ffd23f' };
 
 const MISSAO = {
   ativa: null, esperas: [], alvo: null, marcadores: [], limite: null, objetivo: '', dialogo: null, feitas: 0, barra: null, ger: 0, chapado: 0,
@@ -105,6 +105,7 @@ function criarFixos() {
   FIXOS.yori = npc(null, 'yori', L.yori.x, L.yori.y, { camisa: '#6ab04c', chapeu: '#c8a165' });
   FIXOS.nauj = npc(null, 'nauj', L.nauj.x, L.nauj.y, { camisa: '#f9ca24', calca: '#6ab04c' });
   FIXOS.meco = npc(null, 'meco', L.baile.x, L.baile.y, { camisa: '#f1c40f', calca: '#111' });
+  FIXOS.poli = npc(null, 'poli', LUGAR.poli.x - 50, LUGAR.poli.y, { camisa: '#6c5ce7', calca: '#111' });
   FIXOS.gelado = npc(null, 'gelado', L.gelado.x, L.gelado.y, { camisa: '#111', calca: '#111' });
   FIXOS.matt = npc(null, 'matt', L.matheus.x, L.matheus.y, { camisa: '#d63031' });
   FIXOS.ltzin = npc(null, 'ltzin', L.ltzin.x, L.ltzin.y, { camisa: '#f1c40f', calca: '#b8860b' });
@@ -120,6 +121,7 @@ const MISSOES = [
   { id: 'yori', nome: 'Safra Recorde', quem: 'yori', lugar: 'yori', fn: missaoYori },
   { id: 'nauj', nome: 'Rolêzinho com o Nauj', quem: 'nauj', lugar: 'nauj', fn: missaoNauj },
   { id: 'meco', nome: 'Devolve o Grave do Meco', quem: 'meco', lugar: 'baile', fn: missaoMeco },
+  { id: 'poli', nome: 'O Hit do Poli', quem: 'poli', lugar: 'poli', fn: missaoPoli },
   { id: 'gelado', nome: 'O HD do Segurança Gelado', quem: 'dudu', lugar: 'dudu', fn: missaoGelado },
   { id: 'matt', nome: 'CLAUDE-BOT 3000', quem: 'matt', lugar: 'matheus', fn: missaoMatheus },
   { id: 'ltzin', nome: 'O Rei de Recife', quem: 'ltzin', lugar: 'ltzin', fn: missaoLtzin }
@@ -175,7 +177,7 @@ async function missaoIntro() {
 
 // ----- 1: Dudu, hack no caixa -----
 async function missaoDudu() {
-  MISSOES[1].premio = 1500;
+  MISSAO.ativa.premio = 1500;
   await conversa(
     ['dudu', 'Missão simples: eu programei um pendrive que faz o caixa eletrônico cuspir dinheiro. Tem 3 caixas na cidade.'],
     ['dudu', 'Tu para do lado de cada um e espera eu terminar o hack. Vai demorar uns segundos e a polícia vai ficar sabendo.'],
@@ -206,7 +208,7 @@ async function missaoDudu() {
 
 // ----- 2: Tio Cas e a patroa -----
 async function missaoCas() {
-  MISSOES[2].premio = 900;
+  MISSAO.ativa.premio = 900;
   await conversa(
     ['cas', '*balançando na cadeira* ô Nerivan, meu sobrinho preferido...'],
     ['ana', 'CAS!!! eu já falei TRÊS VEZES pra tu ir buscar o pão!!'],
@@ -224,12 +226,10 @@ async function missaoCas() {
     ['ana', 'Até que enfim! ... CAS, e o GÁS? acabou o gás!'],
     ['cas', '*fecha o olho fingindo que dormiu*'],
     ['ana', 'eu tô VENDO que tu tá acordado, Cas.'],
-    ['cas', 'Nerivan... o gás é no Mercadão. Vai com cuidado que o Popai anda aprontando por aí.']
+    ['cas', 'Nerivan... o gás é no Mercadão. Pega com a mão esquerda que a direita eu tô usando pra balançar.']
   );
   limiteTempo(130, 'a Ana desistiu e foi morar com a mãe dela');
   await vai(LUGAR.mercado.x, LUGAR.mercado.y + 30, { texto: 'busca o botijão no Mercadão', r: 95 });
-  // pegadinha do Popai no caminho
-  trollPopai('casca', true);
   await vai(LUGAR.cas.x, LUGAR.cas.y - 20, { texto: 'leva o gás pro Tio Cas', r: 90 });
   semLimite();
   await conversa(
@@ -242,7 +242,7 @@ async function missaoCas() {
 
 // ----- 3: racha do Alan -----
 async function missaoAlan() {
-  MISSOES[3].premio = 1200;
+  MISSAO.ativa.premio = 1200;
   await conversa(
     ['alan', 'Fala Nerivan! Desenhei um traçado de racha pela cidade inteira. Ninguém valoriza meu desenho, então vou valorizar no racha.'],
     ['alan', 'Pega um carro e me encontra na rua aqui do lado. Quem passar por todos os pontos primeiro ganha.']
@@ -281,7 +281,7 @@ async function missaoAlan() {
 
 // ----- 4: Yori, safra recorde -----
 async function missaoYori() {
-  MISSOES[4].premio = 1500;
+  MISSAO.ativa.premio = 1500;
   await conversa(
     ['yori', 'Ô sô Nerivan! Aqui em Juazeiro onde eu piso nasce safra recorde. Colhi tanta manga que não cabe no sítio.'],
     ['yori', 'Leva essa Hilux carregada até o Mercadão na cidade. Mas vai com cuidado: se bater muito, a manga vira suco.'],
@@ -305,7 +305,7 @@ async function missaoYori() {
 
 // ----- 5: Nauj, rolê no Rio -----
 async function missaoNauj() {
-  MISSOES[5].premio = 1200;
+  MISSAO.ativa.premio = 1200;
   await conversa(
     ['nauj', 'Paz e amor, irmão. Eu sou o Nauj, teu guia favorito. Alma de artista.'],
     ['nauj', 'Hoje eu vou te levar nos lugares mais belos do Rio. Arruma um carro que eu vou de carona, meu bem. A energia tá boa.'],
@@ -326,7 +326,6 @@ async function missaoNauj() {
     MISSAO.chapado = Math.min(1, MISSAO.chapado + 0.35);
     await vai(pts[k].p.x, pts[k].p.y, { r: 120, texto: `rolê do Nauj: ponto turístico ${k + 1}/3`, carro: true, cor: '#2ecc71' });
     await diz('nauj', pts[k].fala);
-    if (k === 1) trollPopai('policia');
   }
   await vai(FIXOS.nauj.x, FIXOS.nauj.y + 40, { r: 110, texto: 'deixa o Nauj de volta na barraca', carro: true });
   FIXOS.nauj.escondido = false; MISSAO.chapado = 0;
@@ -340,18 +339,19 @@ async function missaoNauj() {
 
 // ----- 6: Meco, devolve o grave -----
 async function missaoMeco() {
-  MISSOES[6].premio = 2000;
+  MISSAO.ativa.premio = 2000;
   await conversa(
     ['meco', 'NERIVAN! uai sô, roubaram o PAREDÃO do baile! Sem grave não tem baile, sem baile eu não sou o Neymar do funk!'],
+    ['meco', 'escuta aí, o baile tá tocando SEM GRAVE. só o agudinho. que vergonha pra BH, sô.'],
     ['nerivan', 'quem foi o filho da puta?'],
-    ['meco', 'o POPAI! aquele trollador. Saiu cantando pneu numa Kombi branca agora mesmo. Pega ele!'],
-    ['popai', '*de longe* KKKKKKKKK PEGADINHA DO POPAI, QUERO VER ME PEGAR!']
+    ['meco', 'os CAPANGA do Rei de Recife! O Ltzin quer o grave de BH pro baile dele lá no porto. Saíram numa Kombi branca agora mesmo. Pega eles!'],
+    ['ltzin', '*no rádio da Kombi* o grave agora é do REI, uai! quer dizer... é do REI, OXE!']
   );
-  objetivo('pega um carro e vai atrás do Popai');
+  objetivo('pega um carro e vai atrás da Kombi');
   const sp = pontoRua(12, 9, 'baixo');
-  const van = novoCarro('pickup', sp.x, sp.y, 0, { cor: '#f5f6fa', missao: true, nome: 'POPAI 🤡', semEntrar: true, hp: 150, hpMax: 150 });
-  TIPOS_CARRO.kombi = { ...TIPOS_CARRO.pickup, nome: 'Kombi do Popai', vmax: 420, acel: 320 }; van.modelo = 'kombi';
-  van.motorista = novoPed(van.x, van.y, { rosto: null, nome: 'Popai' });
+  const van = novoCarro('pickup', sp.x, sp.y, 0, { cor: '#f5f6fa', missao: true, nome: 'CAPANGAS DO REI 👑', semEntrar: true, hp: 150, hpMax: 150 });
+  TIPOS_CARRO.kombi = { ...TIPOS_CARRO.pickup, nome: 'Kombi dos Capangas', vmax: 420, acel: 320 }; van.modelo = 'kombi';
+  van.motorista = novoPed(van.x, van.y, { nome: 'Capanga' });
   let fugindo = false, rendido = false;
   van.aoZerar = () => { rendido = true; van.ia = null; van.hp = 1; };
   van.ia = { tipo: 'script', fn: (c, dt) => {
@@ -360,32 +360,73 @@ async function missaoMeco() {
     if (!fugindo) return;
     if (d > 2200) { iaPersegue(c, dt, j.x, j.y, 1); return; }
     iaPersegue(c, dt, j.x, j.y, 1, true);
-    if (rnd() < dt * 0.25) { W.manchas.push({ t: 'casca', x: c.x - Math.cos(c.a) * 60, y: c.y - Math.sin(c.a) * 60 }); W.itens.push({ t: 'armadilha', icone: '🍌', x: c.x - Math.cos(c.a) * 60, y: c.y - Math.sin(c.a) * 60, missao: true, vida: 20, fn: escorregou }); }
   } };
   W.carros.push(van);
-  MISSAO.barra = { txt: 'Kombi do Popai', v: 1 };
-  MISSAO.alvoObj = van;
-  await ate(() => { MISSAO.alvo = { x: van.x, y: van.y }; MISSAO.barra.v = van.hp / van.hpMax; objetivo(noCarro() ? 'destrói a Kombi do Popai (bate ou atira)' : 'pega um carro e vai atrás do Popai'); return rendido; });
-  MISSAO.barra = null; MISSAO.alvoObj = null;
+  MISSAO.barra = { txt: 'Kombi dos capangas', v: 1 };
+  await ate(() => { MISSAO.alvo = { x: van.x, y: van.y }; MISSAO.barra.v = van.hp / van.hpMax; objetivo(noCarro() ? 'destrói a Kombi dos capangas (bate ou atira)' : 'pega um carro e vai atrás da Kombi'); return rendido; });
+  MISSAO.barra = null;
   van.nome = null; van.cor = '#7f8c8d';
-  const pop = novoPed(van.x + 40, van.y, { nome: 'Popai', missao: true, invuln: true, camisa: '#fd79a8', corNome: COR_NOME.popai, chapeu: '#e84393' });
-  pop.ia = (p, dt) => { const a = Math.atan2(p.y - W.jog.y, p.x - W.jog.x); p.a = a; const nx = p.x + Math.cos(a) * 230 * dt, ny = p.y + Math.sin(a) * 230 * dt; if (!solidoEm(nx, ny)) { p.x = nx; p.y = ny; p.anda += dt * 12; } };
-  W.peds.push(pop); falarPed(pop, 'NÃO VALEU, NÃO VALEU! KKKK');
+  for (let k = 0; k < 2; k++) inimigo(van.x + 40 + k * 30, van.y + 30, { camisa: '#b8860b', hp: 30, nome: k ? undefined : 'Capanga' });
+  falar('meco', 'acaba com eles, Nerivan! o paredão tá na Kombi!', 3);
   const cx = van.x, cy = van.y;
   W.itens.push({ t: 'pacote', icone: '🔊', x: cx, y: cy + 60, missao: true, fn: () => { } });
   await vai(cx, cy + 60, { r: 60, texto: 'pega o paredão do Meco' });
   await vai(LUGAR.baile.x, LUGAR.baile.y + 40, { r: 110, texto: 'leva o paredão de volta pro baile' });
   await conversa(
-    ['meco', 'O GRAVE VOLTOU!!! BH É QUEM? BH É NÓIS!!'],
+    ['meco', 'O GRAVE VOLTOU!!! escuta essa pancada! BH É QUEM? BH É NÓIS!!'],
     ['meco', 'Se eu não tivesse lesionado tanto eu ia te dar um drible de agradecimento. Toma uma grana.'],
-    ['luketa', 'O Dudu descobriu um jeito de chegar no Ltzin. Mas antes... vocês vão ter que mexer com o Segurança Gelado.']
+    ['luketa', 'O Poli tá te chamando na rádio. Diz que tá montando o hit do ano e precisa de ajuda.']
   );
   premio(2000);
 }
 
-// ----- 7: Gelado -----
+// ----- 7: Poli, o hit do ano -----
+async function missaoPoli() {
+  MISSAO.ativa.premio = 1800;
+  await conversa(
+    ['poli', 'Nerivan! Aqui é o Poli, especialista em áudio, ouvido absoluto e rei do entretenimento.'],
+    ['poli', 'O Ltzin tá dominando as rádio de Recife com a playlist dele. Eu vou responder com o HIT DO ANO, gravado com os sons da cidade.'],
+    ['nerivan', 'e eu com isso?'],
+    ['poli', 'tu vai sair gravando os sample pra mim. Esse microfone aqui pega tudo num raio de 3 quarteirões. Bora!']
+  );
+  const gravou = txt => { SOM.pega(); W.efeitos.push({ t: 'texto', x: W.jog.x, y: W.jog.y - 40, txt: '🎙️ ' + txt + ' GRAVADO!', vida: 1.8, max: 1.8, cor: '#a29bfe' }); };
+  // 1) buzina de caminhão
+  const p0 = pontoRua(8, 6, 'baixo');
+  const cam1 = novoCarro('caminhao', p0.x - 500, centroFaixa(0, 7), 0, { missao: true, nome: 'Caminhão do Gás', semEntrar: true, cor: '#d35400' });
+  cam1.ia = { tipo: 'transito', dir: 0, decidiu: false, velAlvo: 150 }; cam1.motorista = novoPed(cam1.x, cam1.y); W.carros.push(cam1);
+  let perto = 0; MISSAO.barra = { txt: 'gravando a buzina do caminhão', v: 0 };
+  objetivo('sample 1/4: chega perto do Caminhão do Gás pra gravar a buzina');
+  await ate(dt => { MISSAO.alvo = { x: cam1.x, y: cam1.y }; if (!W.carros.includes(cam1)) { MISSAO.falhar('sumiu o caminhão'); return false; } if (dist(W.jog.x, W.jog.y, cam1.x, cam1.y) < 220) { perto += dt; if (rnd() < dt * 2) SOM.buzina(); } MISSAO.barra.v = perto / 3; return perto >= 3; });
+  gravou('BUZINA'); cam1.nome = null; MISSAO.barra = null;
+  // 2) batida de carro
+  await diz('poli', 'Booom. Agora preciso de uma BATIDA. De carro, Nerivan. Pega um e mete num poste, num muro, em qualquer coisa. Com força.');
+  objetivo('sample 2/4: pega um carro e dá uma batida FORTE');
+  MISSAO.alvo = null; const t0 = W.tempo;
+  await ate(() => (W.ultBatida || 0) > t0 && (W.forcaBatida || 0) > 250);
+  gravou('BATIDA');
+  // 3) sirene da polícia
+  await diz('poli', 'ISSO! que grave! Agora o agudo: sirene de polícia. Arruma uma estrela e deixa a viatura chegar perto. Ou eu ligo pra eles, sei lá.');
+  objetivo('sample 3/4: deixa uma viatura com sirene chegar perto');
+  const t1 = W.tempo;
+  await ate(() => { if (W.tempo - t1 > 15 && W.procurado === 0) { crime(3); falar('poli', 'liguei pros home e falei que tu roubou meu microfone. vem aí!', 3); } return W.carros.some(c => c.sirene && c.ia && c.ia.tipo === 'policia' && dist(c.x, c.y, W.jog.x, W.jog.y) < 380); });
+  gravou('SIRENE');
+  // 4) grito da Ana
+  await diz('poli', 'Perfeito! Falta o vocal principal: o grito mais famoso da cidade. Vai na casa do Tio Cas. (e despista a polícia antes, se não ela não grita)');
+  await vai(LUGAR.cas.x, LUGAR.cas.y - 20, { r: 100, texto: 'sample 4/4: vai na casa do Tio Cas (sem polícia na cola)', cond: () => W.procurado === 0 });
+  await conversa(['nerivan', 'ô Ana, grita "CAS" aqui no microfone pra mim?'], ['ana', 'CAAAAAAAAAAAS!!!!'], ['cas', '*cai da cadeira* QUE FOI?! eu tava trabalhando!']);
+  gravou('GRITO DA ANA');
+  await vai(LUGAR.poli.x, LUGAR.poli.y + 40, { r: 100, texto: 'leva os sample pro Poli na rádio' });
+  await conversa(
+    ['poli', '*mixando com o ouvido absoluto* buzina no grave, batida no bumbo, sirene no agudo e a Ana no refrão...'],
+    ['poli', 'SAIU: "CAAAS (Simas Turbo Remix)". Já tá tocando na Rádio Poli FM. Recife inteira tá ouvindo. O Ltzin deve tá PUTO.'],
+    ['luketa', 'E com a cidade do nosso lado, chegou a hora de mexer com o Segurança Gelado. O Dudu tá te esperando.']
+  );
+  premio(1800);
+}
+
+// ----- 8: Gelado -----
 async function missaoGelado() {
-  MISSOES[7].premio = 3000;
+  MISSAO.ativa.premio = 3000;
   await conversa(
     ['dudu', 'O Segurança Gelado guarda um HD com a localização do palácio do Ltzin. Ele é empresário, magnata e segurança nas horas vagas.'],
     ['dudu', 'Ele não faz menos que R$500 por dia. Então ele vai defender esse HD com a vida.'],
@@ -425,7 +466,7 @@ async function missaoGelado() {
 
 // ----- 8: Matheus e o robô -----
 async function missaoMatheus() {
-  MISSOES[8].premio = 5000;
+  MISSAO.ativa.premio = 5000;
   const L = LUGAR.matheus;
   FIXOS.matt.escondido = true;
   await vai(L.x, L.y + 380, { r: 160, texto: 'entra no laboratório do Matheus' });
@@ -455,7 +496,7 @@ async function missaoMatheus() {
 
 // ----- 9: Ltzin, chefão final -----
 async function missaoLtzin() {
-  MISSOES[9].premio = 10000;
+  MISSAO.ativa.premio = 10000;
   const L = LUGAR.ltzin;
   await vai(L.x, L.y + 20, { r: 130, texto: 'invade o palácio do Rei de Recife' });
   const A = { x: L.x, y: L.y - 80 };
@@ -512,56 +553,6 @@ async function missaoLtzin() {
   CREDITOS = { t: 0 };
 }
 let CREDITOS = null;
-
-// ---------- trollagens do Popai ----------
-let trollTimer = 200;
-function escorregou() {
-  W.escorregou = 1.2; SOM.bip(900, 0.4, 0.15, 'sine', 200);
-  const j = W.jog;
-  if (j.carro) { j.carro.a += rnd(-1.4, 1.4); j.carro.vx *= 0.8; j.carro.vy *= 0.8; tremer(6); }
-  falar('popai', pick(['KKKKKKKKK ESCORREGOU', 'PEGADINHA DO POPAI!!', 'é casca de banana, otário KKKK']), 2.5);
-}
-function trollPopai(tipo, forcado) {
-  const j = W.jog;
-  tipo = tipo || pick(['casca', 'policia', 'radio', 'grana', 'carro']);
-  if (tipo === 'carro' && (!j.carro || MISSAO.ativa)) tipo = 'casca';
-  if (tipo === 'casca') {
-    const c = j.carro, a = c ? c.a : j.a, d = c ? Math.max(200, Math.abs(c.vel) * 0.8) : 90;
-    for (let k = -1; k <= 1; k++) {
-      const x = j.x + Math.cos(a) * d + Math.cos(a + Math.PI / 2) * k * 40, y = j.y + Math.sin(a) * d + Math.sin(a + Math.PI / 2) * k * 40;
-      W.manchas.push({ t: 'casca', x, y }); W.itens.push({ t: 'armadilha', icone: '🍌', x, y, vida: 25, fn: escorregou });
-    }
-    falar('popai', 'ô Nerivan, olha pra frente! KKKK', 2.5);
-  } else if (tipo === 'policia') {
-    crime(2); falar('popai', 'alô, polícia? o Nerivan tá roubando carro! KKKKK PEGADINHA DO POPAI', 3.5);
-  } else if (tipo === 'radio') {
-    RADIO.atual = 2; RADIO.travadoAte = W.tempo + 20; RADIO.tocar(!!j.carro);
-    falar('popai', 'hackeei teu rádio! agora é SÓ TRAP por 20 segundos KKKKK', 3.5);
-  } else if (tipo === 'grana') {
-    const a = rnd(Math.PI * 2);
-    W.itens.push({ t: 'armadilha', icone: '💰', x: j.x + Math.cos(a) * 160, y: j.y + Math.sin(a) * 160, vida: 40, fn: () => {
-      W.efeitos.push({ t: 'texto', x: j.x, y: j.y - 30, txt: 'É NOTA DE 3 REAIS 🤡', vida: 2, max: 2, cor: '#fd79a8' });
-      for (let k = 0; k < 20; k++) W.efeitos.push({ t: 'faisca', x: j.x + rnd(-40, 40), y: j.y + rnd(-40, 40), vida: 0.6, max: 0.6 });
-      falar('popai', 'DINHEIRO FALSO! PEGADINHA DO POPAI KKKKKKK', 3);
-    } });
-    falar('luketa', 'olha uma maleta de dinheiro ali do lado... suspeito', 2.5);
-  } else if (tipo === 'carro') {
-    const c = j.carro;
-    falar('popai', 'esse carro é meu agora! KKKKKK', 3);
-    setTimeout(() => {
-      if (W.jog.carro !== c || W.jog.morto) return;
-      entrarSair(); c.semEntrar = true; c.nome = 'Popai 🤡';
-      c.motorista = novoPed(c.x, c.y, { nome: 'Popai' });
-      c.ia = { tipo: 'script', fn: (cc, dt) => { iaPersegue(cc, dt, W.jog.x, W.jog.y, 1, true); cc.fugiu = (cc.fugiu || 0) + dt; if (cc.fugiu > 6) { cc.ia = null; cc.semEntrar = false; cc.nome = null; cc.motorista = null; } } };
-    }, 1500);
-  }
-  W.stats.trollagens++;
-}
-function atualizaTroll(dt) {
-  if (MISSAO.ativa || MISSAO.feitas < 2 || W.jog.morto) return;
-  trollTimer -= dt;
-  if (trollTimer <= 0) { trollTimer = rnd(180, 300); trollPopai(); }
-}
 
 // dicas do Luketa quando tá à toa
 let dicaTimer = 45;

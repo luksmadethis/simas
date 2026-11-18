@@ -8,7 +8,7 @@ function rostoHUD(g, quem, x, y, r) {
   const im = ROSTOS[quem];
   g.save(); g.beginPath(); g.arc(x, y, r, 0, 7); g.closePath();
   if (im && im.complete && im.naturalWidth) { g.clip(); g.drawImage(im, x - r, y - r, r * 2, r * 2); }
-  else { g.fillStyle = COR_NOME[quem] || '#888'; g.fill(); g.fillStyle = '#111'; g.font = `900 ${r}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(quem === 'popai' ? '🤡' : quem === 'ana' ? '👩' : (NOMES[quem] || '?')[0], x, y + 1); g.textBaseline = 'alphabetic'; }
+  else { g.fillStyle = COR_NOME[quem] || '#888'; g.fill(); g.fillStyle = '#111'; g.font = `900 ${r}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(quem === 'ana' ? '👩' : (NOMES[quem] || '?')[0], x, y + 1); g.textBaseline = 'alphabetic'; }
   g.restore();
   g.strokeStyle = COR_NOME[quem] || '#fff'; g.lineWidth = 3; g.beginPath(); g.arc(x, y, r, 0, 7); g.stroke();
 }
@@ -224,7 +224,7 @@ function desenharMapaGrande(g) {
   const ic = (l, ico, nome) => { if (!l) return; const x = x0 + l.x / T * k, y = y0 + l.y / T * k; g.font = `${Math.max(12, s / 34)}px system-ui`; g.fillText(ico, x, y + 6); if (nome && s > 400) { g.font = `bold ${Math.max(9, s / 60)}px system-ui`; textoContorno(g, nome, x, y + 22, '#fff', 3); } };
   ic(LUGAR.garagem, '🔧', 'garagem'); ic(LUGAR.garagemBH, '🔧', 'garagem'); ic(LUGAR.roupas, '👕', 'roupas'); ic(LUGAR.armas, '🔫', 'arsenal'); ic(LUGAR.hospital, '🏥'); ic(LUGAR.policia, '🚔');
   ic(LUGAR.dudu, '💻', 'Dudu'); ic(LUGAR.cas, '🪑', 'Tio Cas'); ic(LUGAR.skate, '🛹', 'Alan'); ic(LUGAR.yori, '🥭', 'Yori'); ic(LUGAR.nauj, '🌿', 'Nauj'); ic(LUGAR.baile, '🔊', 'Meco');
-  ic(LUGAR.gelado, '🕶️', 'Gelado'); ic(LUGAR.matheus, '🤖', 'Matheus'); ic(LUGAR.ltzin, '👑', 'Ltzin');
+  ic(LUGAR.gelado, '🕶️', 'Gelado'); ic(LUGAR.poli, '🎙️', 'Poli'); ic(LUGAR.matheus, '🤖', 'Matheus'); ic(LUGAR.ltzin, '👑', 'Ltzin');
   for (const it of W.itens) if (it.t === 'arma' && it.arma === 'foguete') { const x = x0 + it.x / T * k, y = y0 + it.y / T * k; g.fillStyle = '#e74c3c'; g.fillRect(x - 2, y - 2, 4, 4); }
   const alvo = MISSAO.ativa ? MISSAO.alvo : lugarMissao(proximaMissao());
   if (alvo) { const x = x0 + alvo.x / T * k, y = y0 + alvo.y / T * k; g.strokeStyle = '#ffd23f'; g.lineWidth = 3; g.beginPath(); g.arc(x, y, 10 + Math.sin(W.tempo * 6) * 3, 0, 7); g.stroke(); }
@@ -271,8 +271,8 @@ const LINHAS_CREDITOS = [
   ['Nerivan — rei da engenharia social', 'nerivan'], ['Luketa — guia, narrador e beatmaker', 'luketa'], ['Dudu — hacker de sistemas', 'dudu'],
   ['Tio Cas — DJ, sentado desde terça', 'cas'], ['Ana — a patroa', 'ana'], ['Alan — skatista e desenhista desvalorizado', 'alan'],
   ['Yori — alimenta o Brasil', 'yori'], ['Nauj — teu guia favorito', 'nauj'], ['Meco — o Neymar do funk BH', 'meco'],
-  ['Popai — trollador profissional', 'popai'], ['Segurança Gelado — R$500 por dia', 'gelado'], ['Matheus — CEO, humorista e piloto de robô', 'matt'],
-  ['Ltzin — Rei de Recife', 'ltzin'], ['Poli — Rádio Poli FM', 'poli'], ['', ''], ['robô gigante feito pelo Claude', 'sub'], ['(ele avisou que era má ideia)', ''], ['', ''], ['SIMAS 🌈', 'tit'], ['obrigado por jogar!', '']
+['Segurança Gelado — R$500 por dia', 'gelado'], ['Matheus — CEO, humorista e piloto de robô', 'matt'],
+  ['Ltzin — Rei de Recife', 'ltzin'], ['Poli — ouvido absoluto, Rádio Poli FM', 'poli'], ['', ''], ['robô gigante feito pelo Claude', 'sub'], ['(ele avisou que era má ideia)', ''], ['', ''], ['SIMAS 🌈', 'tit'], ['obrigado por jogar!', '']
 ];
 function desenharCreditos(g, dt) {
   CREDITOS.t += dt;
@@ -449,7 +449,7 @@ function atualizaYT() {
   } catch (e) { }
 }
 function radioSub() {
-  if (RADIO.atual === 0) return ytAtivo() ? (YTR.titulo || 'playlist da Poli FM') : YTR.estado === 'falhou' ? 'a playlist toca quando o jogo tiver no site' : 'carregando a playlist...';
+  if (RADIO.atual === 0) return ytAtivo() ? ('🎤 ' + (YTR.titulo || 'Popai')) : YTR.estado === 'falhou' ? 'as do Popai tocam quando o jogo tá no site' : 'carregando a playlist...';
   return RADIOS[RADIO.atual].sub;
 }
 setInterval(atualizaYT, 400);

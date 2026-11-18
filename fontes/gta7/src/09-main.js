@@ -1,7 +1,7 @@
 // =========================================================
 // PRINCIPAL: começar, salvar, laço do jogo
 // =========================================================
-W.stats = { roubos: 0, missoes: 0, trollagens: 0 };
+W.stats = { roubos: 0, missoes: 0 };
 W.garagem = [];
 W.itensReaparecer = [];
 let RODANDO = false, ultimo = 0, carroAntes = null, lojaAtual = null;
@@ -76,14 +76,14 @@ function gatilhos() {
     if (j.carro) { j.carro.vx = j.carro.vy = 0; j.carro.vel = 0; }
   }
   if (!perto) lojaAtual = null;
-  // desmanche do Popai: vende o carro
+  // desmanche: vende o carro
   if (j.carro && !j.carro.missao && dist(j.x, j.y, LUGAR.desmanche.x, LUGAR.desmanche.y) < 80 && Math.abs(j.carro.vel) < 300) {
     const c = j.carro, base = { popular: 300, sedan: 450, esporte: 900, pickup: 600, caminhao: 800, policia: 1000, gelado: 2500 }[c.modelo] || 400;
     const v = Math.round(base * (0.4 + 0.6 * c.hp / c.hpMax) * (1 + c.motor * 0.2 + c.blind * 0.2) / 10) * 10;
     entrarSair(); c.lixo = true; W.carros = W.carros.filter(x => x !== c);
     j.grana += v; SOM.grana(); tremer(6);
-    AVISO = { titulo: '+' + fmt$(v), sub: 'o Popai comprou teu ' + TIPOS_CARRO[c.modelo].nome, cor: '#7CFC00', t: 0, dur: 2.5 };
-    falar('popai', pick(['vou desmontar e vender as peças no Mercado Livre KKKK', 'esse aí tá batido hein, pago pouco', 'negócio fechado, primo!']), 3);
+    AVISO = { titulo: '+' + fmt$(v), sub: 'o desmanche comprou teu ' + TIPOS_CARRO[c.modelo].nome, cor: '#7CFC00', t: 0, dur: 2.5 };
+    falar('luketa', pick(['vendido! carro roubado vira peça no Mercado Livre', 'grana fácil, Nerivan. rouba outro', 'negócio fechado!']), 3);
     salvar();
   }
   // começar missão
@@ -124,8 +124,7 @@ function passo(dt) {
   if (apertou('e', 'f')) entrarSair();
   if (apertou('tab', 'q')) trocarArma(1);
   if (apertou('r') && j.carro) {
-    if (W.tempo < RADIO.travadoAte) falar('popai', 'NÃO PODE TROCAR KKKKK', 1.5);
-    else { RADIO.atual = (RADIO.atual + 1) % RADIOS.length; RADIO.tocar(true); RADIO_AVISO = { t: 0 }; }
+    { RADIO.atual = (RADIO.atual + 1) % RADIOS.length; RADIO.tocar(true); RADIO_AVISO = { t: 0 }; }
   }
   if (W.escorregou > 0) W.escorregou -= dt;
   if (!j.morto && j.hp < 100 && W.tempo - (W.ultDano || 0) > 5) j.hp = Math.min(100, j.hp + 4 * dt);
@@ -135,7 +134,32 @@ function passo(dt) {
   if (!j.carro) SOM.atualizaMotor(0, false);
   atualizaPeds(dt); atualizaCarros(dt); colisoes(dt); atualizaBalas(dt); atualizaItens(dt); atualizaChefes(dt);
   atualizaProcurado(dt); atualizaEfeitos(dt); povoar(dt, VW / cam.zoom, VH / cam.zoom);
-  MISSAO.tick(dt); gatilhos(); atualizaTroll(dt); atualizaDicas(dt);
+  MISSAO.tick(dt); gatilhos(); atualizaDicas(dt);
+}
+
+// som do baile do Meco: uma música do "Malando com Zensat", sem grave até devolver o paredão
+const BAILE = { pronto: false, el: null, filtro: null, ganho: null };
+function atualizaBaile() {
+  if (!SOM.ctx || !W.jog || !LUGAR.baile) return;
+  const d = dist(W.jog.x, W.jog.y, LUGAR.baile.x, LUGAR.baile.y), vol = Math.pow(clamp(1 - d / 1500, 0, 1), 1.4) * 0.95;
+  if (!BAILE.pronto) {
+    if (vol <= 0) return;
+    BAILE.pronto = true;
+    try {
+      const el = new Audio('/jogos/malandro-hero/musicas/' + pick(['kika', 'meuerro', 'sigilo']) + '.mp3'); el.loop = true;
+      const src = SOM.ctx.createMediaElementSource(el), f = SOM.ctx.createBiquadFilter(), g = SOM.ctx.createGain();
+      f.type = 'highpass'; f.frequency.value = 700; g.gain.value = 0;
+      src.connect(f); f.connect(g); g.connect(SOM.master);
+      Object.assign(BAILE, { el, filtro: f, ganho: g });
+    } catch (e) { return; }
+  }
+  if (!BAILE.el) return;
+  const idx = MISSOES.findIndex(m => m.id === 'meco'), temGrave = MISSAO.feitas > idx;
+  const t = SOM.ctx.currentTime;
+  BAILE.filtro.frequency.setTargetAtTime(temGrave ? 10 : 700, t, 0.4);
+  BAILE.ganho.gain.setTargetAtTime(vol * (PAUSA_SOM ? 0 : 1), t, 0.2);
+  if (vol > 0 && BAILE.el.paused) BAILE.el.play().catch(() => { });
+  else if (vol <= 0 && !BAILE.el.paused) BAILE.el.pause();
 }
 
 function laco(agora) {
@@ -144,7 +168,7 @@ function laco(agora) {
   try {
     passo(dt);
     atualizaCamera(dt);
-    RADIO.atualiza();
+    RADIO.atualiza(); atualizaBaile();
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#1d4f8f'; ctx.fillRect(0, 0, cv.width, cv.height);
     desenharMundo(); desenharHUD(dt);
   } catch (e) { console.error(e); }
