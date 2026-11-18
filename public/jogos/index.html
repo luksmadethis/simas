@@ -67,8 +67,18 @@ h1{margin:6px 0 4px;font-size:38px;font-weight:900}
       <div class="info">
         <h3>🐔 Galado Pula</h3>
         <p>o Galado correndo q nem um desgraçado. pula os GALHO, fica quietinho no chão quando vier MISSIL e pega os pacote de R$500 q aparece de vez em nunca</p>
-        <div class="top5"><b>🏆 TOP 5</b><ol id="top"><li>carregando...</li></ol></div>
+        <div class="top5"><b>🏆 TOP 5</b><ol id="top1"><li>carregando...</li></ol></div>
         <div class="rec" id="rec"></div>
+        <span class="btn">jogar essa porra →</span>
+      </div>
+    </a>
+    <a class="jogo" href="/jogos/dorme-patroa/">
+      <canvas id="prev2" width="560" height="220"></canvas>
+      <div class="info">
+        <h3>😴 Dorme que a Patroa tá Chegando</h3>
+        <p>o Cas jogando escondido de madrugada. ouviu os PASSO e viu a luz na porta? CORRE PRA CAMA e finge q ta dormindo antes da Ana abrir. se ela pegar jogando, fudeu</p>
+        <div class="top5"><b>🏆 TOP 5</b><ol id="top2"><li>carregando...</li></ol></div>
+        <div class="rec" id="rec2"></div>
         <span class="btn">jogar essa porra →</span>
       </div>
     </a>
@@ -77,12 +87,15 @@ h1{margin:6px 0 4px;font-size:38px;font-weight:900}
 </div>
 
 <script src="/jogos/galado-pula/galado.js?v=1"></script>
+<script src="/jogos/dorme-patroa/cena.js?v=1"></script>
 <script>
 try { const r = localStorage.getItem('galado-recorde'); if (r) document.getElementById('rec').textContent = '🏆 teu recorde: ' + r; } catch (e) {}
-// top 5 do Galado Pula
+try { const r = localStorage.getItem('patroa-recorde'); if (r) document.getElementById('rec2').textContent = '🏆 teu recorde: ' + r; } catch (e) {}
+// top 5 dos jogos
 (function () {
-  const el = document.getElementById('top');
-  if (typeof firebase === 'undefined') { el.innerHTML = '<li>ranking fora do ar</li>'; return; }
+  const jogos = [['galado', 'top1'], ['patroa', 'top2']];
+  const fora = () => jogos.forEach(([, id]) => document.getElementById(id).innerHTML = '<li>ranking fora do ar</li>');
+  if (typeof firebase === 'undefined') { fora(); return; }
   firebase.initializeApp({
     apiKey: "AIzaSyA0G_qSK5eEVzGnLskGS8leXCwC7XNzK0A",
     authDomain: "simasfitness2.firebaseapp.com",
@@ -93,14 +106,18 @@ try { const r = localStorage.getItem('galado-recorde'); if (r) document.getEleme
   });
   const esc = t => String(t).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
   firebase.auth().onAuthStateChanged(u => {
-    if (!u) { firebase.auth().signInAnonymously().catch(() => el.innerHTML = '<li>ranking fora do ar</li>'); return; }
-    firebase.firestore().collection('galado').orderBy('pts', 'desc').limit(5).onSnapshot(q => {
-      const li = [];
-      q.forEach(d => { const r = d.data(); li.push('<li><span>' + ['🥇','🥈','🥉','4º','5º'][li.length] + ' ' + esc(r.nome) + '</span><span>' + r.pts + '</span></li>'); });
-      el.innerHTML = li.join('') || '<li>ninguem jogou ainda</li>';
-    }, () => el.innerHTML = '<li>ranking fora do ar</li>');
+    if (!u) { firebase.auth().signInAnonymously().catch(fora); return; }
+    jogos.forEach(([col, id]) => {
+      const el = document.getElementById(id);
+      firebase.firestore().collection(col).orderBy('pts', 'desc').limit(5).onSnapshot(q => {
+        const li = [];
+        q.forEach(d => { const r = d.data(); li.push('<li><span>' + ['🥇','🥈','🥉','4º','5º'][li.length] + ' ' + esc(r.nome) + '</span><span>' + r.pts + '</span></li>'); });
+        el.innerHTML = li.join('') || '<li>ninguem jogou ainda</li>';
+      }, () => el.innerHTML = '<li>ranking fora do ar</li>');
+    });
   });
 })();
+const c2 = document.getElementById('prev2');
 const c = document.getElementById('prev'), x = c.getContext('2d');
 let off = 0;
 function loop(t) {
@@ -110,6 +127,13 @@ function loop(t) {
   x.fillStyle = '#3a3450';
   for (let i = -1; i < 16; i++) x.fillRect(i * 40 - off, 196, 14, 2);
   drawGalado(x, 200, 180, 1.2, 'correr', t);
+  // prévia do Dorme que a Patroa: Cas jogando, de vez em quando pula pra cama
+  const x2 = c2.getContext('2d'), ciclo = (t / 1000) % 6, dorme = ciclo > 3.6;
+  x2.save(); x2.scale(560 / 900, 560 / 900); x2.translate(0, -40);
+  drawQuarto(x2, t, dorme && ciclo > 4.4 ? Math.min(1, (ciclo - 4.4) * 3) : 0, ciclo > 3 && ciclo < 4.4 ? 1 : 0);
+  drawCas(x2, dorme ? 'dormindo' : 'jogando', t);
+  if (dorme && ciclo > 4.6) drawAna(x2, 'deboa', t);
+  x2.restore();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);

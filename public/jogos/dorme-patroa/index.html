@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dorme que a Patroa tá Chegando · Simas</title>
+<meta name="description" content="joga escondido e corre pra cama antes da Ana abrir a porta">
+<meta property="og:title" content="Dorme que a Patroa tá Chegando 😴">
+<meta property="og:description" content="joga escondido e corre pra cama antes da Ana abrir a porta">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+html,body{margin:0;min-height:100%;background:#0d0c12;color:#f3f1f7;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{display:flex;flex-direction:column;overscroll-behavior:none}
+.snav{flex:none;position:relative;z-index:70;display:flex;align-items:center;gap:14px;height:44px;padding:0 14px;background:#0d0c12;border-bottom:1px solid #2a2733;font:600 14px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#f3f1f7;box-sizing:border-box}
+.snav *{box-sizing:border-box;margin:0}
+.snav a{color:inherit;text-decoration:none}
+.snav-logo{font-weight:900;font-size:20px;letter-spacing:-.3px}
+.snav-logo b{font-weight:900}
+.snav-links{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+.snav-links a{padding:7px 11px;border-radius:9px;color:#9a95a8;white-space:nowrap}
+.snav-links a:hover{background:#17151f;color:#f3f1f7}
+.snav-links a.on{background:#1e1b28;color:#f3f1f7;box-shadow:inset 0 -2px 0 #9b2bc2}
+@media(max-width:520px){.snav{gap:8px;padding:0 8px}.snav-logo{font-size:18px}.snav-links a{padding:7px 8px;font-size:13px}}
+
+main{flex:1;display:flex;flex-direction:column;align-items:center;gap:12px;padding:14px;box-sizing:border-box}
+.topo{width:100%;max-width:960px}
+.voltar{display:inline-block;background:#17151f;border:1px solid #2a2733;color:#f3f1f7;text-decoration:none;font-weight:700;font-size:14px;padding:9px 14px;border-radius:11px}
+.voltar:hover{border-color:#9b2bc2;background:#1e1b28}
+h1{margin:0;font-size:26px;font-weight:900;text-align:center}
+#palco{position:relative;width:100%;max-width:960px}
+canvas{display:block;width:100%;height:auto;border-radius:16px;background:#14121c;touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.dica{opacity:.65;font-size:14px;text-align:center;margin:0;max-width:760px}
+#som{position:absolute;bottom:10px;left:10px;background:#0d0c12aa;border:1px solid #2a2733;color:#fff;border-radius:10px;padding:6px 9px;font-size:16px;cursor:pointer}
+#nomeBox{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(13,12,18,.82);border-radius:16px;z-index:5}
+#nomeBox[hidden]{display:none}
+.cartao{background:#17151f;border:1px solid #2a2733;border-radius:16px;padding:18px 20px;width:min(340px,86%);text-align:center}
+.cartao h2{margin:0 0 4px;font-size:20px}
+.cartao p{margin:0 0 12px;color:#9a95a8;font-size:13.5px}
+.cartao input{width:100%;box-sizing:border-box;background:#0d0c12;border:1px solid #3a3450;color:#fff;border-radius:11px;padding:11px 12px;font-size:17px;text-align:center;outline:none}
+.cartao input:focus{border-color:#ff8c00}
+.cartao .bts{display:flex;gap:8px;margin-top:12px}
+.cartao button{flex:1;border:0;border-radius:11px;padding:11px;font-weight:800;font-size:15px;cursor:pointer}
+#nomeOk{background:linear-gradient(90deg,#ff8c00,#e40303);color:#fff}
+#nomePula{background:#262236;color:#bbb}
+#baixo{width:100%;max-width:960px;display:grid;grid-template-columns:1fr 1.3fr;gap:12px}
+@media(max-width:640px){#baixo{grid-template-columns:1fr}}
+.painel{background:#17151f;border:1px solid #2a2733;border-radius:14px;padding:12px 14px}
+.painel h3{margin:0 0 8px;font-size:15px;letter-spacing:.5px}
+#eu{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;color:#b5b0c2}
+#eu b{color:#fff}
+#trocar{background:#262236;border:1px solid #3a3450;color:#fff;border-radius:9px;padding:6px 10px;cursor:pointer;font-size:13px}
+#top{list-style:none;margin:0;padding:0}
+#top li{display:flex;justify-content:space-between;padding:6px 8px;border-radius:9px;font-size:15px}
+#top li:nth-child(odd){background:#1c1a26}
+#top li.meu{outline:1px solid #ff8c00}
+#top .pos{width:26px;display:inline-block}
+#top .p{font-family:ui-monospace,Consolas,monospace;font-weight:700}
+#top .vazio{color:#777;justify-content:center}
+
+/* ===== cores LGBT animadas (o arco-íris anda devagar em tudo que usa --rainbow) ===== */
+@property --rbx{syntax:'<percentage>';inherits:true;initial-value:0%}
+:root{--rainbow:repeating-linear-gradient(90deg,#e40303 calc(var(--rbx,0%) - 100%),#ff8c00 calc(var(--rbx,0%) - 83.33%),#ffed00 calc(var(--rbx,0%) - 66.67%),#00a83a calc(var(--rbx,0%) - 50%),#2a6bff calc(var(--rbx,0%) - 33.33%),#9b2bc2 calc(var(--rbx,0%) - 16.67%),#e40303 var(--rbx,0%));animation:rbx 9s steps(90) infinite}
+@keyframes rbx{to{--rbx:100%}}
+@media (prefers-reduced-motion:reduce){:root{animation:none}}
+.flag{height:6px;background:var(--rainbow)}
+.grad{background:var(--rainbow);-webkit-background-clip:text;background-clip:text;color:transparent}
+</style>
+</head>
+<body>
+<div class="flag"></div>
+<nav class="snav"><a class="snav-logo" href="/" aria-label="Simas, voltar pra home"><b style="color:#e40303">S</b><b style="color:#ff8c00">i</b><b style="color:#ffed00">m</b><b style="color:#00c13a">a</b><b style="color:#2a6bff">s</b></a><div class="snav-links"><a href="/">🏠 Home</a><a href="/simastelas/">📺 SimasTelas</a><a href="/simasfitness/">💪 Fitness</a><a href="/simastok/">🎬 SimasTok</a><a href="/jogos/" class="on">🎮 Jogos</a><a href="/sugestoes/">💡 Sugestões</a></div></nav>
+
+<main>
+  <div class="topo"><a class="voltar" href="/jogos/">← Voltar a lista de Jogos</a></div>
+  <h1><span class="grad">DORME QUE A PATROA TÁ CHEGANDO</span> 😴</h1>
+  <div id="palco">
+    <canvas id="c" width="900" height="500"></canvas>
+    <button id="som" title="som">🔊</button>
+    <div id="nomeBox" hidden>
+      <form class="cartao" id="nomeForm">
+        <h2>qual teu nome? 😴</h2>
+        <p>vai aparecer no TOP 5 se tu nao for pego no primeiro segundo</p>
+        <input id="nomeIn" maxlength="20" autocomplete="nickname" placeholder="teu nome aqui porra">
+        <div class="bts"><button type="button" id="nomePula">jogar sem nome</button><button type="submit" id="nomeOk">BORA</button></div>
+      </form>
+    </div>
+  </div>
+  <p class="dica">ESPAÇO / clique / toque = Cas pula pra CAMA ou volta pro PC · só ganha ponto JOGANDO · quando ouvir os PASSO e ver a LUZ na porta, CORRE PRA CAMA · nao levanta enquanto ela tiver no quarto</p>
+  <div id="baixo">
+    <div class="painel">
+      <h3>😴 TU</h3>
+      <div id="eu"><span id="euTxt">jogando sem nome (nao entra no ranking)</span><button id="trocar">✏️ nome</button></div>
+    </div>
+    <div class="painel">
+      <h3>🏆 TOP 5 DA GALERA</h3>
+      <ol id="top"><li class="vazio">carregando...</li></ol>
+    </div>
+  </div>
+</main>
+
+<script src="/jogos/dorme-patroa/cena.js?v=1"></script>
+<script>
+// ================== CONFIG ==================
+// ponto: só enquanto o Cas tá JOGANDO no PC. 10/s no começo, 20/s depois de ~2,5 min.
+// escapar da Ana (ela abre a porta e ele tá dormindo) = +25.
+const PTS_SEG_INI = 10, PTS_SEG_MAX = 20, BONUS_ESCAPOU = 25;
+const TRANS = 0.32;                 // segundos pra pular da cadeira pra cama (e voltar). No meio do pulo ele ainda tá ACORDADO.
+const DIFICIL_EM = 150;             // segundos até a dificuldade máxima
+const ls = { get(k){ try { return localStorage.getItem(k) } catch(e){ return null } },
+             set(k,v){ try { localStorage.setItem(k,v) } catch(e){} } };
+const c = document.getElementById('c'), x = c.getContext('2d');
+const $ = id => document.getElementById(id);
+const esc = t => String(t).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+let recorde = +(ls.get('patroa-recorde') || 0);
+
+// ================== NOME + RANKING (Firestore, coleção patroa/{uid}) ==================
+const temFB = typeof firebase !== 'undefined';
+if (temFB) firebase.initializeApp({
+  apiKey: "AIzaSyA0G_qSK5eEVzGnLskGS8leXCwC7XNzK0A",
+  authDomain: "simasfitness2.firebaseapp.com",
+  projectId: "simasfitness2",
+  storageBucket: "simasfitness2.firebasestorage.app",
+  messagingSenderId: "1068623437415",
+  appId: "1:1068623437415:web:63ccdb065e991452563ec2"
+});
+const auth = temFB ? firebase.auth() : null, db = temFB ? firebase.firestore() : null;
+let uid = null, nome = (ls.get('galado-nome') || '').trim(), melhorNuvem = 0;
+const nomeBox = $('nomeBox'), nomeIn = $('nomeIn');
+const modalAberto = () => !nomeBox.hidden;
+function abreNome() { nomeIn.value = nome; nomeBox.hidden = false; setTimeout(() => nomeIn.focus(), 50); }
+function fechaNome() { nomeBox.hidden = true; mostraEu(); }
+$('nomeForm').onsubmit = e => {
+  e.preventDefault();
+  const n = nomeIn.value.replace(/\s+/g, ' ').trim().slice(0, 20);
+  if (!n) { nomeIn.focus(); return; }
+  const mudou = n !== nome;
+  nome = n; ls.set('galado-nome', nome); fechaNome();
+  if (mudou && uid && melhorNuvem > 0) salvaPontos(melhorNuvem, true);
+};
+$('nomePula').onclick = () => { nome = ''; ls.set('galado-nome', ''); fechaNome(); };
+$('trocar').onclick = e => { e.stopPropagation(); if (estado !== 'jogando') abreNome(); };
+function mostraEu() {
+  $('euTxt').innerHTML = nome
+    ? 'jogando como <b>' + esc(nome) + '</b>' + (melhorNuvem ? ' · teu melhor no ranking: <b>' + melhorNuvem + '</b>' : '')
+    : 'jogando sem nome (nao entra no ranking)';
+}
+function salvaPontos(p, forcar) {
+  if (!uid || !nome) return;
+  p = Math.floor(p);
+  if (!forcar && p <= melhorNuvem) return;
+  const novo = Math.max(p, melhorNuvem);
+  db.collection('patroa').doc(uid).set({ nome, pts: novo, t: firebase.firestore.FieldValue.serverTimestamp() })
+    .then(() => { melhorNuvem = novo; mostraEu(); })
+    .catch(e => console.warn('ranking:', e));
+}
+if (!temFB) setTimeout(() => { $('top').innerHTML = '<li class="vazio">ranking fora do ar agora</li>'; });
+else auth.onAuthStateChanged(async u => {
+  if (!u) { try { await auth.signInAnonymously(); } catch (e) { $('top').innerHTML = '<li class="vazio">deu pau pra conectar no ranking</li>'; } return; }
+  uid = u.uid;
+  try {
+    const d = await db.collection('patroa').doc(uid).get();
+    if (d.exists) { melhorNuvem = d.data().pts || 0; if (melhorNuvem > recorde) { recorde = melhorNuvem; ls.set('patroa-recorde', recorde); } }
+  } catch (e) {}
+  if (nome && recorde > melhorNuvem) salvaPontos(recorde);
+  mostraEu();
+  db.collection('patroa').orderBy('pts', 'desc').limit(5).onSnapshot(q => {
+    const li = [];
+    q.forEach(d => { const r = d.data(); li.push('<li class="' + (d.id === uid ? 'meu' : '') + '"><span><span class="pos">' + ['🥇','🥈','🥉','4º','5º'][li.length] + '</span>' + esc(r.nome) + '</span><span class="p">' + r.pts + '</span></li>'); });
+    $('top').innerHTML = li.join('') || '<li class="vazio">ninguem jogou ainda, bora ser o primeiro</li>';
+  }, () => { $('top').innerHTML = '<li class="vazio">nao deu pra carregar o ranking</li>'; });
+});
+
+// ================== SOM ==================
+let somOn = ls.get('patroa-som') !== '0', ac = null;
+const btnSom = $('som');
+btnSom.textContent = somOn ? '🔊' : '🔇';
+btnSom.onclick = e => { e.stopPropagation(); somOn = !somOn; btnSom.textContent = somOn ? '🔊' : '🔇'; ls.set('patroa-som', somOn ? '1' : '0'); };
+function bip(f1, f2, dur, tipo = 'square', vol = .05) {
+  if (!somOn) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+    o.type = tipo; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur);
+  } catch (e) {}
+}
+const somPasso = v => bip(110, 55, .14, 'sine', .22 * v);
+const somPorta = () => bip(180, 420, .45, 'sawtooth', .035);
+const somPula = () => bip(300, 700, .12, 'triangle', .07);
+const somVolta = () => bip(600, 300, .1, 'triangle', .05);
+const somTecla = () => bip(1800 + Math.random() * 600, 1500, .02, 'square', .012);
+const somEscapou = () => { bip(660, 990, .1, 'triangle', .08); setTimeout(() => bip(990, 1320, .14, 'triangle', .08), 100); };
+const somPego = () => { bip(900, 200, .6, 'sawtooth', .08); setTimeout(() => bip(500, 120, .7, 'square', .05), 150); };
+
+// ================== ESTADO ==================
+let estado = 'inicio';        // inicio | jogando | pego
+let pts, tempo, escapes, cas, k, ana, anaT, anaDur, anaTipo, porta, luz, voltaLogo, efeitos, proxPasso, proxTecla, pegoEm, novoRecorde = false;
+// cas: 'pc' | 'cama' | 'indo' | 'voltando'
+// ana: 'calma' | 'vindo' | 'falso' | 'abrindo' | 'olhando' | 'saindo' | 'brava'
+const r = (a, b) => a + Math.random() * (b - a);
+const dif = () => Math.min(1, tempo / DIFICIL_EM);
+function zera() {
+  pts = 0; tempo = 0; escapes = 0; cas = 'pc'; k = 0; porta = 0; luz = 0; efeitos = [];
+  voltaLogo = false; proxPasso = 0; proxTecla = 0;
+  calma(r(3, 5));
+}
+function calma(seg) { ana = 'calma'; anaT = 0; anaDur = seg; }
+zera();
+
+// ================== CONTROLE ==================
+function apertou() {
+  if (modalAberto()) return;
+  if (estado === 'inicio') { estado = 'jogando'; zera(); return; }
+  if (estado === 'pego') { if (performance.now() - pegoEm > 900) { estado = 'jogando'; zera(); } return; }
+  if (cas === 'pc') { cas = 'indo'; somPula(); }
+  else if (cas === 'cama') { cas = 'voltando'; somVolta(); }
+  else if (cas === 'indo') cas = 'voltando';        // desistiu no meio do pulo
+  else if (cas === 'voltando') cas = 'indo';
+}
+addEventListener('keydown', e => {
+  if (modalAberto() || e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'Enter') { e.preventDefault(); if (!e.repeat) apertou(); }
+});
+c.addEventListener('pointerdown', e => { e.preventDefault(); apertou(); });
+
+// ================== LÓGICA ==================
+function acordado() { return cas !== 'cama'; }
+function pego() {
+  estado = 'pego'; ana = 'brava'; porta = 1; pegoEm = performance.now();
+  if (cas !== 'pc') { cas = 'pc'; k = 0; }       // pego no pulo: volta pra cadeira no susto
+  somPego();
+  if (Math.floor(pts) > recorde) { recorde = Math.floor(pts); ls.set('patroa-recorde', recorde); novoRecorde = true; } else novoRecorde = false;
+  salvaPontos(pts);
+}
+function passo(dt) {
+  tempo += dt;
+  const d = dif();
+
+  // Cas pulando
+  if (cas === 'indo') { k += dt / TRANS; if (k >= 1) { k = 1; cas = 'cama'; } }
+  if (cas === 'voltando') { k -= dt / TRANS; if (k <= 0) { k = 0; cas = 'pc'; } }
+
+  // pontos jogando
+  if (cas === 'pc') {
+    pts += (PTS_SEG_INI + (PTS_SEG_MAX - PTS_SEG_INI) * d) * dt;
+    proxTecla -= dt; if (proxTecla <= 0) { somTecla(); proxTecla = r(.07, .2); }
+  }
+
+  // Ana
+  anaT += dt;
+  if (ana === 'calma') {
+    luz = Math.max(0, luz - dt * 2);
+    if (anaT >= anaDur) {
+      // começa a vir (ou alarme falso)
+      ana = Math.random() < .12 + .25 * d ? 'falso' : 'vindo';
+      anaT = 0; anaDur = Math.max(.75, 1.9 - 1.1 * d + r(-.2, .2));
+      anaTipo = Math.random() < .45 ? 'espiando' : 'entrando';
+      proxPasso = 0;
+    }
+  } else if (ana === 'vindo' || ana === 'falso') {
+    const f = anaT / anaDur;
+    luz = ana === 'vindo' ? Math.min(1, f * 1.3) : Math.max(0, (f < .6 ? f * 1.4 : (1 - f) * 2));
+    proxPasso -= dt;
+    if (proxPasso <= 0) { somPasso(ana === 'vindo' ? .4 + f * .6 : (f < .6 ? .5 + f : 1.2 - f)); proxPasso = Math.max(.18, anaDur / 5); }
+    if (anaT >= anaDur) {
+      if (ana === 'falso') { efeitos.push({ txt: 'alarme falso kkkk', x: 700, y: 440, t: 0, cor: '#9a95a8' }); calma(r(1.2, 2.5) * (1 - .4 * d)); }
+      else { ana = 'abrindo'; anaT = 0; somPorta(); }
+    }
+  } else if (ana === 'abrindo') {
+    const alvo = anaTipo === 'espiando' ? .35 : 1;
+    porta = Math.min(alvo, porta + dt * (alvo / .22));
+    if (porta >= alvo) { ana = 'olhando'; anaT = 0; anaDur = anaTipo === 'espiando' ? .9 : 1.4; }
+  } else if (ana === 'olhando') {
+    if (acordado()) { pego(); return; }
+    if (anaT >= anaDur) {
+      ana = 'saindo'; anaT = 0; escapes++; pts += BONUS_ESCAPOU; somEscapou();
+      efeitos.push({ txt: '+' + BONUS_ESCAPOU + ' escapou 😮‍💨', x: 330, y: 250, t: 0, cor: '#5dff8a' });
+    }
+  } else if (ana === 'saindo') {
+    porta = Math.max(0, porta - dt * 3.5);
+    luz = Math.max(0, luz - dt * 2);
+    if (porta <= 0) {
+      if (Math.random() < .15 + .2 * d) calma(r(.6, 1.4));   // voltou logo, a desgraçada
+      else calma(r(3.2, 6.5) * (1 - .45 * d));
+    }
+  }
+  efeitos.forEach(e => { e.t += dt; e.y -= 30 * dt; });
+  efeitos = efeitos.filter(e => e.t < 1.6);
+}
+
+// ================== DESENHO ==================
+function hud(t) {
+  x.fillStyle = 'rgba(13,12,18,.72)'; rr(x, 14, 14, 214, 64, 12); x.fill();
+  x.fillStyle = '#f3f1f7'; x.font = 'bold 26px ui-monospace,Consolas,monospace';
+  x.fillText(String(Math.floor(pts)).padStart(5, '0'), 28, 48);
+  x.fillStyle = '#8a849c'; x.font = 'bold 14px ui-monospace,Consolas,monospace';
+  x.fillText('HI ' + String(recorde).padStart(5, '0') + '  😮‍💨' + escapes, 28, 68);
+  if (estado !== 'jogando') return;
+  // status
+  const st = cas === 'pc' ? '🎮 JOGANDO' : (cas === 'cama' ? '😴 DORMINDO' : '💨 CORRENDO');
+  x.fillStyle = cas === 'pc' ? '#5dff8a' : (cas === 'cama' ? '#8fb8ff' : '#ffed00');
+  x.font = '900 16px system-ui'; x.fillText(st, 130, 48 + 0 * t);
+  if (ana === 'vindo' || ana === 'falso') {
+    x.globalAlpha = .55 + .45 * Math.sin(t / 90);
+    x.fillStyle = '#ffd27a'; x.font = '900 18px system-ui'; x.textAlign = 'right';
+    x.fillText('👣 tum... tum...', 880, 440); x.textAlign = 'left'; x.globalAlpha = 1;
+  }
+}
+function aviso(t1, t2, t) {
+  x.textAlign = 'center';
+  x.fillStyle = 'rgba(13,12,18,.82)'; rr(x, 220, 404, 460, 82, 14); x.fill();
+  x.fillStyle = '#ffed00'; x.font = '900 26px system-ui'; x.fillText(t1, 450, 438);
+  if (Math.floor(t / 500) % 2 === 0 || estado === 'pego') { x.fillStyle = '#ddd'; x.font = '600 15px system-ui'; x.fillText(t2, 450, 466); }
+  x.textAlign = 'left';
+}
+let ultimo = performance.now();
+function loop(t) {
+  let dt = (t - ultimo) / 1000; ultimo = t;
+  if (dt > .1) dt = .1;
+  if (estado === 'jogando') passo(dt);
+
+  drawQuarto(x, t, porta, luz);
+  const anaVisivel = ana === 'olhando' || ana === 'saindo' || ana === 'brava' || (ana === 'abrindo' && porta > .2);
+  if (anaVisivel && anaTipo === 'espiando' && ana !== 'brava') drawAna(x, 'espiando', t);
+  // Cas
+  if (cas === 'cama') drawCas(x, 'dormindo', t);
+  else if (cas === 'pc') drawCas(x, estado === 'pego' ? 'pego' : 'jogando', t);
+  else drawCas(x, 'voando', t, k);
+  if (anaVisivel && (anaTipo === 'entrando' || ana === 'brava')) {
+    drawAna(x, ana === 'brava' ? 'brava' : (ana === 'olhando' && anaT > .45 ? 'deboa' : 'entrando'), t);
+  } else if (anaVisivel && anaTipo === 'espiando' && ana === 'olhando' && anaT > .4) {
+    balaoQ(x, 'hmm... dormindo 🤨', 770, 150, -1);
+  }
+  efeitos.forEach(e => { x.globalAlpha = Math.max(0, 1 - e.t / 1.6); x.fillStyle = e.cor; x.font = '900 20px system-ui'; x.fillText(e.txt, e.x, e.y); x.globalAlpha = 1; });
+  hud(t);
+  if (estado === 'inicio') aviso('BORA JOGAR ESCONDIDO', 'aperta ESPAÇO ou toca na tela pra começar', t);
+  if (estado === 'pego') aviso(novoRecorde ? 'RECORDE NOVO PORRA 🏆' : 'PEGO NO FLAGRA 💀', 'fez ' + Math.floor(pts) + ' ponto · espaço ou toque pra ir de novo', t);
+  requestAnimationFrame(loop);
+}
+abreNome();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

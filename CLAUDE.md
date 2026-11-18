@@ -10,7 +10,7 @@ Site do grupo de amigos **Simas** em **https://ofisimas.web.app**, hospedado no 
 - `/simasfitness/`: Simas Fitness 2.0, desafio fitness de 30 dias com ranking e fórum
 - `/sugestoes/`: caixinha de sugestões da galera
 - `/simastok/`: SimasTok, vídeos verticais tipo TikTok
-- `/jogos/`: aba de joguinhos (hoje: `/jogos/galado-pula/`)
+- `/jogos/`: aba de joguinhos (hoje: `/jogos/galado-pula/` e `/jogos/dorme-patroa/`)
 
 O site é interno da galera. O tom dos textos é **escrachado de propósito**: palavrão, português chucro, minúsculo com erros e CAPS em palavras de destaque, e piada interna.
 **Nunca usar a palavra "panela"** (pedido do dono).
@@ -26,6 +26,7 @@ O site é interno da galera. O tom dos textos é **escrachado de propósito**: p
     - Player: barra arrastável (scrub), segurar = 2x, toque duplo curte, salvar 🔖 (`salvos`), visualizações (`views`, +1 depois de 2s), disco girando + "som original", abas "Pra você"/"Em alta", perfil em grade ao tocar no @nome, som liga sozinho no 1º toque.
   - `public/jogos/index.html`: página da aba Jogos (lista os jogos)
   - `public/jogos/galado-pula/`: jogo Galado Pula (`index.html`, `galado.js` = desenho do personagem, `cabeca.webp` = rosto do Gelado recortado)
+  - `public/jogos/dorme-patroa/`: jogo Dorme que a Patroa tá Chegando (`index.html`, `cena.js` = quarto + Cas + Ana + rostos 2D desenhados)
   - `firestore.rules`: regras de segurança do banco (Firestore) do projeto
   - `firebase.json`: config da hospedagem (site `ofisimas`, cleanUrls, trailingSlash, HTML sem cache)
 - luksmadethis/simastelas e luksmadethis/simasfitness2: **antigos**. Hoje só redirecionam (GitHub Pages) pro endereço novo. Não mexer.
@@ -76,6 +77,9 @@ Piadas internas já usadas: "aqui pagou papai #constancia", "duas serie de levan
 - Quando morre, o Galado fala num balão: "Paga nada primo".
 - **Nome + ranking:** ao abrir o jogo aparece a caixinha "qual teu nome, galado?" (dá pra jogar sem nome, aí não entra no ranking; botão ✏️ nome troca). Login anônimo automático. Firestore `galado/{uid}` = `{nome, pts, t}`, um por navegador; as regras só deixam a pontuação SUBIR. **TOP 5** aparece embaixo do jogo e no card da página `/jogos/`. Recorde local também em localStorage `galado-recorde`/`galado-nome`. Se o Firebase não carregar, o jogo roda igual sem ranking.
 - Se mudar `galado.js` ou `cabeca.webp`, aumentar o `?v=` nos links (eles têm cache).
+- **Dorme que a Patroa tá Chegando** (`/jogos/dorme-patroa/`): o **Cas** joga no PC de madrugada (ganha 10 pts/s, sobe até 20/s em ~2,5 min). Quando a **Ana** (patroa) vem, acende a luz por baixo da porta e tocam os passos ("👣 tum... tum..."); espaço/clique/toque faz o Cas pular pra cama (leva 0,32s e no meio do pulo ainda conta como acordado). Ela abre a porta (espiada na fresta ou entrando inteira): se ele tiver **dormindo** = escapou (+25); se tiver no PC ou no pulo = PEGO ("CAS!!! TU TAVA JOGANDO?!"). Não pode levantar enquanto ela tá no quarto. Tem alarme falso (passos que vão embora) e às vezes ela volta logo. Fica mais difícil até 150s (`DIFICIL_EM`).
+- Cenário: quarto com ar-condicionado e o Cristo Redentor na janela. Rostos do Cas e da Ana são **desenhados em 2D** (`rostoCas`/`rostoAna` em `cena.js`, com expressões), aprovados pelo Dudu; não usar foto recortada.
+- Ranking igual ao do Galado: Firestore `patroa/{uid}` (mesma regra `galadoOk()`), TOP 5 embaixo do jogo e no card. Os dois jogos usam o MESMO nome salvo (localStorage `galado-nome`); recorde local `patroa-recorde`.
 
 ## Visual
 Fundo escuro (#0d0c12), cores do arco-íris LGBT, **animadas** em todas as páginas: `--rainbow` é um repeating-gradient que anda com a variável registrada `--rbx` (bloco "cores LGBT animadas" no fim do <style> de cada página; steps(90) em 9s pra não pesar). O cabeçalho (`.snav`) é igual em todas as páginas: logo Simas + Home, SimasTelas, Fitness, SimasTok, Jogos e Sugestões. Página nova precisa ganhar o link em TODOS os cabeçalhos.
