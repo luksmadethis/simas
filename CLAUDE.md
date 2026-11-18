@@ -10,6 +10,7 @@ Site do grupo de amigos **Simas** em **https://ofisimas.web.app**, hospedado no 
 - `/simasfitness/`: Simas Fitness 2.0, desafio fitness de 30 dias com ranking e fórum
 - `/sugestoes/`: caixinha de sugestões da galera
 - `/simastok/`: SimasTok, vídeos verticais tipo TikTok
+- `/jogos/`: aba de joguinhos (hoje: `/jogos/galado-pula/`)
 
 O site é interno da galera. O tom dos textos é **escrachado de propósito**: palavrão, português chucro, minúsculo com erros e CAPS em palavras de destaque, e piada interna.
 **Nunca usar a palavra "panela"** (pedido do dono).
@@ -21,6 +22,8 @@ O site é interno da galera. O tom dos textos é **escrachado de propósito**: p
   - `public/simasfitness/index.html` + ícones/og: app Simas Fitness
   - `public/sugestoes/index.html`: caixinha de sugestões
   - `public/simastok/index.html`: SimasTok (vídeos estilo TikTok; arquivos no Cloudinary, dados em `tok` e `tokcom` no Firestore; `CLOUD`/`PRESET` no topo do script)
+  - `public/jogos/index.html`: página da aba Jogos (lista os jogos)
+  - `public/jogos/galado-pula/`: jogo Galado Pula (`index.html`, `galado.js` = desenho do personagem, `cabeca.webp` = rosto do Gelado recortado)
   - `firestore.rules`: regras de segurança do banco (Firestore) do projeto
   - `firebase.json`: config da hospedagem (site `ofisimas`, cleanUrls, trailingSlash, HTML sem cache)
 - luksmadethis/simastelas e luksmadethis/simasfitness2: **antigos**. Hoje só redirecionam (GitHub Pages) pro endereço novo. Não mexer.
@@ -62,8 +65,16 @@ Push na branch `main` publica sozinho, pelo GitHub Actions:
 Array `GALERA` no fim de `public/index.html` (`nome`, `papel`, `frase`, `foto`). Mostrada em carrossel passando, em ordem alfabética (automática). Hoje: Alan, Cas, Dudu, Gelado, Ltzin, Luketa, Matt, Meco, Nauj, Nerivan, Poli, Yori, todos com foto, cargo e frase. Seção chama "Equipe Simas Turbo LTDA" (kicker "Conselho Executivo & Corpo Diretivo"); o tom dos cargos é formal/elogioso com piada interna.
 Piadas internas já usadas: "aqui pagou papai #constancia", "duas serie de levanta da cadera", "aí é brincadeira dj cas", #ChádeBebê, "quem é o pai?", "NO DIA 3 VAI SER REVELADO O SEXO DO BEBÊ", "cla, ú, dê, eu amo voce", "que linda barriga".
 
+## Jogos (/jogos/)
+- **Galado Pula**: estilo o dinossauro do Chrome. O personagem é o Galado, uma galinha com o rosto do Gelado (`drawGalado()` em `galado.js`, estados correr/pular/parado/morto). Pula com espaço, seta pra cima, clique ou toque.
+- Obstáculos: **galho** no chão (tem que pular) e **míssil** na altura do pulo (tem que ficar no chão; só aparece depois de 250 pontos, com ⚠ de aviso). Nunca vem míssil enquanto tem dinheiro na tela.
+- **Pacote de R$500**: +500 pontos, flutua na altura do pulo, aparece a cada 50 a 100s (o primeiro depois de 30s).
+- Pontos por distância: ~10/s no começo, ~23/s na velocidade máxima (velocidade sobe de 6 até 14 em ~2 min). Assim o R$500 vale uns 30s de corrida.
+- Constantes no topo do script (`VEL_INI`, `VEL_MAX`, `ACEL`, `PTS_POR_PX`, `MISSIL_DESDE`, `DINHEIRO_MIN/MAX`). Recorde fica só no navegador (localStorage `galado-recorde`), ainda não tem ranking da galera.
+- Se mudar `galado.js` ou `cabeca.webp`, aumentar o `?v=` nos links (eles têm cache).
+
 ## Visual
-Fundo escuro (#0d0c12), cores do arco-íris LGBT, **animadas** em todas as páginas: `--rainbow` é um repeating-gradient que anda com a variável registrada `--rbx` (bloco "cores LGBT animadas" no fim do <style> de cada página; steps(90) em 9s pra não pesar). O cabeçalho (`.snav`) é igual em todas as páginas: logo Simas + Home, SimasTelas, Fitness, SimasTok e Sugestões.
+Fundo escuro (#0d0c12), cores do arco-íris LGBT, **animadas** em todas as páginas: `--rainbow` é um repeating-gradient que anda com a variável registrada `--rbx` (bloco "cores LGBT animadas" no fim do <style> de cada página; steps(90) em 9s pra não pesar). O cabeçalho (`.snav`) é igual em todas as páginas: logo Simas + Home, SimasTelas, Fitness, SimasTok, Jogos e Sugestões. Página nova precisa ganhar o link em TODOS os cabeçalhos.
 Home: arco-íris que desce serpenteando conforme o scroll e barra de progresso arco-íris no topo. O mouse é o normal: a varinha e o brilho foram removidos porque deixavam o site lento.
 
 ## Pendências

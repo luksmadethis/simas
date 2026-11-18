@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jogos · Simas</title>
+<meta name="description" content="os joguinho da galera Simas">
+<meta property="og:title" content="Jogos do Simas 🎮">
+<meta property="og:description" content="os joguinho da galera, vem perder teu tempo">
+<style>
+html,body{margin:0;background:#0d0c12;color:#f3f1f7;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.snav{flex:none;position:relative;z-index:70;display:flex;align-items:center;gap:14px;height:44px;padding:0 14px;background:#0d0c12;border-bottom:1px solid #2a2733;font:600 14px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#f3f1f7;box-sizing:border-box}
+.snav *{box-sizing:border-box;margin:0}
+.snav a{color:inherit;text-decoration:none}
+.snav-logo{font-weight:900;font-size:20px;letter-spacing:-.3px}
+.snav-logo b{font-weight:900}
+.snav-links{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+.snav-links a{padding:7px 11px;border-radius:9px;color:#9a95a8;white-space:nowrap}
+.snav-links a:hover{background:#17151f;color:#f3f1f7}
+.snav-links a.on{background:#1e1b28;color:#f3f1f7;box-shadow:inset 0 -2px 0 #9b2bc2}
+@media(max-width:520px){.snav{gap:8px;padding:0 8px}.snav-logo{font-size:18px}.snav-links a{padding:7px 8px;font-size:13px}}
+
+.wrap{max-width:980px;margin:0 auto;padding:28px 18px 60px}
+.kicker{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#9a95a8}
+h1{margin:6px 0 4px;font-size:38px;font-weight:900}
+.grad{background:linear-gradient(90deg,#e40303,#ff8c00,#ffed00,#00c13a,#2a6bff,#9b2bc2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:#b5b0c2;margin:0 0 26px}
+.jogos{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.jogo{display:block;text-decoration:none;color:inherit;background:#17151f;border:1px solid #2a2733;border-radius:18px;overflow:hidden;transition:transform .15s,border-color .15s}
+.jogo:hover{transform:translateY(-3px);border-color:#9b2bc2}
+.jogo canvas{display:block;width:100%;height:auto;background:linear-gradient(#120f1d,#221d33)}
+.info{padding:14px 16px 18px}
+.info h3{margin:0 0 6px;font-size:21px}
+.info p{margin:0 0 12px;color:#b5b0c2;font-size:14.5px;line-height:1.45}
+.rec{font-size:13px;color:#9a95a8}
+.btn{display:inline-block;margin-top:10px;background:linear-gradient(90deg,#ff8c00,#e40303);color:#fff;font-weight:800;padding:9px 14px;border-radius:11px}
+.breve{opacity:.5;border-style:dashed;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-height:200px;text-align:center;padding:20px}
+/* ===== cores LGBT animadas (o arco-íris anda devagar em tudo que usa --rainbow) ===== */
+@property --rbx{syntax:'<percentage>';inherits:true;initial-value:0%}
+:root{--rainbow:repeating-linear-gradient(90deg,#e40303 calc(var(--rbx,0%) - 100%),#ff8c00 calc(var(--rbx,0%) - 83.33%),#ffed00 calc(var(--rbx,0%) - 66.67%),#00a83a calc(var(--rbx,0%) - 50%),#2a6bff calc(var(--rbx,0%) - 33.33%),#9b2bc2 calc(var(--rbx,0%) - 16.67%),#e40303 var(--rbx,0%));animation:rbx 9s steps(90) infinite}
+@keyframes rbx{to{--rbx:100%}}
+@media (prefers-reduced-motion:reduce){:root{animation:none}}
+.flag{height:6px;background:var(--rainbow)}
+.grad,h1.grad{background:var(--rainbow);-webkit-background-clip:text;background-clip:text;color:transparent}
+</style>
+</head>
+<body>
+<div class="flag"></div>
+<nav class="snav"><a class="snav-logo" href="/" aria-label="Simas, voltar pra home"><b style="color:#e40303">S</b><b style="color:#ff8c00">i</b><b style="color:#ffed00">m</b><b style="color:#00c13a">a</b><b style="color:#2a6bff">s</b></a><div class="snav-links"><a href="/">🏠 Home</a><a href="/simastelas/">📺 SimasTelas</a><a href="/simasfitness/">💪 Fitness</a><a href="/simastok/">🎬 SimasTok</a><a href="/jogos/" class="on">🎮 Jogos</a><a href="/sugestoes/">💡 Sugestões</a></div></nav>
+
+<div class="wrap">
+  <div class="kicker">Jogos</div>
+  <h1><span class="grad">os joguinho</span> da galera</h1>
+  <p class="sub">pra quando tu devia ta trabalhando, estudando ou treinando (o q é raro aqui)</p>
+
+  <div class="jogos">
+    <a class="jogo" href="/jogos/galado-pula/">
+      <canvas id="prev" width="560" height="220"></canvas>
+      <div class="info">
+        <h3>🐔 Galado Pula</h3>
+        <p>o Galado correndo q nem um desgraçado. pula os GALHO, fica quietinho no chão quando vier MISSIL e pega os pacote de R$500 q aparece de vez em nunca</p>
+        <div class="rec" id="rec"></div>
+        <span class="btn">jogar essa porra →</span>
+      </div>
+    </a>
+    <div class="jogo breve"><div style="font-size:28px">🎮</div><div>mais jogo vindo ai</div><div>manda ideia na <a href="/sugestoes/" style="color:#ff8c00">caixinha</a></div></div>
+  </div>
+</div>
+
+<script src="/jogos/galado-pula/galado.js?v=1"></script>
+<script>
+try { const r = localStorage.getItem('galado-recorde'); if (r) document.getElementById('rec').textContent = '🏆 teu recorde: ' + r; } catch (e) {}
+const c = document.getElementById('prev'), x = c.getContext('2d');
+let off = 0;
+function loop(t) {
+  x.clearRect(0, 0, c.width, c.height);
+  off = (off + 4) % 40;
+  ['#e40303','#ff8c00','#ffed00','#00c13a','#2a6bff','#9b2bc2'].forEach((cor, i) => { x.fillStyle = cor; x.fillRect(0, 180 + i * 1.5, c.width, 1.5); });
+  x.fillStyle = '#3a3450';
+  for (let i = -1; i < 16; i++) x.fillRect(i * 40 - off, 196, 14, 2);
+  drawGalado(x, 200, 180, 1.2, 'correr', t);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

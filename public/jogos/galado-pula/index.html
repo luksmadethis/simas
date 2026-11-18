@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Galado Pula · Simas</title>
+<meta name="description" content="pula os galho, desvia dos missil e pega o dinheiro. o jogo do Galado.">
+<meta property="og:title" content="Galado Pula 🐔">
+<meta property="og:description" content="pula os galho, desvia dos missil e pega o dinheiro">
+<style>
+html,body{margin:0;height:100%;background:#0d0c12;color:#f3f1f7;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{display:flex;flex-direction:column;overscroll-behavior:none}
+.snav{flex:none;position:relative;z-index:70;display:flex;align-items:center;gap:14px;height:44px;padding:0 14px;background:#0d0c12;border-bottom:1px solid #2a2733;font:600 14px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#f3f1f7;box-sizing:border-box}
+.snav *{box-sizing:border-box;margin:0}
+.snav a{color:inherit;text-decoration:none}
+.snav-logo{font-weight:900;font-size:20px;letter-spacing:-.3px}
+.snav-logo b{font-weight:900}
+.snav-links{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+.snav-links a{padding:7px 11px;border-radius:9px;color:#9a95a8;white-space:nowrap}
+.snav-links a:hover{background:#17151f;color:#f3f1f7}
+.snav-links a.on{background:#1e1b28;color:#f3f1f7;box-shadow:inset 0 -2px 0 #9b2bc2}
+@media(max-width:520px){.snav{gap:8px;padding:0 8px}.snav-logo{font-size:18px}.snav-links a{padding:7px 8px;font-size:13px}}
+
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:14px;box-sizing:border-box}
+h1{margin:0;font-size:26px;font-weight:900;background:linear-gradient(90deg,#e40303,#ff8c00,#ffed00,#00c13a,#2a6bff,#9b2bc2);-webkit-background-clip:text;background-clip:text;color:transparent}
+#palco{position:relative;width:100%;max-width:960px}
+canvas{display:block;width:100%;height:auto;border-radius:16px;background:#14121c;touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.dica{opacity:.6;font-size:14px;text-align:center;margin:0}
+#som{position:absolute;top:10px;left:10px;background:#0d0c12aa;border:1px solid #2a2733;color:#fff;border-radius:10px;padding:6px 9px;font-size:16px;cursor:pointer}
+/* ===== cores LGBT animadas (o arco-íris anda devagar em tudo que usa --rainbow) ===== */
+@property --rbx{syntax:'<percentage>';inherits:true;initial-value:0%}
+:root{--rainbow:repeating-linear-gradient(90deg,#e40303 calc(var(--rbx,0%) - 100%),#ff8c00 calc(var(--rbx,0%) - 83.33%),#ffed00 calc(var(--rbx,0%) - 66.67%),#00a83a calc(var(--rbx,0%) - 50%),#2a6bff calc(var(--rbx,0%) - 33.33%),#9b2bc2 calc(var(--rbx,0%) - 16.67%),#e40303 var(--rbx,0%));animation:rbx 9s steps(90) infinite}
+@keyframes rbx{to{--rbx:100%}}
+@media (prefers-reduced-motion:reduce){:root{animation:none}}
+.flag{height:6px;background:var(--rainbow)}
+.grad,h1.grad{background:var(--rainbow);-webkit-background-clip:text;background-clip:text;color:transparent}
+</style>
+</head>
+<body>
+<div class="flag"></div>
+<nav class="snav"><a class="snav-logo" href="/" aria-label="Simas, voltar pra home"><b style="color:#e40303">S</b><b style="color:#ff8c00">i</b><b style="color:#ffed00">m</b><b style="color:#00c13a">a</b><b style="color:#2a6bff">s</b></a><div class="snav-links"><a href="/">🏠 Home</a><a href="/simastelas/">📺 SimasTelas</a><a href="/simasfitness/">💪 Fitness</a><a href="/simastok/">🎬 SimasTok</a><a href="/jogos/" class="on">🎮 Jogos</a><a href="/sugestoes/">💡 Sugestões</a></div></nav>
+
+<main>
+  <h1 class="grad">GALADO PULA <span style="-webkit-text-fill-color:initial;color:initial">🐔</span></h1>
+  <div id="palco">
+    <canvas id="c" width="900" height="300"></canvas>
+    <button id="som" title="som">🔊</button>
+  </div>
+  <p class="dica">ESPAÇO / ↑ / clique / toque pra pular · pula os GALHO, fica no chão quando vier MISSIL · pega os R$500</p>
+</main>
+
+<script src="/jogos/galado-pula/galado.js?v=1"></script>
+<script>
+// ================== CONFIG ==================
+// pontos: ~10/s no começo, ~23/s na velocidade máxima.
+// R$500 = +500, aparece a cada 50~100s => vale uns 30s de corrida.
+const W = 900, H = 300, CHAO = 262, ESC = 0.9;
+const VEL_INI = 6, VEL_MAX = 14, ACEL = 0.0013;   // px por quadro (60fps)
+const PTS_POR_PX = 0.0278;
+const PULO = -15.5, GRAV = 0.85;
+const MISSIL_DESDE = 250;                        // missil só depois desses pontos
+const DINHEIRO_MIN = 50, DINHEIRO_MAX = 100;     // segundos entre pacotes
+const DINHEIRO_1O = 30;                          // primeiro pacote não antes disso
+
+const c = document.getElementById('c'), x = c.getContext('2d');
+const ls = { get(k){ try { return localStorage.getItem(k) } catch(e){ return null } },
+             set(k,v){ try { localStorage.setItem(k,v) } catch(e){} } };
+
+// ================== SOM ==================
+let somOn = ls.get('galado-som') !== '0', ac = null;
+const btnSom = document.getElementById('som');
+btnSom.textContent = somOn ? '🔊' : '🔇';
+btnSom.onclick = e => { e.stopPropagation(); somOn = !somOn; btnSom.textContent = somOn ? '🔊' : '🔇'; ls.set('galado-som', somOn ? '1' : '0'); };
+function bip(f1, f2, dur, tipo='square', vol=.06) {
+  if (!somOn) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+    o.type = tipo; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur);
+  } catch(e) {}
+}
+const somPulo = () => bip(420, 760, .12);
+const somGrana = () => { bip(880, 1320, .09, 'triangle', .09); setTimeout(() => bip(1320, 1760, .14, 'triangle', .09), 90); };
+const somMorre = () => bip(400, 60, .5, 'sawtooth', .08);
+const somMil = () => bip(990, 990, .08, 'square', .05);
+
+// ================== ESTADO ==================
+let estado = 'inicio';      // inicio | jogando | morto
+let vel, pts, recorde = +(ls.get('galado-recorde') || 0), alt, vy, obst, grana, efeitos, distProx, tJogo, proxGrana, mortoEm, piscaMil, chaoOff, grama;
+const estrelas = Array.from({length: 40}, () => ({ x: Math.random()*W, y: Math.random()*170, r: Math.random()*1.4+.3 }));
+const nuvens = Array.from({length: 4}, (_, i) => ({ x: i*260 + Math.random()*100, y: 30 + Math.random()*70, s: .6 + Math.random()*.6 }));
+
+function zera() {
+  vel = VEL_INI; pts = 0; alt = 0; vy = 0; obst = []; grana = []; efeitos = [];
+  distProx = 500; tJogo = 0; proxGrana = DINHEIRO_1O + Math.random()*(DINHEIRO_MAX - DINHEIRO_1O) * .5;
+  piscaMil = 0; chaoOff = 0;
+  grama = Array.from({length: 30}, () => ({ x: Math.random()*W, y: CHAO + 8 + Math.random()*30, w: 2 + Math.random()*6 }));
+}
+zera();
+
+// ================== CONTROLE ==================
+function apertou() {
+  if (estado === 'inicio') { estado = 'jogando'; zera(); pular(); return; }
+  if (estado === 'morto') { if (performance.now() - mortoEm > 600) { estado = 'jogando'; zera(); } return; }
+  pular();
+}
+function pular() { if (alt === 0 && vy === 0) { vy = PULO; somPulo(); } }
+addEventListener('keydown', e => {
+  if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') { e.preventDefault(); if (!e.repeat) apertou(); }
+});
+c.addEventListener('pointerdown', e => { e.preventDefault(); apertou(); });
+document.addEventListener('visibilitychange', () => { ultimo = performance.now(); });
+
+// ================== CRIAÇÃO ==================
+function criaObstaculo() {
+  const podeMissil = pts >= MISSIL_DESDE && grana.length === 0;   // nada de missil colado no dinheiro
+  const chanceMissil = Math.min(.42, .22 + (pts - MISSIL_DESDE) / 8000);
+  if (podeMissil && Math.random() < chanceMissil) {
+    obst.push({ tipo: 'missil', x: W + 360, y: CHAO - 129, w: 62, h: 18, aviso: 1 });
+  } else {
+    const grande = Math.random() < Math.min(.5, .15 + pts / 4000);
+    const duplo = grande && Math.random() < .35;
+    const w = duplo ? 70 : (grande ? 44 : 30), h = grande ? 44 : 30;
+    obst.push({ tipo: 'galho', x: W + 20, y: CHAO - h, w, h, seed: Math.random(), duplo });
+  }
+  // distância até o próximo: dá tempo de cair do pulo + folga aleatória
+  const noAr = (2 * -PULO / GRAV) * vel;          // px andados durante 1 pulo
+  distProx = noAr * 1.15 + 60 + Math.random() * (vel * 55);
+  const ult = obst[obst.length - 1];
+  if (ult.tipo === 'missil') distProx += 120;      // missil anda mais rápido, dá folga
+}
+function criaGrana() {
+  // não coloca perto de missil
+  if (obst.some(o => o.tipo === 'missil' && o.x > W - 200)) return false;
+  grana.push({ x: W + 40, y: CHAO - 165, w: 46, h: 26 });
+  return true;
+}
+
+// ================== COLISÃO ==================
+function caixasGalado() {
+  const gx = 170, gy = CHAO + alt, s = ESC;
+  const b = (x1, y1, x2, y2) => ({ x1: gx + x1*s, y1: gy + y1*s, x2: gx + x2*s, y2: gy + y2*s });
+  return [b(-24, -62, 20, -32), b(-8, -32, 10, -2), b(-4, -104, 32, -60)];
+}
+const bate = (a, o) => a.x1 < o.x2 && a.x2 > o.x1 && a.y1 < o.y2 && a.y2 > o.y1;
+function caixaObj(o) {
+  if (o.tipo === 'missil') return { x1: o.x + 4, y1: o.y + 3, x2: o.x + o.w - 14, y2: o.y + o.h - 3 };
+  if (o.tipo === 'galho') return { x1: o.x + 5, y1: o.y + 6, x2: o.x + o.w - 5, y2: o.y + o.h };
+  return { x1: o.x - 6, y1: o.y - 6, x2: o.x + o.w + 6, y2: o.y + o.h + 6 };   // grana: mais fácil de pegar
+}
+
+// ================== LÓGICA (1 quadro = 1/60s) ==================
+function passo() {
+  tJogo += 1/60;
+  vel = Math.min(VEL_MAX, vel + ACEL);
+  pts += vel * PTS_POR_PX;
+  const mil = Math.floor(pts / 1000);
+  if (mil > Math.floor((pts - vel*PTS_POR_PX) / 1000)) { piscaMil = 60; somMil(); }
+  if (piscaMil > 0) piscaMil--;
+
+  if (vy !== 0 || alt < 0) { vy += GRAV; alt += vy; if (alt >= 0) { alt = 0; vy = 0; } }
+
+  chaoOff = (chaoOff + vel) % 40;
+  grama.forEach(g => { g.x -= vel; if (g.x < -10) g.x += W + 20; });
+  nuvens.forEach(n => { n.x -= vel * .15 * n.s; if (n.x < -120) n.x += W + 240; });
+  estrelas.forEach(s => { s.x -= vel * .03; if (s.x < 0) s.x += W; });
+
+  distProx -= vel;
+  if (distProx <= 0) criaObstaculo();
+  if (tJogo >= proxGrana) {
+    if (criaGrana()) proxGrana = tJogo + DINHEIRO_MIN + Math.random() * (DINHEIRO_MAX - DINHEIRO_MIN);
+    else proxGrana = tJogo + 1.5;
+  }
+
+  for (const o of obst) {
+    if (o.tipo === 'missil') {
+      if (o.aviso > 0) { o.x -= vel * 1.35; if (o.x < W + 10) o.aviso = 0; }
+      else o.x -= vel * 1.35;
+    } else o.x -= vel;
+  }
+  obst = obst.filter(o => o.x + o.w > -40);
+  grana.forEach(g => g.x -= vel);
+
+  const cg = caixasGalado();
+  for (const g of grana) {
+    if (!g.pego && cg.some(a => bate(a, caixaObj(g)))) {
+      g.pego = true; pts += 500; somGrana();
+      efeitos.push({ txt: '+500 💸', x: g.x, y: g.y, t: 0 });
+    }
+  }
+  grana = grana.filter(g => !g.pego && g.x > -60);
+  efeitos.forEach(e => { e.t++; e.y -= .8; });
+  efeitos = efeitos.filter(e => e.t < 70);
+
+  for (const o of obst) {
+    if (cg.some(a => bate(a, caixaObj(o)))) { morre(); break; }
+  }
+}
+function morre() {
+  estado = 'morto'; mortoEm = performance.now(); somMorre();
+  if (Math.floor(pts) > recorde) { recorde = Math.floor(pts); ls.set('galado-recorde', recorde); novoRecorde = true; }
+  else novoRecorde = false;
+}
+let novoRecorde = false;
+
+// ================== DESENHO ==================
+function desenhaGalho(o) {
+  x.save(); x.translate(o.x, CHAO);
+  const n = o.duplo ? 2 : 1, ww = o.w / n;
+  for (let k = 0; k < n; k++) {
+    x.save(); x.translate(k * ww, 0);
+    const h = o.h - (k ? 8 : 0);
+    // tronco
+    x.fillStyle = '#6b4423';
+    x.beginPath();
+    x.moveTo(2, 0); x.lineTo(ww * .3, -h * .55); x.lineTo(ww * .2, -h); x.lineTo(ww * .45, -h * .7);
+    x.lineTo(ww * .7, -h * .95); x.lineTo(ww * .62, -h * .5); x.lineTo(ww - 2, 0); x.closePath(); x.fill();
+    x.strokeStyle = '#4a2e16'; x.lineWidth = 2; x.stroke();
+    // galhinhos
+    x.strokeStyle = '#6b4423'; x.lineWidth = 3; x.lineCap = 'round';
+    x.beginPath(); x.moveTo(ww * .3, -h * .55); x.lineTo(ww * .05, -h * .75);
+    x.moveTo(ww * .62, -h * .5); x.lineTo(ww * .95, -h * .7); x.stroke();
+    // folhas
+    x.fillStyle = '#2f8f3a';
+    [[ww * .05, -h * .78], [ww * .95, -h * .73], [ww * .2, -h * 1.02], [ww * .7, -h * .98]].forEach(([fx, fy], i) => {
+      x.beginPath(); x.ellipse(fx, fy, 5, 3, i - .5, 0, Math.PI * 2); x.fill();
+    });
+    x.restore();
+  }
+  x.restore();
+}
+function desenhaMissil(o, t) {
+  if (o.aviso) {
+    if (Math.floor(t / 120) % 2) {
+      x.fillStyle = '#ff3b3b'; x.font = 'bold 26px system-ui'; x.textAlign = 'right';
+      x.fillText('⚠', W - 10, o.y + 18); x.textAlign = 'left';
+    }
+    return;
+  }
+  x.save(); x.translate(o.x, o.y);
+  // fogo
+  const f = 12 + Math.random() * 10;
+  x.fillStyle = '#ffb300';
+  x.beginPath(); x.moveTo(o.w - 6, 4); x.lineTo(o.w + f, o.h / 2); x.lineTo(o.w - 6, o.h - 4); x.fill();
+  x.fillStyle = '#ff5a1f';
+  x.beginPath(); x.moveTo(o.w - 6, 6); x.lineTo(o.w + f * .55, o.h / 2); x.lineTo(o.w - 6, o.h - 6); x.fill();
+  // corpo
+  x.fillStyle = '#b9bcc6';
+  x.fillRect(12, 2, o.w - 18, o.h - 4);
+  x.fillStyle = '#8b8f9c'; x.fillRect(12, o.h / 2, o.w - 18, o.h / 2 - 2);
+  // bico vermelho
+  x.fillStyle = '#e02424';
+  x.beginPath(); x.moveTo(12, 2); x.lineTo(0, o.h / 2); x.lineTo(12, o.h - 2); x.fill();
+  // aletas
+  x.fillStyle = '#5c606c';
+  x.beginPath(); x.moveTo(o.w - 16, 2); x.lineTo(o.w - 4, -7); x.lineTo(o.w - 6, 2); x.fill();
+  x.beginPath(); x.moveTo(o.w - 16, o.h - 2); x.lineTo(o.w - 4, o.h + 7); x.lineTo(o.w - 6, o.h - 2); x.fill();
+  // faixa
+  x.fillStyle = '#e02424'; x.fillRect(24, 2, 4, o.h - 4);
+  x.restore();
+}
+function desenhaGrana(g, t) {
+  const bob = Math.sin(t / 200) * 4;
+  x.save(); x.translate(g.x, g.y + bob);
+  x.shadowColor = '#5dff8a'; x.shadowBlur = 16;
+  for (let i = 2; i >= 0; i--) {
+    x.fillStyle = i ? '#3f8f4f' : '#5fbf6a';
+    x.fillRect(i * 2, -i * 3, g.w, g.h);
+  }
+  x.shadowBlur = 0;
+  x.strokeStyle = '#2e6b3a'; x.lineWidth = 1.5; x.strokeRect(0, 0, g.w, g.h);
+  x.fillStyle = '#f5e6b8'; x.fillRect(g.w / 2 - 7, 0, 14, g.h);   // cinta
+  x.fillStyle = '#1b4d27'; x.font = 'bold 11px system-ui'; x.textAlign = 'center';
+  x.fillText('R$500', g.w / 2, g.h / 2 + 4);
+  x.textAlign = 'left';
+  x.restore();
+}
+function cenario(t) {
+  const g = x.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#120f1d'); g.addColorStop(1, '#221d33');
+  x.fillStyle = g; x.fillRect(0, 0, W, H);
+  x.fillStyle = '#fff';
+  estrelas.forEach(s => { x.globalAlpha = .35 + .3 * Math.sin(t / 700 + s.x); x.beginPath(); x.arc(s.x, s.y, s.r, 0, 7); x.fill(); });
+  x.globalAlpha = 1;
+  // lua
+  x.fillStyle = '#f3efd8'; x.beginPath(); x.arc(780, 55, 22, 0, 7); x.fill();
+  x.fillStyle = '#16121f'; x.beginPath(); x.arc(790, 49, 19, 0, 7); x.fill();
+  // nuvens
+  x.fillStyle = 'rgba(255,255,255,.06)';
+  nuvens.forEach(n => { x.beginPath(); x.ellipse(n.x, n.y, 50 * n.s, 14 * n.s, 0, 0, 7); x.ellipse(n.x + 30 * n.s, n.y - 8 * n.s, 30 * n.s, 12 * n.s, 0, 0, 7); x.fill(); });
+  // chão
+  x.fillStyle = '#1a1626'; x.fillRect(0, CHAO, W, H - CHAO);
+  const arco = ['#e40303', '#ff8c00', '#ffed00', '#00c13a', '#2a6bff', '#9b2bc2'];
+  arco.forEach((cor, i) => { x.fillStyle = cor; x.fillRect(0, CHAO + i * 1.2, W, 1.2); });
+  x.fillStyle = '#3a3450';
+  for (let i = -1; i < W / 40 + 1; i++) x.fillRect(i * 40 - chaoOff, CHAO + 14, 14, 2);
+  grama.forEach(g => x.fillRect(g.x, g.y, g.w, 2));
+}
+function placar() {
+  const p = String(Math.floor(pts)).padStart(5, '0'), r = String(recorde).padStart(5, '0');
+  x.font = 'bold 20px ui-monospace,Consolas,monospace'; x.textAlign = 'right';
+  x.fillStyle = '#8a849c'; x.fillText('HI ' + r, W - 130, 32);
+  if (!(piscaMil > 0 && Math.floor(piscaMil / 8) % 2)) { x.fillStyle = '#f3f1f7'; x.fillText(p, W - 20, 32); }
+  x.textAlign = 'left';
+}
+function texto(t1, t2, t) {
+  x.textAlign = 'center';
+  x.fillStyle = 'rgba(13,12,18,.6)'; x.fillRect(W / 2 - 230, 78, 460, 92);
+  x.fillStyle = '#ffed00'; x.font = '900 30px system-ui'; x.fillText(t1, W / 2, 118);
+  if (Math.floor(t / 500) % 2 === 0 || estado === 'morto') { x.fillStyle = '#ddd'; x.font = '600 16px system-ui'; x.fillText(t2, W / 2, 150); }
+  x.textAlign = 'left';
+}
+
+// ================== LOOP ==================
+let ultimo = performance.now(), sobra = 0;
+function loop(t) {
+  let d = t - ultimo; ultimo = t;
+  if (d > 100) d = 100;
+  if (estado === 'jogando') {
+    sobra += d;
+    while (sobra >= 1000 / 60) { passo(); sobra -= 1000 / 60; if (estado !== 'jogando') break; }
+  } else sobra = 0;
+
+  cenario(t);
+  grana.forEach(g => desenhaGrana(g, t));
+  obst.forEach(o => o.tipo === 'galho' ? desenhaGalho(o) : desenhaMissil(o, t));
+  const st = estado === 'morto' ? 'morto' : estado === 'inicio' ? 'parado' : (alt < 0 ? 'pular' : 'correr');
+  drawGalado(x, 170, CHAO + alt, ESC, st, t);
+  efeitos.forEach(e => { x.globalAlpha = 1 - e.t / 70; x.fillStyle = '#5dff8a'; x.font = '900 22px system-ui'; x.fillText(e.txt, e.x, e.y); x.globalAlpha = 1; });
+  placar();
+  if (estado === 'inicio') texto('BORA GALADO CARALHO', 'aperta ESPAÇO ou toca na tela pra começar', t);
+  if (estado === 'morto') texto(novoRecorde ? 'RECORDE NOVO PORRA 🏆' : 'SE FODEU GALADO 💀', 'fez ' + Math.floor(pts) + ' ponto · espaço ou toque pra ir de novo', t);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
