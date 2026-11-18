@@ -980,6 +980,7 @@ function feriPed(p, d, quem) {
   if (p.hp <= 0 || p.escondido) return;
   if (p.invuln) { p.medo = 3; if (p.fixo && quem === W.jog && rnd() < 0.3) falarPed(p, pick(['ô, para com isso!', 'tá maluco, Nerivan?', 'ai! sou teu parceiro, porra'])); return; }
   p.hp -= d; p.medo = 6;
+  if (quem === W.jog && !p.policia && !p.hostil && p.hp > 0 && d < 30 && !p.covarde) { if (p.brigao === undefined) p.brigao = rnd() < 0.35; if (p.brigao) { p.bravo = true; p.medo = 0; falarPed(p, pick(['QUÉ BRIGAR?!', 'vem, vagabundo', 'tu vai ver agora', 'ô, respeita!'])); } else p.covarde = true; }
   if (p.chefeAlvo && p.aoDano) p.aoDano(d);
   if (p.hp <= 0) {
     p.morto = true;
@@ -1010,6 +1011,10 @@ function crime(n) {
 }
 
 // ---------- IA de trânsito ----------
+// farol: vertical e horizontal se revezam (8s cada, com 1,5s de amarelo)
+function cruzamentoComFarol(kx, ky) { return (temH(kx - 1, ky) || temH(kx, ky)) && (temV(kx, ky - 1) || temV(kx, ky)) && naCidade(kx * GRID * T, ky * GRID * T) && regiaoDoBloco(kx, ky) !== REG.JUAZEIRO; }
+function faroFase(vertical) { const t = W.tempo % 19; const f = vertical ? (t + 9.5) % 19 : t; return f < 8 ? 'verde' : f < 9.5 ? 'amarelo' : 'vermelho'; }
+function faroVerde(vertical) { return faroFase(vertical) === 'verde'; }
 function iaTransito(c, dt) {
   const ia = c.ia, [dx, dy] = DIRS[ia.dir];
   // carro na frente? para
@@ -1019,6 +1024,15 @@ function iaTransito(c, dt) {
     if (o === c) continue;
     const d = dist(o.x, o.y, fx + dx * 20, fy + dy * 20);
     if (d < 70) { alvo = Math.min(alvo, Math.max(0, (d - 30) * 3)); }
+  }
+  for (const p of W.peds) if (!p.morto && !p.dentroCarro && !p.escondido && tileEm(p.x, p.y) === TL.RUA && dist(p.x, p.y, fx, fy) < 55) { alvo = 0; if (!ia.buzinou && rnd() < 0.01) { ia.buzinou = true; } break; }
+  // farol e cruzamento
+  const txa = Math.floor((c.x + dx * 80) / T), tya = Math.floor((c.y + dy * 80) / T), txc = Math.floor(c.x / T), tyc = Math.floor(c.y / T);
+  const entrando = txa % GRID < 2 && tya % GRID < 2 && !(txc % GRID < 2 && tyc % GRID < 2);
+  if (entrando) {
+    const kx = Math.floor(txa / GRID), ky = Math.floor(tya / GRID);
+    if (cruzamentoComFarol(kx, ky) && !faroVerde(dx === 0)) alvo = 0;
+    else for (const o of W.carros) { if (o === c || !o.ia || o.ia.tipo !== 'transito') continue; const ox = Math.floor(o.x / T), oy = Math.floor(o.y / T); if (Math.floor(ox / GRID) === kx && Math.floor(oy / GRID) === ky && ox % GRID < 2 && oy % GRID < 2 && (DIRS[o.ia.dir][0] === 0) !== (dx === 0)) { alvo = 0; break; } }
   }
   const j = W.jog, jx = j.carro ? j.carro.x : j.x, jy = j.carro ? j.carro.y : j.y;
   if (dist(jx, jy, fx + dx * 20, fy + dy * 20) < 60) { alvo = 0; if (!ia.buzinou && rnd() < 0.02) { ia.buzinou = true; if (dist(c.x, c.y, jx, jy) < 400) SOM.buzina(); } }
@@ -1058,8 +1072,60 @@ function iaTransito(c, dt) {
   if (bateuPredio(c)) { c.x -= c.vx * dt; c.y -= c.vy * dt; ia.dir = (ia.dir + 2) % 4; }
 }
 
-// ---------- IA de perseguição (polícia, chefes, quem foge) ----------
+// ---------- visão e caminho pelas ruas ----------
+function temVisao(ax, ay, bx, by) {
+  const d = dist(ax, ay, bx, by), n = Math.ceil(d / 28);
+  for (let k = 1; k < n; k++) if (solidoEm(lerp(ax, bx, k / n), lerp(ay, by, k / n))) return false;
+  return true;
+}
+const noPos = (kx, ky) => ({ x: (GRID * kx + 1) * T, y: (GRID * ky + 1) * T });
+function noUsado(kx, ky) { return temH(kx, ky) || temH(kx - 1, ky) || temV(kx, ky) || temV(kx, ky - 1); }
+function noPerto(x, y) {
+  const kx0 = Math.round((x / T - 1) / GRID), ky0 = Math.round((y / T - 1) / GRID);
+  let melhor = null, md = 1e9;
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    const kx = clamp(kx0 + dx, 1, 15), ky = clamp(ky0 + dy, 1, 15);
+    if (!noUsado(kx, ky)) continue; const p = noPos(kx, ky), d = dist(p.x, p.y, x, y);
+    if (d < md) { md = d; melhor = [kx, ky]; }
+  }
+  return melhor;
+}
+function vizinhos(kx, ky) {
+  const v = [];
+  if (temH(kx, ky)) v.push([kx + 1, ky]); if (temH(kx - 1, ky)) v.push([kx - 1, ky]);
+  if (temV(kx, ky)) v.push([kx, ky + 1]); if (temV(kx, ky - 1)) v.push([kx, ky - 1]);
+  return v;
+}
+// próximo cruzamento no caminho mais curto pela rua (BFS na grade de cruzamentos)
+function proximoNo(x, y, tx, ty) {
+  const a = noPerto(x, y), b = noPerto(tx, ty); if (!a || !b) return null;
+  const k = n => n[0] + ',' + n[1];
+  if (k(a) === k(b)) return null;
+  const veio = new Map([[k(a), null]]), fila = [a];
+  while (fila.length) {
+    const n = fila.shift(); if (k(n) === k(b)) break;
+    for (const v of vizinhos(...n)) if (!veio.has(k(v))) { veio.set(k(v), n); fila.push(v); }
+  }
+  if (!veio.has(k(b))) return null;
+  let n = b, ant = veio.get(k(n));
+  while (ant && k(ant) !== k(a)) { n = ant; ant = veio.get(k(n)); }
+  // se já tô praticamente no cruzamento "a", vou direto pro próximo; senão primeiro pro "a"
+  const pa = noPos(...a);
+  return dist(x, y, pa.x, pa.y) > 160 ? pa : noPos(...n);
+}
+const naCidade = (x, y) => x < CIDADE * T && y < CIDADE * T;
+
+// ---------- IA de perseguição (polícia, chefes, gangue, quem foge) ----------
 function iaPersegue(c, dt, alvoX, alvoY, agressivo = 1, fugir = false) {
+  // longe ou sem ver o alvo: vai pelas ruas (de cruzamento em cruzamento) em vez de bater em prédio
+  if (!fugir && naCidade(c.x, c.y) && naCidade(alvoX, alvoY)) {
+    const dd = dist(c.x, c.y, alvoX, alvoY);
+    c.ia.tRota = (c.ia.tRota || 0) - dt;
+    if (dd > 380 && (dd > 900 || !temVisao(c.x, c.y, alvoX, alvoY))) {
+      if (c.ia.tRota <= 0 || !c.ia.no || dist(c.x, c.y, c.ia.no.x, c.ia.no.y) < 110) { c.ia.no = proximoNo(c.x, c.y, alvoX, alvoY); c.ia.tRota = 0.8; }
+      if (c.ia.no) { alvoX = c.ia.no.x; alvoY = c.ia.no.y; }
+    } else c.ia.no = null;
+  }
   let ang = Math.atan2(alvoY - c.y, alvoX - c.x); if (fugir) ang += Math.PI;
   // antenas pra desviar de prédio
   const olha = 140, lados = [0, 0.5, -0.5, 1, -1];
@@ -1201,7 +1267,7 @@ function atirar(dx, dy) {
   }
   W.efeitos.push({ t: 'clarao', x: ox, y: oy, vida: 0.06, max: 0.06 });
   // tiro assusta todo mundo e chama a polícia se tiver perto
-  for (const p of W.peds) if (dist(p.x, p.y, j.x, j.y) < 500) p.medo = Math.max(p.medo, 5);
+  for (const p of W.peds) if (dist(p.x, p.y, j.x, j.y) < 500) { p.medo = Math.max(p.medo, 5); p.perigoX = j.x; p.perigoY = j.y; }
   if (copsPerto(700)) crime(0.5);
 }
 function trocarArma(d, silencioso) {
@@ -1351,6 +1417,47 @@ function atualizaJogadorCarro(dt) {
 }
 
 // ---------- pedestres ----------
+const RUMOS = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
+function podeAndar(p, a, rua) {
+  for (const d of [24, 48]) { const t = tileEm(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d); if (SOLIDO.has(t) || (!rua && t === TL.RUA)) return false; }
+  return true;
+}
+function escolheRumo(p) {
+  const atual = RUMOS.reduce((m, r) => Math.abs(angDiff(p.a, r)) < Math.abs(angDiff(p.a, m)) ? r : m, 0);
+  const ops = RUMOS.filter(r => podeAndar(p, r, false));
+  // na beira da rua, perto da faixa: às vezes atravessa
+  const tx = Math.floor(p.x / T), ty = Math.floor(p.y / T);
+  for (const r of RUMOS) {
+    const ax = tx + Math.round(Math.cos(r)), ay = ty + Math.round(Math.sin(r));
+    if (ehRua(ax, ay) && rnd() < 0.18 && (ax % GRID === 2 || ax % GRID === 11 || ay % GRID === 2 || ay % GRID === 11)) {
+      let lx = ax, ly = ay, n = 0; while (ehRua(lx, ly) && n < 6) { lx += Math.round(Math.cos(r)); ly += Math.round(Math.sin(r)); n++; }
+      if (n <= 4 && !SOLIDO.has(tile(lx, ly))) { p.a = r; p.atravessa = (n + 1) * T / (p.vel * 1.4); return; }
+    }
+  }
+  if (!ops.length) { p.a = atual + Math.PI; return; }
+  const reto = ops.find(r => Math.abs(angDiff(r, atual)) < 0.1);
+  const semVolta = ops.filter(r => Math.abs(angDiff(r, atual + Math.PI)) > 0.1);
+  p.a = (reto !== undefined && rnd() < 0.75) ? reto : pick(semVolta.length ? semVolta : ops);
+}
+function fugaMelhor(p, px, py) {
+  let melhor = Math.atan2(p.y - py, p.x - px), nota = -1e9;
+  for (let k = 0; k < 8; k++) {
+    const a = k * Math.PI / 4; if (!podeAndar(p, a, true)) continue;
+    const nx = p.x + Math.cos(a) * 60, ny = p.y + Math.sin(a) * 60, n = dist(nx, ny, px, py) - (tileEm(nx, ny) === TL.RUA ? 25 : 0);
+    if (n > nota) { nota = n; melhor = a; }
+  }
+  return melhor;
+}
+// carro vindo rápido na direção do pedestre: pula pro lado
+function carroVindo(p) {
+  for (const c of W.carros) {
+    const v = Math.hypot(c.vx, c.vy); if (v < 160) continue;
+    const d = dist(c.x, c.y, p.x, p.y); if (d > 170) continue;
+    const ux = c.vx / v, uy = c.vy / v, rx = p.x - c.x, ry = p.y - c.y, frente = rx * ux + ry * uy, lado = -rx * uy + ry * ux;
+    if (frente > 0 && Math.abs(lado) < 45) return Math.atan2(uy, ux) + (lado >= 0 ? Math.PI / 2 : -Math.PI / 2);
+  }
+  return null;
+}
 function atualizaPeds(dt) {
   const j = W.jog;
   for (const p of W.peds) {
@@ -1364,23 +1471,36 @@ function atualizaPeds(dt) {
       const alvo = j.carro || j, d = dist(p.x, p.y, alvo.x, alvo.y);
       if (W.procurado > 0 || p.bravo) {
         const ang = Math.atan2(alvo.y - p.y, alvo.x - p.x); p.a = ang;
-        if (d > 140) { vx = Math.cos(ang) * 200; vy = Math.sin(ang) * 200; }
+        if (d > 140) { vx = Math.cos(ang) * 200; vy = Math.sin(ang) * 200; if (!podeAndar(p, ang, true)) { const alt = fugaMelhor(p, p.x * 2 - alvo.x, p.y * 2 - alvo.y); vx = Math.cos(alt) * 200; vy = Math.sin(alt) * 200; } }
         p.recarga = (p.recarga || 0) - dt;
-        if (p.policia && W.procurado >= 2 && d < 420 && p.recarga <= 0) { p.recarga = rnd(1.1, 2); inimigoAtira(p, alvo.x, alvo.y, W.procurado >= 4 ? 8 : 6, 0.22); }
+        if (p.policia && W.procurado >= 2 && d < 420 && p.recarga <= 0 && temVisao(p.x, p.y, alvo.x, alvo.y)) { p.recarga = rnd(1.1, 2); inimigoAtira(p, alvo.x, alvo.y, W.procurado >= 4 ? 8 : 6, 0.22); }
         if (!p.policia && d < 30 && p.recarga <= 0) { p.recarga = 1; ferirJogador(5); }
         if (p.bravo && !p.policia && d > 700) p.bravo = false;
       } else { p.policia = p.policia; }
     } else if (p.medo > 0) {
-      const ang = Math.atan2(p.y - j.y, p.x - j.x); p.a = ang; vx = Math.cos(ang) * 210; vy = Math.sin(ang) * 210;
+      // foge pro lado mais livre, longe do perigo
+      const ang = fugaMelhor(p, p.perigoX ?? j.x, p.perigoY ?? j.y); p.a = ang; vx = Math.cos(ang) * 220; vy = Math.sin(ang) * 220;
+      if (p.medo > 3 && !p.ligou && rnd() < dt * 0.15 && !copsPerto(800)) { p.ligou = true; falarPed(p, pick(['alô, polícia?!', 'tô ligando pros home!', '190, rápido!'])); crime(1); }
     } else {
-      p.troca -= dt;
-      if (p.troca <= 0) { p.troca = rnd(2, 6); p.a = [0, Math.PI / 2, Math.PI, -Math.PI / 2][rndi(0, 3)] + rnd(-0.15, 0.15); if (rnd() < 0.15) p.parado = rnd(1, 3); }
-      if (p.parado > 0) p.parado -= dt; else { vx = Math.cos(p.a) * p.vel; vy = Math.sin(p.a) * p.vel; }
+      // anda pela calçada: segue reto, vira na esquina, às vezes atravessa na faixa
+      const desvio = carroVindo(p);
+      if (desvio) { p.a = desvio; vx = Math.cos(desvio) * 260; vy = Math.sin(desvio) * 260; p.atravessa = 0; }
+      else {
+        p.troca -= dt;
+        if (p.atravessa > 0) { p.atravessa -= dt; vx = Math.cos(p.a) * p.vel * 1.4; vy = Math.sin(p.a) * p.vel * 1.4; }
+        else {
+          if (p.troca <= 0 || !podeAndar(p, p.a, false)) { p.troca = rnd(4, 9); escolheRumo(p); if (rnd() < 0.1) p.parado = rnd(1, 3); }
+          if (p.parado > 0) p.parado -= dt; else { vx = Math.cos(p.a) * p.vel; vy = Math.sin(p.a) * p.vel; }
+        }
+      }
     }
     if (vx || vy) {
       const nx = p.x + vx * dt, ny = p.y + vy * dt, t = tileEm(nx, ny);
-      const ok = !SOLIDO.has(t) && (p.medo > 0 || p.policia || p.bravo || t !== TL.RUA);
-      if (ok) { p.x = nx; p.y = ny; p.anda += dt * 9; } else { p.a += Math.PI * rnd(0.5, 1.5); p.troca = rnd(1, 3); }
+      const ok = !SOLIDO.has(t) && (p.medo > 0 || p.policia || p.bravo || p.atravessa > 0 || t !== TL.RUA || tileEm(p.x, p.y) === TL.RUA);
+      if (ok) { p.x = nx; p.y = ny; p.anda += dt * 9; }
+      else if (!SOLIDO.has(tileEm(nx, p.y)) && (t !== TL.RUA || p.medo > 0)) { p.x = nx; p.anda += dt * 9; }
+      else if (!SOLIDO.has(tileEm(p.x, ny)) && (t !== TL.RUA || p.medo > 0)) { p.y = ny; p.anda += dt * 9; }
+      else { escolheRumo(p); p.troca = rnd(2, 4); }
     }
   }
   W.peds = W.peds.filter(p => !(p.morto && dist(p.x, p.y, cam.x, cam.y) > 1600));
@@ -1411,7 +1531,7 @@ function atualizaCarros(dt) {
         iaPersegue(c, dt, alvo.x, alvo.y, 1);
         c.recarga = (c.recarga || 0) - dt;
         const d = dist(c.x, c.y, alvo.x, alvo.y);
-        if (W.procurado >= 3 && d < 400 && c.recarga <= 0) { c.recarga = c.modelo === 'gelado' ? 0.7 : rnd(1.4, 2.4); inimigoAtira(c, alvo.x, alvo.y, c.modelo === 'gelado' ? 6 : 5, 0.22); }
+        if (W.procurado >= 3 && d < 400 && c.recarga <= 0 && temVisao(c.x, c.y, alvo.x, alvo.y)) { c.recarga = c.modelo === 'gelado' ? 0.7 : rnd(1.4, 2.4); inimigoAtira(c, alvo.x, alvo.y, c.modelo === 'gelado' ? 6 : 5, 0.22); }
         // policial sai do carro se o jogador tá a pé e perto
         if (!j.carro && d < 260 && Math.abs(c.vel) < 60 && c.motorista && !c.desceu) {
           c.desceu = true; const m = c.motorista; m.x = c.x + 40; m.y = c.y; m.policia = true; m.hp = 45; W.peds.push(m); c.motorista = null; c.ia = null;
@@ -1998,6 +2118,16 @@ function desenharMundo() {
   }
   const decoVis = []; decoNaArea(vx0 - 200, vy0 - 200, vx1 + 200, vy1 + 200, d => decoVis.push(d));
   for (const d of decoVis) if (d.t !== 'arvore' && d.t !== 'palmeira' && d.t !== 'poste') desenharDeco(g, d);
+  // faróis nos cruzamentos
+  const corF = f => f === 'verde' ? '#2ecc71' : f === 'amarelo' ? '#f1c40f' : '#e74c3c';
+  for (let ky = Math.max(1, Math.floor(vy0 / T / GRID)); ky <= Math.min(15, Math.ceil(vy1 / T / GRID)); ky++) for (let kx = Math.max(1, Math.floor(vx0 / T / GRID)); kx <= Math.min(15, Math.ceil(vx1 / T / GRID)); kx++) {
+    if (!cruzamentoComFarol(kx, ky)) continue;
+    const x0 = GRID * kx * T, y0 = GRID * ky * T, S2 = 2 * T, fv = corF(faroFase(true)), fh = corF(faroFase(false));
+    for (const [px, py, c] of [[x0 - 10, y0 - 10, fv], [x0 + S2 + 10, y0 + S2 + 10, fv], [x0 + S2 + 10, y0 - 10, fh], [x0 - 10, y0 + S2 + 10, fh]]) {
+      g.fillStyle = '#222'; g.fillRect(px - 7, py - 7, 14, 14); g.fillStyle = c; g.beginPath(); g.arc(px, py, 5, 0, 7); g.fill();
+      g.fillStyle = c + '33'; g.beginPath(); g.arc(px, py, 11, 0, 7); g.fill();
+    }
+  }
   // marcadores de missão no chão
   desenharMarcadores(g);
   // itens
@@ -2122,10 +2252,22 @@ function iaInimigo(p, dt) {
   const j = W.jog, alvo = j.carro || j, d = dist(p.x, p.y, alvo.x, alvo.y);
   p.a = Math.atan2(alvo.y - p.y, alvo.x - p.x);
   if (d > 900 && !p.persegue) return;
-  let v = 0; if (d > (p.longe || 220)) v = p.vel * 2.6; else if (d < 120) v = -p.vel * 1.5;
-  if (v) { const nx = p.x + Math.cos(p.a) * v * dt, ny = p.y + Math.sin(p.a) * v * dt; if (!solidoEm(nx, ny) && tileEm(nx, ny) !== TL.AGUA) { p.x = nx; p.y = ny; p.anda += dt * 9; } }
+  p.tVis = (p.tVis || 0) - dt; if (p.tVis <= 0) { p.tVis = 0.3; p.ve = temVisao(p.x, p.y, alvo.x, alvo.y); }
+  // anda: chega perto, mantém distância e vai de lado (estrafe) pra não ficar parado na mira
+  p.lado = p.lado || (rnd() < 0.5 ? 1 : -1); p.tLado = (p.tLado || 0) - dt; if (p.tLado <= 0) { p.tLado = rnd(1, 2.5); p.lado *= -1; }
+  let mx = 0, my = 0, longe = p.longe || 220;
+  if (!p.ve || d > longe) { mx = Math.cos(p.a); my = Math.sin(p.a); }
+  else if (d < 120) { mx = -Math.cos(p.a); my = -Math.sin(p.a); }
+  mx += Math.cos(p.a + Math.PI / 2) * p.lado * 0.6; my += Math.sin(p.a + Math.PI / 2) * p.lado * 0.6;
+  const len = Math.hypot(mx, my) || 1, v = p.vel * 2.4;
+  const nx = p.x + mx / len * v * dt, ny = p.y + my / len * v * dt;
+  const ok = (x, y) => !solidoEm(x, y) && tileEm(x, y) !== TL.AGUA;
+  if (ok(nx, ny)) { p.x = nx; p.y = ny; p.anda += dt * 9; }
+  else if (ok(nx, p.y)) { p.x = nx; p.anda += dt * 9; }
+  else if (ok(p.x, ny)) { p.y = ny; p.anda += dt * 9; }
+  else p.lado *= -1;
   p.recarga = (p.recarga || rnd(0.5, 1.5)) - dt;
-  if (d < (p.alcance || 520) && p.recarga <= 0) {
+  if (p.ve && d < (p.alcance || 520) && p.recarga <= 0) {
     p.recarga = p.cad || rnd(1.2, 2.1);
     if (p.armaVisivel === 'escopeta') for (let k = 0; k < 4; k++) inimigoAtira(p, alvo.x, alvo.y, 5, 0.3);
     else if (p.armaVisivel === 'uzi') { for (let k = 0; k < 3; k++) setTimeout(() => !p.morto && inimigoAtira(p, alvo.x, alvo.y, 4, 0.18), k * 90); }

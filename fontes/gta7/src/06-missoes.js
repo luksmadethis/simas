@@ -72,10 +72,22 @@ function iaInimigo(p, dt) {
   const j = W.jog, alvo = j.carro || j, d = dist(p.x, p.y, alvo.x, alvo.y);
   p.a = Math.atan2(alvo.y - p.y, alvo.x - p.x);
   if (d > 900 && !p.persegue) return;
-  let v = 0; if (d > (p.longe || 220)) v = p.vel * 2.6; else if (d < 120) v = -p.vel * 1.5;
-  if (v) { const nx = p.x + Math.cos(p.a) * v * dt, ny = p.y + Math.sin(p.a) * v * dt; if (!solidoEm(nx, ny) && tileEm(nx, ny) !== TL.AGUA) { p.x = nx; p.y = ny; p.anda += dt * 9; } }
+  p.tVis = (p.tVis || 0) - dt; if (p.tVis <= 0) { p.tVis = 0.3; p.ve = temVisao(p.x, p.y, alvo.x, alvo.y); }
+  // anda: chega perto, mantém distância e vai de lado (estrafe) pra não ficar parado na mira
+  p.lado = p.lado || (rnd() < 0.5 ? 1 : -1); p.tLado = (p.tLado || 0) - dt; if (p.tLado <= 0) { p.tLado = rnd(1, 2.5); p.lado *= -1; }
+  let mx = 0, my = 0, longe = p.longe || 220;
+  if (!p.ve || d > longe) { mx = Math.cos(p.a); my = Math.sin(p.a); }
+  else if (d < 120) { mx = -Math.cos(p.a); my = -Math.sin(p.a); }
+  mx += Math.cos(p.a + Math.PI / 2) * p.lado * 0.6; my += Math.sin(p.a + Math.PI / 2) * p.lado * 0.6;
+  const len = Math.hypot(mx, my) || 1, v = p.vel * 2.4;
+  const nx = p.x + mx / len * v * dt, ny = p.y + my / len * v * dt;
+  const ok = (x, y) => !solidoEm(x, y) && tileEm(x, y) !== TL.AGUA;
+  if (ok(nx, ny)) { p.x = nx; p.y = ny; p.anda += dt * 9; }
+  else if (ok(nx, p.y)) { p.x = nx; p.anda += dt * 9; }
+  else if (ok(p.x, ny)) { p.y = ny; p.anda += dt * 9; }
+  else p.lado *= -1;
   p.recarga = (p.recarga || rnd(0.5, 1.5)) - dt;
-  if (d < (p.alcance || 520) && p.recarga <= 0) {
+  if (p.ve && d < (p.alcance || 520) && p.recarga <= 0) {
     p.recarga = p.cad || rnd(1.2, 2.1);
     if (p.armaVisivel === 'escopeta') for (let k = 0; k < 4; k++) inimigoAtira(p, alvo.x, alvo.y, 5, 0.3);
     else if (p.armaVisivel === 'uzi') { for (let k = 0; k < 3; k++) setTimeout(() => !p.morto && inimigoAtira(p, alvo.x, alvo.y, 4, 0.18), k * 90); }

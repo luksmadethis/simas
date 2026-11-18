@@ -285,6 +285,7 @@ function feriPed(p, d, quem) {
   if (p.hp <= 0 || p.escondido) return;
   if (p.invuln) { p.medo = 3; if (p.fixo && quem === W.jog && rnd() < 0.3) falarPed(p, pick(['ô, para com isso!', 'tá maluco, Nerivan?', 'ai! sou teu parceiro, porra'])); return; }
   p.hp -= d; p.medo = 6;
+  if (quem === W.jog && !p.policia && !p.hostil && p.hp > 0 && d < 30 && !p.covarde) { if (p.brigao === undefined) p.brigao = rnd() < 0.35; if (p.brigao) { p.bravo = true; p.medo = 0; falarPed(p, pick(['QUÉ BRIGAR?!', 'vem, vagabundo', 'tu vai ver agora', 'ô, respeita!'])); } else p.covarde = true; }
   if (p.chefeAlvo && p.aoDano) p.aoDano(d);
   if (p.hp <= 0) {
     p.morto = true;
@@ -315,6 +316,10 @@ function crime(n) {
 }
 
 // ---------- IA de trânsito ----------
+// farol: vertical e horizontal se revezam (8s cada, com 1,5s de amarelo)
+function cruzamentoComFarol(kx, ky) { return (temH(kx - 1, ky) || temH(kx, ky)) && (temV(kx, ky - 1) || temV(kx, ky)) && naCidade(kx * GRID * T, ky * GRID * T) && regiaoDoBloco(kx, ky) !== REG.JUAZEIRO; }
+function faroFase(vertical) { const t = W.tempo % 19; const f = vertical ? (t + 9.5) % 19 : t; return f < 8 ? 'verde' : f < 9.5 ? 'amarelo' : 'vermelho'; }
+function faroVerde(vertical) { return faroFase(vertical) === 'verde'; }
 function iaTransito(c, dt) {
   const ia = c.ia, [dx, dy] = DIRS[ia.dir];
   // carro na frente? para
@@ -324,6 +329,15 @@ function iaTransito(c, dt) {
     if (o === c) continue;
     const d = dist(o.x, o.y, fx + dx * 20, fy + dy * 20);
     if (d < 70) { alvo = Math.min(alvo, Math.max(0, (d - 30) * 3)); }
+  }
+  for (const p of W.peds) if (!p.morto && !p.dentroCarro && !p.escondido && tileEm(p.x, p.y) === TL.RUA && dist(p.x, p.y, fx, fy) < 55) { alvo = 0; if (!ia.buzinou && rnd() < 0.01) { ia.buzinou = true; } break; }
+  // farol e cruzamento
+  const txa = Math.floor((c.x + dx * 80) / T), tya = Math.floor((c.y + dy * 80) / T), txc = Math.floor(c.x / T), tyc = Math.floor(c.y / T);
+  const entrando = txa % GRID < 2 && tya % GRID < 2 && !(txc % GRID < 2 && tyc % GRID < 2);
+  if (entrando) {
+    const kx = Math.floor(txa / GRID), ky = Math.floor(tya / GRID);
+    if (cruzamentoComFarol(kx, ky) && !faroVerde(dx === 0)) alvo = 0;
+    else for (const o of W.carros) { if (o === c || !o.ia || o.ia.tipo !== 'transito') continue; const ox = Math.floor(o.x / T), oy = Math.floor(o.y / T); if (Math.floor(ox / GRID) === kx && Math.floor(oy / GRID) === ky && ox % GRID < 2 && oy % GRID < 2 && (DIRS[o.ia.dir][0] === 0) !== (dx === 0)) { alvo = 0; break; } }
   }
   const j = W.jog, jx = j.carro ? j.carro.x : j.x, jy = j.carro ? j.carro.y : j.y;
   if (dist(jx, jy, fx + dx * 20, fy + dy * 20) < 60) { alvo = 0; if (!ia.buzinou && rnd() < 0.02) { ia.buzinou = true; if (dist(c.x, c.y, jx, jy) < 400) SOM.buzina(); } }
@@ -363,8 +377,60 @@ function iaTransito(c, dt) {
   if (bateuPredio(c)) { c.x -= c.vx * dt; c.y -= c.vy * dt; ia.dir = (ia.dir + 2) % 4; }
 }
 
-// ---------- IA de perseguição (polícia, chefes, quem foge) ----------
+// ---------- visão e caminho pelas ruas ----------
+function temVisao(ax, ay, bx, by) {
+  const d = dist(ax, ay, bx, by), n = Math.ceil(d / 28);
+  for (let k = 1; k < n; k++) if (solidoEm(lerp(ax, bx, k / n), lerp(ay, by, k / n))) return false;
+  return true;
+}
+const noPos = (kx, ky) => ({ x: (GRID * kx + 1) * T, y: (GRID * ky + 1) * T });
+function noUsado(kx, ky) { return temH(kx, ky) || temH(kx - 1, ky) || temV(kx, ky) || temV(kx, ky - 1); }
+function noPerto(x, y) {
+  const kx0 = Math.round((x / T - 1) / GRID), ky0 = Math.round((y / T - 1) / GRID);
+  let melhor = null, md = 1e9;
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    const kx = clamp(kx0 + dx, 1, 15), ky = clamp(ky0 + dy, 1, 15);
+    if (!noUsado(kx, ky)) continue; const p = noPos(kx, ky), d = dist(p.x, p.y, x, y);
+    if (d < md) { md = d; melhor = [kx, ky]; }
+  }
+  return melhor;
+}
+function vizinhos(kx, ky) {
+  const v = [];
+  if (temH(kx, ky)) v.push([kx + 1, ky]); if (temH(kx - 1, ky)) v.push([kx - 1, ky]);
+  if (temV(kx, ky)) v.push([kx, ky + 1]); if (temV(kx, ky - 1)) v.push([kx, ky - 1]);
+  return v;
+}
+// próximo cruzamento no caminho mais curto pela rua (BFS na grade de cruzamentos)
+function proximoNo(x, y, tx, ty) {
+  const a = noPerto(x, y), b = noPerto(tx, ty); if (!a || !b) return null;
+  const k = n => n[0] + ',' + n[1];
+  if (k(a) === k(b)) return null;
+  const veio = new Map([[k(a), null]]), fila = [a];
+  while (fila.length) {
+    const n = fila.shift(); if (k(n) === k(b)) break;
+    for (const v of vizinhos(...n)) if (!veio.has(k(v))) { veio.set(k(v), n); fila.push(v); }
+  }
+  if (!veio.has(k(b))) return null;
+  let n = b, ant = veio.get(k(n));
+  while (ant && k(ant) !== k(a)) { n = ant; ant = veio.get(k(n)); }
+  // se já tô praticamente no cruzamento "a", vou direto pro próximo; senão primeiro pro "a"
+  const pa = noPos(...a);
+  return dist(x, y, pa.x, pa.y) > 160 ? pa : noPos(...n);
+}
+const naCidade = (x, y) => x < CIDADE * T && y < CIDADE * T;
+
+// ---------- IA de perseguição (polícia, chefes, gangue, quem foge) ----------
 function iaPersegue(c, dt, alvoX, alvoY, agressivo = 1, fugir = false) {
+  // longe ou sem ver o alvo: vai pelas ruas (de cruzamento em cruzamento) em vez de bater em prédio
+  if (!fugir && naCidade(c.x, c.y) && naCidade(alvoX, alvoY)) {
+    const dd = dist(c.x, c.y, alvoX, alvoY);
+    c.ia.tRota = (c.ia.tRota || 0) - dt;
+    if (dd > 380 && (dd > 900 || !temVisao(c.x, c.y, alvoX, alvoY))) {
+      if (c.ia.tRota <= 0 || !c.ia.no || dist(c.x, c.y, c.ia.no.x, c.ia.no.y) < 110) { c.ia.no = proximoNo(c.x, c.y, alvoX, alvoY); c.ia.tRota = 0.8; }
+      if (c.ia.no) { alvoX = c.ia.no.x; alvoY = c.ia.no.y; }
+    } else c.ia.no = null;
+  }
   let ang = Math.atan2(alvoY - c.y, alvoX - c.x); if (fugir) ang += Math.PI;
   // antenas pra desviar de prédio
   const olha = 140, lados = [0, 0.5, -0.5, 1, -1];

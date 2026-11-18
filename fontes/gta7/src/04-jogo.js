@@ -77,7 +77,7 @@ function atirar(dx, dy) {
   }
   W.efeitos.push({ t: 'clarao', x: ox, y: oy, vida: 0.06, max: 0.06 });
   // tiro assusta todo mundo e chama a polícia se tiver perto
-  for (const p of W.peds) if (dist(p.x, p.y, j.x, j.y) < 500) p.medo = Math.max(p.medo, 5);
+  for (const p of W.peds) if (dist(p.x, p.y, j.x, j.y) < 500) { p.medo = Math.max(p.medo, 5); p.perigoX = j.x; p.perigoY = j.y; }
   if (copsPerto(700)) crime(0.5);
 }
 function trocarArma(d, silencioso) {
@@ -227,6 +227,47 @@ function atualizaJogadorCarro(dt) {
 }
 
 // ---------- pedestres ----------
+const RUMOS = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
+function podeAndar(p, a, rua) {
+  for (const d of [24, 48]) { const t = tileEm(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d); if (SOLIDO.has(t) || (!rua && t === TL.RUA)) return false; }
+  return true;
+}
+function escolheRumo(p) {
+  const atual = RUMOS.reduce((m, r) => Math.abs(angDiff(p.a, r)) < Math.abs(angDiff(p.a, m)) ? r : m, 0);
+  const ops = RUMOS.filter(r => podeAndar(p, r, false));
+  // na beira da rua, perto da faixa: às vezes atravessa
+  const tx = Math.floor(p.x / T), ty = Math.floor(p.y / T);
+  for (const r of RUMOS) {
+    const ax = tx + Math.round(Math.cos(r)), ay = ty + Math.round(Math.sin(r));
+    if (ehRua(ax, ay) && rnd() < 0.18 && (ax % GRID === 2 || ax % GRID === 11 || ay % GRID === 2 || ay % GRID === 11)) {
+      let lx = ax, ly = ay, n = 0; while (ehRua(lx, ly) && n < 6) { lx += Math.round(Math.cos(r)); ly += Math.round(Math.sin(r)); n++; }
+      if (n <= 4 && !SOLIDO.has(tile(lx, ly))) { p.a = r; p.atravessa = (n + 1) * T / (p.vel * 1.4); return; }
+    }
+  }
+  if (!ops.length) { p.a = atual + Math.PI; return; }
+  const reto = ops.find(r => Math.abs(angDiff(r, atual)) < 0.1);
+  const semVolta = ops.filter(r => Math.abs(angDiff(r, atual + Math.PI)) > 0.1);
+  p.a = (reto !== undefined && rnd() < 0.75) ? reto : pick(semVolta.length ? semVolta : ops);
+}
+function fugaMelhor(p, px, py) {
+  let melhor = Math.atan2(p.y - py, p.x - px), nota = -1e9;
+  for (let k = 0; k < 8; k++) {
+    const a = k * Math.PI / 4; if (!podeAndar(p, a, true)) continue;
+    const nx = p.x + Math.cos(a) * 60, ny = p.y + Math.sin(a) * 60, n = dist(nx, ny, px, py) - (tileEm(nx, ny) === TL.RUA ? 25 : 0);
+    if (n > nota) { nota = n; melhor = a; }
+  }
+  return melhor;
+}
+// carro vindo rápido na direção do pedestre: pula pro lado
+function carroVindo(p) {
+  for (const c of W.carros) {
+    const v = Math.hypot(c.vx, c.vy); if (v < 160) continue;
+    const d = dist(c.x, c.y, p.x, p.y); if (d > 170) continue;
+    const ux = c.vx / v, uy = c.vy / v, rx = p.x - c.x, ry = p.y - c.y, frente = rx * ux + ry * uy, lado = -rx * uy + ry * ux;
+    if (frente > 0 && Math.abs(lado) < 45) return Math.atan2(uy, ux) + (lado >= 0 ? Math.PI / 2 : -Math.PI / 2);
+  }
+  return null;
+}
 function atualizaPeds(dt) {
   const j = W.jog;
   for (const p of W.peds) {
@@ -240,23 +281,36 @@ function atualizaPeds(dt) {
       const alvo = j.carro || j, d = dist(p.x, p.y, alvo.x, alvo.y);
       if (W.procurado > 0 || p.bravo) {
         const ang = Math.atan2(alvo.y - p.y, alvo.x - p.x); p.a = ang;
-        if (d > 140) { vx = Math.cos(ang) * 200; vy = Math.sin(ang) * 200; }
+        if (d > 140) { vx = Math.cos(ang) * 200; vy = Math.sin(ang) * 200; if (!podeAndar(p, ang, true)) { const alt = fugaMelhor(p, p.x * 2 - alvo.x, p.y * 2 - alvo.y); vx = Math.cos(alt) * 200; vy = Math.sin(alt) * 200; } }
         p.recarga = (p.recarga || 0) - dt;
-        if (p.policia && W.procurado >= 2 && d < 420 && p.recarga <= 0) { p.recarga = rnd(1.1, 2); inimigoAtira(p, alvo.x, alvo.y, W.procurado >= 4 ? 8 : 6, 0.22); }
+        if (p.policia && W.procurado >= 2 && d < 420 && p.recarga <= 0 && temVisao(p.x, p.y, alvo.x, alvo.y)) { p.recarga = rnd(1.1, 2); inimigoAtira(p, alvo.x, alvo.y, W.procurado >= 4 ? 8 : 6, 0.22); }
         if (!p.policia && d < 30 && p.recarga <= 0) { p.recarga = 1; ferirJogador(5); }
         if (p.bravo && !p.policia && d > 700) p.bravo = false;
       } else { p.policia = p.policia; }
     } else if (p.medo > 0) {
-      const ang = Math.atan2(p.y - j.y, p.x - j.x); p.a = ang; vx = Math.cos(ang) * 210; vy = Math.sin(ang) * 210;
+      // foge pro lado mais livre, longe do perigo
+      const ang = fugaMelhor(p, p.perigoX ?? j.x, p.perigoY ?? j.y); p.a = ang; vx = Math.cos(ang) * 220; vy = Math.sin(ang) * 220;
+      if (p.medo > 3 && !p.ligou && rnd() < dt * 0.15 && !copsPerto(800)) { p.ligou = true; falarPed(p, pick(['alô, polícia?!', 'tô ligando pros home!', '190, rápido!'])); crime(1); }
     } else {
-      p.troca -= dt;
-      if (p.troca <= 0) { p.troca = rnd(2, 6); p.a = [0, Math.PI / 2, Math.PI, -Math.PI / 2][rndi(0, 3)] + rnd(-0.15, 0.15); if (rnd() < 0.15) p.parado = rnd(1, 3); }
-      if (p.parado > 0) p.parado -= dt; else { vx = Math.cos(p.a) * p.vel; vy = Math.sin(p.a) * p.vel; }
+      // anda pela calçada: segue reto, vira na esquina, às vezes atravessa na faixa
+      const desvio = carroVindo(p);
+      if (desvio) { p.a = desvio; vx = Math.cos(desvio) * 260; vy = Math.sin(desvio) * 260; p.atravessa = 0; }
+      else {
+        p.troca -= dt;
+        if (p.atravessa > 0) { p.atravessa -= dt; vx = Math.cos(p.a) * p.vel * 1.4; vy = Math.sin(p.a) * p.vel * 1.4; }
+        else {
+          if (p.troca <= 0 || !podeAndar(p, p.a, false)) { p.troca = rnd(4, 9); escolheRumo(p); if (rnd() < 0.1) p.parado = rnd(1, 3); }
+          if (p.parado > 0) p.parado -= dt; else { vx = Math.cos(p.a) * p.vel; vy = Math.sin(p.a) * p.vel; }
+        }
+      }
     }
     if (vx || vy) {
       const nx = p.x + vx * dt, ny = p.y + vy * dt, t = tileEm(nx, ny);
-      const ok = !SOLIDO.has(t) && (p.medo > 0 || p.policia || p.bravo || t !== TL.RUA);
-      if (ok) { p.x = nx; p.y = ny; p.anda += dt * 9; } else { p.a += Math.PI * rnd(0.5, 1.5); p.troca = rnd(1, 3); }
+      const ok = !SOLIDO.has(t) && (p.medo > 0 || p.policia || p.bravo || p.atravessa > 0 || t !== TL.RUA || tileEm(p.x, p.y) === TL.RUA);
+      if (ok) { p.x = nx; p.y = ny; p.anda += dt * 9; }
+      else if (!SOLIDO.has(tileEm(nx, p.y)) && (t !== TL.RUA || p.medo > 0)) { p.x = nx; p.anda += dt * 9; }
+      else if (!SOLIDO.has(tileEm(p.x, ny)) && (t !== TL.RUA || p.medo > 0)) { p.y = ny; p.anda += dt * 9; }
+      else { escolheRumo(p); p.troca = rnd(2, 4); }
     }
   }
   W.peds = W.peds.filter(p => !(p.morto && dist(p.x, p.y, cam.x, cam.y) > 1600));
@@ -287,7 +341,7 @@ function atualizaCarros(dt) {
         iaPersegue(c, dt, alvo.x, alvo.y, 1);
         c.recarga = (c.recarga || 0) - dt;
         const d = dist(c.x, c.y, alvo.x, alvo.y);
-        if (W.procurado >= 3 && d < 400 && c.recarga <= 0) { c.recarga = c.modelo === 'gelado' ? 0.7 : rnd(1.4, 2.4); inimigoAtira(c, alvo.x, alvo.y, c.modelo === 'gelado' ? 6 : 5, 0.22); }
+        if (W.procurado >= 3 && d < 400 && c.recarga <= 0 && temVisao(c.x, c.y, alvo.x, alvo.y)) { c.recarga = c.modelo === 'gelado' ? 0.7 : rnd(1.4, 2.4); inimigoAtira(c, alvo.x, alvo.y, c.modelo === 'gelado' ? 6 : 5, 0.22); }
         // policial sai do carro se o jogador tá a pé e perto
         if (!j.carro && d < 260 && Math.abs(c.vel) < 60 && c.motorista && !c.desceu) {
           c.desceu = true; const m = c.motorista; m.x = c.x + 40; m.y = c.y; m.policia = true; m.hp = 45; W.peds.push(m); c.motorista = null; c.ia = null;

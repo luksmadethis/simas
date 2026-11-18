@@ -468,6 +468,16 @@ function desenharMundo() {
   }
   const decoVis = []; decoNaArea(vx0 - 200, vy0 - 200, vx1 + 200, vy1 + 200, d => decoVis.push(d));
   for (const d of decoVis) if (d.t !== 'arvore' && d.t !== 'palmeira' && d.t !== 'poste') desenharDeco(g, d);
+  // faróis nos cruzamentos
+  const corF = f => f === 'verde' ? '#2ecc71' : f === 'amarelo' ? '#f1c40f' : '#e74c3c';
+  for (let ky = Math.max(1, Math.floor(vy0 / T / GRID)); ky <= Math.min(15, Math.ceil(vy1 / T / GRID)); ky++) for (let kx = Math.max(1, Math.floor(vx0 / T / GRID)); kx <= Math.min(15, Math.ceil(vx1 / T / GRID)); kx++) {
+    if (!cruzamentoComFarol(kx, ky)) continue;
+    const x0 = GRID * kx * T, y0 = GRID * ky * T, S2 = 2 * T, fv = corF(faroFase(true)), fh = corF(faroFase(false));
+    for (const [px, py, c] of [[x0 - 10, y0 - 10, fv], [x0 + S2 + 10, y0 + S2 + 10, fv], [x0 + S2 + 10, y0 - 10, fh], [x0 - 10, y0 + S2 + 10, fh]]) {
+      g.fillStyle = '#222'; g.fillRect(px - 7, py - 7, 14, 14); g.fillStyle = c; g.beginPath(); g.arc(px, py, 5, 0, 7); g.fill();
+      g.fillStyle = c + '33'; g.beginPath(); g.arc(px, py, 11, 0, 7); g.fill();
+    }
+  }
   // marcadores de missão no chão
   desenharMarcadores(g);
   // itens
