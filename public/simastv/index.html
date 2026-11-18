@@ -223,9 +223,12 @@ const ls = { get(k){ try { return localStorage.getItem(k) } catch(e){ return nul
 const esc = t => String(t).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 const video = $('video'), tela = $('tela'), msgEl = $('msg');
 // canais que já vêm na TV (lives oficiais no YouTube). Os que a galera salvar entram depois deles.
+// alt = outras fontes do mesmo canal: se a primeira não tiver live agora, a TV tenta a próxima.
 const PADRAO = [
   { nome: 'O Incrível Mundo de Gumball', url: 'https://www.youtube.com/channel/UC0CNGfg_nO5ZnmWwhyQvQLg/live' },
-  { nome: 'Mr Bean', url: 'https://www.youtube.com/channel/UCkAGrHCLFmlK3H2kd6isipg/live' },   // canal oficial @MrBean
+  { nome: 'Mr Bean', url: 'https://www.youtube.com/channel/UCkAGrHCLFmlK3H2kd6isipg/live',      // canal oficial @mrbean
+    alt: ['https://www.youtube.com/channel/UCzoFjzSkbrDD1GHsz2YNLig/live',                         // Mr Bean World (oficial)
+          'https://www.youtube.com/watch?v=S_71wzZMf0M'] },                                       // live que o Dudu achou (reserva)
   { nome: 'Rick and Morty', url: 'https://www.youtube.com/channel/UC1M2e_KYHylhBCrCk_LNAYw/live' },   // @RickandMortyBrasil
   { nome: 'Hora de Aventura', url: 'https://www.youtube.com/channel/UCMHZYGeVSKFoN0b5nIBv0jQ/live' },
 ];
@@ -291,10 +294,13 @@ async function controlaYoutube(fr, dono) {
   try { await carregaYT(); } catch (e) { return; }      // sem a API, o vídeo toca normal (o navegador decide o som)
   if (atual !== dono || iframe !== fr) return;
   yt = new YT.Player(fr, { events: {
+    onError: () => { if (iframe === fr) erro('esse canal não tá ao vivo agora'); },
     onReady: e => {
       try { e.target.unMute(); e.target.setVolume(100); e.target.playVideo(); } catch (er) {}
       setTimeout(() => {
         if (iframe !== fr) return;
+        let vd = null; try { vd = e.target.getVideoData(); } catch (er) {}
+        if (vd && !vd.video_id) { erro('esse canal não tá ao vivo agora'); return; }   // live_stream sem live rolando
         let st = -1; try { st = e.target.getPlayerState(); } catch (er) {}
         if (st !== 1 && st !== 3) {                       // não começou: navegador barrou o som
           try { e.target.mute(); e.target.playVideo(); } catch (er) {}
@@ -317,7 +323,7 @@ function para() {
 }
 function erro(txt) {
   // link http: se ainda tem outro jeito de tentar (https primeiro, depois o http do jeito que colou), tenta antes de desistir
-  if (fila.length) { const prox = fila.shift(); para(); msg('tentando de outro jeito... 📡'); tocar(prox); return; }
+  if (fila.length) { const prox = fila.shift(); para(); msg('procurando outro sinal... 📡'); tocar(prox); return; }
   if (linkHttp) txt = 'não rolou nem em https nem em http. ou o link tá fora do ar, ou o navegador bloqueou o http (o site é https). se o canal tiver link https, usa ele';
   para(); mostraChuvisco(true); led(false);
   msg('📡 SEM SINAL<br><small style="font-size:.55em;font-weight:700">' + txt + '</small>');
@@ -345,6 +351,7 @@ async function assistir(u, nomeCanal) {
   para(); mostraChuvisco(true); msg('sintonizando... 📡'); led(false);
   girando += 45; $('btCanal').style.setProperty('--g', girando + 'deg');
   const lista = todos(), i = lista.findIndex(c => c.url === u);
+  if (i >= 0 && lista[i].alt) fila = fila.concat(lista[i].alt);   // canal com mais de uma fonte
   mostraCanal(i >= 0 ? 'CH ' + (i + 1) + ' · ' + (nomeCanal || lista[i].nome) : 'AV');
   marcaCanais();
   tocar(linkHttp ? u.replace(/^http:/i, 'https:') : u);
