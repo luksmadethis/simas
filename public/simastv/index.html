@@ -34,6 +34,7 @@
   .tela video,.tela iframe,.tela canvas{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
   .tela canvas{image-rendering:pixelated;z-index:2}
   .tela .vidro{position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.10),transparent 45%),repeating-linear-gradient(rgba(0,0,0,.08) 0 2px,transparent 2px 4px);border-radius:inherit}
+  .tela .msg,.tela .canal{pointer-events:none;user-select:none;-webkit-user-select:none}
   .tela .msg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;font-weight:900;font-size:clamp(16px,3vw,26px);text-align:center;text-shadow:0 2px 8px #000;padding:8px 14px;background:rgba(0,0,0,.55);border-radius:10px;max-width:86%}
   .tela .msg[hidden]{display:none}
   .tela .canal{position:absolute;top:12px;right:16px;z-index:4;font:900 22px/1 ui-monospace,Consolas,monospace;color:#5dff8a;text-shadow:0 0 8px #5dff8a;opacity:0;transition:opacity .3s}
@@ -229,7 +230,7 @@ const PADRAO = [
 const NP = PADRAO.length;
 let canais = []; try { canais = JSON.parse(ls.get('simastv-canais') || '[]'); } catch (e) {}   // só os da pessoa
 const todos = () => PADRAO.concat(canais);
-let atual = '', hls = null, iframe = null, girando = 0, fila = [], linkHttp = false;
+let atual = '', hls = null, iframe = null, yt = null, girando = 0, fila = [], linkHttp = false;
 
 // ---------- chuvisco (quando tá sem sinal / carregando) ----------
 const cv = $('chuvisco'), cx = cv.getContext('2d'), img = cx.createImageData(160, 90);
@@ -263,8 +264,50 @@ function tipo(u) {
   return 'arquivo';
 }
 
+// ---------- som: tenta COM som; se o navegador barrar, toca mudo e liga o som no 1º clique na página ----------
+let somPendente = null;
+function ligaSomNoClique(fn) {
+  somPendente = fn;
+  msg('🔇 o navegador começou sem som. clica em qualquer lugar da página pra ligar 🔊');
+}
+['pointerdown', 'keydown'].forEach(ev => addEventListener(ev, () => {
+  if (!somPendente) return;
+  const fn = somPendente; somPendente = null;
+  try { fn(); } catch (e) {}
+  msg('');
+}, true));
+let ytApi = null;
+function carregaYT() {
+  if (window.YT && YT.Player) return Promise.resolve();
+  return ytApi || (ytApi = new Promise((ok, falha) => {
+    const ant = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => { ant && ant(); ok(); };
+    const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; s.onerror = falha; document.head.appendChild(s);
+  }));
+}
+async function controlaYoutube(fr, dono) {
+  try { await carregaYT(); } catch (e) { return; }      // sem a API, o vídeo toca normal (o navegador decide o som)
+  if (atual !== dono || iframe !== fr) return;
+  yt = new YT.Player(fr, { events: {
+    onReady: e => {
+      try { e.target.unMute(); e.target.setVolume(100); e.target.playVideo(); } catch (er) {}
+      setTimeout(() => {
+        if (iframe !== fr) return;
+        let st = -1; try { st = e.target.getPlayerState(); } catch (er) {}
+        if (st !== 1 && st !== 3) {                       // não começou: navegador barrou o som
+          try { e.target.mute(); e.target.playVideo(); } catch (er) {}
+          ligaSomNoClique(() => { e.target.unMute(); e.target.setVolume(100); e.target.playVideo(); });
+        } else if (e.target.isMuted && e.target.isMuted()) {
+          ligaSomNoClique(() => { e.target.unMute(); e.target.setVolume(100); });
+        }
+      }, 2200);
+    }
+  } });
+}
+
 // ---------- tocar ----------
 function para() {
+  yt = null; somPendente = null;   // o iframe sai logo abaixo; som pendente era do canal antigo
   if (hls) { try { hls.destroy(); } catch (e) {} hls = null; }
   if (iframe) { iframe.remove(); iframe = null; }
   video.onplaying = video.onwaiting = video.onerror = null;   // não deixa aviso atrasado do vídeo antigo bagunçar a tela
@@ -286,7 +329,8 @@ function tocaVideo() {
   video.hidden = false;
   const p = video.play();
   if (p && p.catch) p.catch(e => { if (!e || e.name !== 'NotAllowedError') return;   // link ruim: quem avisa é o erro
-    video.muted = true; video.play().then(() => msg('🔇 toca no video pra ligar o som')).catch(() => msg('▶ aperta o play')); setTimeout(() => msg(''), 3500); });
+    video.muted = true;
+    video.play().then(() => ligaSomNoClique(() => { video.muted = false; video.play().catch(() => {}); })).catch(() => msg('▶ aperta o play')); });
 }
 async function assistir(u, nomeCanal) {
   u = (u || '').trim();
@@ -308,9 +352,10 @@ async function tocar(u) {
   const t = tipo(u);
   if (t === 'youtube') {
     iframe = document.createElement('iframe');
-    const ch = canalYoutube(u), mudo = assistir.mudo ? '&mute=1' : '';
-    iframe.src = (ch ? 'https://www.youtube.com/embed/live_stream?channel=' + ch + '&' : 'https://www.youtube.com/embed/' + idYoutube(u) + '?') + 'autoplay=1&playsinline=1&rel=0' + mudo;
-    if (assistir.mudo) { assistir.mudo = false; setTimeout(() => { if (iframe) { msg('🔇 começou sem som: toca no som do video pra ligar'); setTimeout(() => msg(''), 4000); } }, 1500); }
+    const ch = canalYoutube(u);
+    iframe.src = (ch ? 'https://www.youtube.com/embed/live_stream?channel=' + ch + '&' : 'https://www.youtube.com/embed/' + idYoutube(u) + '?') +
+      'autoplay=1&playsinline=1&rel=0&enablejsapi=1&origin=' + encodeURIComponent(location.origin);
+    controlaYoutube(iframe, dono);
     iframe.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
     iframe.allowFullscreen = true;
     iframe.onload = () => { mostraChuvisco(false); msg(''); led(true); };
@@ -393,9 +438,8 @@ $('btCanal').onclick = () => {
   assistir(prox.url, prox.nome);
 };
 
-// ---------- ao abrir: já liga no CH 1 (Gumball). Começa sem som porque o navegador não deixa tocar com som sem um toque antes ----------
+// ---------- ao abrir: já liga no CH 1 (Gumball), tentando com som ----------
 montaCanais();
-assistir.mudo = true;
 assistir(PADRAO[0].url, PADRAO[0].nome);
 </script>
 </body>
