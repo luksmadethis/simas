@@ -96,7 +96,8 @@ async def novo_job(req: Request):
         limpa_velhos()
         k = (ip, hoje); USO[k] = USO.get(k, 0) + 1
         if USO[k] > POR_DIA: raise HTTPException(429, f'passou do limite de {POR_DIA} conversoes hoje, volta amanha')
-        if sum(1 for j in JOBS.values() if j['fase'] in ('fila', 'baixando', 'convertendo')) >= 3:
+        ativos = [j for j in JOBS.values() if j['fase'] in ('fila', 'baixando', 'convertendo') and time.time() - j['criado'] < 300]
+        if len(ativos) >= 3:
             USO[k] -= 1; raise HTTPException(503, 'servidor ocupado com outras conversoes, tenta em 1 minuto')
         jid = uuid.uuid4().hex[:16]
         JOBS[jid] = {'criado': time.time(), 'dir': tempfile.mkdtemp(dir=BASE), 'fase': 'fila', 'pct': 0}
