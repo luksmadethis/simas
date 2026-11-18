@@ -143,7 +143,7 @@ function passo(dt) {
   if (!j.carro) SOM.atualizaMotor(0, false);
   atualizaPeds(dt); atualizaCarros(dt); colisoes(dt); atualizaBalas(dt); atualizaItens(dt); atualizaChefes(dt);
   atualizaProcurado(dt); atualizaEfeitos(dt); povoar(dt, VW / cam.zoom, VH / cam.zoom);
-  MISSAO.tick(dt); gatilhos(); atualizaDicas(dt); atualizaFiguras(dt); atualizaRenda(dt); atualizaSegredos(dt);
+  MISSAO.tick(dt); gatilhos(); atualizaGangueMoto(dt); atualizaDicas(dt); atualizaFiguras(dt); atualizaRenda(dt); atualizaSegredos(dt);
 }
 
 // som do baile do Meco: uma música do "Malando com Zensat", sem grave até devolver o paredão

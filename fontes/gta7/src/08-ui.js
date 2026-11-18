@@ -84,6 +84,13 @@ function desenharHUD(dt) {
   // objetivo, tempo, barra
   g.textAlign = 'center';
   let yc = peq ? 46 : 54;
+  const nGang = W.raivaMoto ? W.carros.filter(c => c.gangue && c.hp > 0 && c.motorista).length : 0;
+  if (W.raivaMoto && !j.morto) {
+    const w = peq ? 250 : 320;
+    g.fillStyle = (W.tempo * 4 | 0) % 2 ? 'rgba(120,60,0,.88)' : 'rgba(30,30,30,.88)'; rr(g, VW / 2 - w / 2, yc, w, 30, 8); g.fill();
+    g.font = `900 ${peq ? 11 : 13}px ${FONTE}`; g.fillStyle = '#ffd23f'; g.fillText(`🏍️ GANGUE DOS MOTOQUEIRO NA COLA · ${nGang}`, VW / 2, yc + 20);
+    yc += 38;
+  }
   if (gel && !j.morto) {
     const d = Math.round(dist(gel.x, gel.y, j.x, j.y) / 16), w = peq ? 250 : 320;
     g.fillStyle = (W.tempo * 4 | 0) % 2 ? 'rgba(160,0,0,.85)' : 'rgba(20,40,160,.85)'; rr(g, VW / 2 - w / 2, yc, w, 30, 8); g.fill();
@@ -205,6 +212,7 @@ function desenharMini(g) {
   };
   for (const c of W.carros) if (c.policia && c.ia && c.ia.tipo === 'policia') blip(c.x, c.y, c.modelo === 'gelado' ? '#ffd23f' : (W.tempo * 4 | 0) % 2 ? '#ff3b3b' : '#3b6bff', c.modelo === 'gelado' ? 6 : 3);
   for (const p of W.peds) if ((p.hostil || p.policia) && !p.morto) blip(p.x, p.y, '#ff3b3b', 2.5);
+  for (const c of W.carros) if (c.gangue && c.hp > 0) blip(c.x, c.y, '#ff8c00', 3.5);
   blip(LUGAR.garagem.x, LUGAR.garagem.y, '#ff9f1c', 4); blip(LUGAR.garagemBH.x, LUGAR.garagemBH.y, '#ff9f1c', 4);
   const alvo = MISSAO.ativa ? MISSAO.alvo : lugarMissao(proximaMissao());
   if (alvo) blip(alvo.x, alvo.y, '#ffd23f', 6);

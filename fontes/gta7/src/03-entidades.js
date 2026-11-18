@@ -98,7 +98,7 @@ function povoar(dt, vw, vh) {
   const j = W.jog, cx = cam.x, cy = cam.y, raio = Math.hypot(vw, vh) / 2;
   // tira o que ficou longe
   W.peds = W.peds.filter(p => p.fixo || p.missao || dist(p.x, p.y, cx, cy) < raio * 2.2);
-  W.carros = W.carros.filter(c => c === j.carro || c.fixo || c.missao || c.guardado || (c.policia && W.procurado > 0) || dist(c.x, c.y, cx, cy) < raio * 2.4);
+  W.carros = W.carros.filter(c => c === j.carro || c.fixo || c.missao || c.gangue || c.guardado || (c.policia && W.procurado > 0) || dist(c.x, c.y, cx, cy) < raio * 2.4);
   const nPeds = W.peds.filter(p => !p.fixo).length, nCarros = W.carros.filter(c => c.ia && c.ia.tipo === 'transito').length;
   if (nPeds < 34) { const p = pontoNaCalcadaPerto(cx, cy, raio * 1.05, raio * 1.6); if (p) W.peds.push(novoPed(p.x, p.y)); }
   if (nCarros < 22) {
@@ -214,6 +214,51 @@ function danoCarro(c, d, quem) {
   if (c.hp <= 0) {
     c.hp = 0; c.fogo = 2.5;
     if (c.policia && quem === W.jog) crime(1);
+    // moto destruída: o motoqueiro cai morto
+    const m = c.motorista;
+    if (TIPOS_CARRO[c.modelo].moto && m && m !== W.jog) {
+      c.fogo = 0.6; c.motorista = null; c.ia = null;
+      m.x = c.x; m.y = c.y; m.hp = 0; m.morto = true; m.dentroCarro = false; W.peds.push(m);
+      W.manchas.push({ t: 'sangue', x: m.x, y: m.y, r: 16, a: 0 });
+      if (quem === W.jog) matouMotoqueiro(c);
+    }
+  }
+}
+
+// ---------- gangue dos motoqueiros: matou motoboy, eles vêm atrás ----------
+W.raivaMoto = null;
+function matouMotoqueiro(c) {
+  const r = W.raivaMoto;
+  if (!r) {
+    W.raivaMoto = { ate: W.tempo + 120, vieram: 0, quer: 3, longe: 0 };
+    falar('luketa', (c && c.modelo === 'biz') ? 'TU MATOU O MOTOBOY DO iFOME?! agora a GANGUE DOS MOTOQUEIRO vem atrás de tu!' : 'matou motoqueiro?! a GANGUE DOS MOTOQUEIRO vem aí, corre!', 4);
+    SOM.buzina();
+  } else { r.ate = W.tempo + 120; r.quer = Math.min(8, r.quer + 1); falar('luketa', pick(['mais um! agora vem mais moto', 'eles tão ficando PUTO', 'a gangue tá chamando reforço']), 2.5); }
+}
+function atualizaGangueMoto(dt) {
+  const r = W.raivaMoto; if (!r) return;
+  const j = W.jog, alvo = j.carro || j;
+  const vivos = W.carros.filter(c => c.gangue && c.hp > 0 && c.motorista);
+  if (dist(alvo.x, alvo.y, cam.x, cam.y) < 10 && false) return;
+  if (vivos.every(c => dist(c.x, c.y, alvo.x, alvo.y) > 2600)) r.longe += dt; else r.longe = 0;
+  if (W.tempo > r.ate || r.longe > 25 || j.morto) {
+    for (const c of W.carros) if (c.gangue) { c.gangue = false; c.nome = null; c.ia = { tipo: 'transito', dir: rndi(0, 3), velAlvo: 200 }; }
+    for (const p of W.peds) if (p.gangue && !p.morto) { p.gangue = false; p.hostil = false; p.ia = null; p.medo = 5; }
+    W.raivaMoto = null; if (!j.morto) falar('luketa', 'os motoqueiro desistiram. ufa', 2.5); return;
+  }
+  if (vivos.length < r.quer && r.vieram < 14 && rnd() < dt * 0.9) {
+    const raio = Math.hypot(VW, VH) / 2 / cam.zoom, p = pontoNaRuaPerto(alvo.x, alvo.y, raio * 1.05, raio * 1.5);
+    if (p) {
+      const c = novoCarro(rnd() < 0.5 ? 'biz' : 'cg', p.x, p.y, Math.atan2(alvo.y - p.y, alvo.x - p.x), { gangue: true, nome: 'MOTOQUEIRO 🏍️' });
+      c.motorista = novoPed(c.x, c.y, { capacete: pick(['#111', '#c0392b', '#f1c40f']), camisa: pick(['#111', '#c0392b', '#2c3e50']), gangue: true, motoqueiro: true });
+      c.ia = { tipo: 'script', fn: (cc, dt2) => {
+        const a = W.jog.carro || W.jog; iaPersegue(cc, dt2, a.x, a.y, 1);
+        cc.recarga = (cc.recarga || rnd(0.5, 1.5)) - dt2;
+        const d = dist(cc.x, cc.y, a.x, a.y);
+        if (d < 380 && cc.recarga <= 0) { cc.recarga = rnd(1.1, 2); inimigoAtira(cc, a.x, a.y, 5, 0.22); }
+      } };
+      W.carros.push(c); r.vieram++;
+    }
   }
 }
 
@@ -245,6 +290,7 @@ function feriPed(p, d, quem) {
     p.morto = true;
     W.manchas.push({ t: 'sangue', x: p.x, y: p.y, r: rnd(12, 20), a: rnd(6) });
     if (!p.semGrana && rnd() < 0.3) W.itens.push({ t: 'grana', x: p.x + rnd(-8, 8), y: p.y + rnd(-8, 8), v: rndi(5, 40), vida: 30 });
+    if (quem === W.jog && p.motoqueiro) matouMotoqueiro(null);
     if (quem === W.jog) crime(p.policia ? 2 : (copsPerto(600) || rnd() < 0.25 ? 1 : 0));
     if (p.aoMorrer) p.aoMorrer();
   }

@@ -276,6 +276,7 @@ function desenharMoto(g, c, t) {
     else { g.fillStyle = m.capacete || '#2c3e50'; g.beginPath(); g.arc(0, 0, 9, 0, 7); g.fill(); g.fillStyle = 'rgba(150,200,255,.6)'; g.beginPath(); g.arc(3, 0, 5, -1, 1); g.fill(); }
   }
   g.restore();
+  if (c.nome && dist(c.x, c.y, W.jog.x, W.jog.y) < 700) { g.font = 'bold 11px system-ui'; g.textAlign = 'center'; g.lineWidth = 3; g.strokeStyle = '#000'; g.strokeText(c.nome, c.x, c.y - 30); g.fillStyle = c.gangue ? '#ff8c00' : '#ff6b6b'; g.fillText(c.nome, c.x, c.y - 30); }
 }
 function desenharCarro(g, c) {
   const L = c.l, Wd = c.w, t = TIPOS_CARRO[c.modelo];

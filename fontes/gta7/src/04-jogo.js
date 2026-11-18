@@ -39,7 +39,8 @@ function entrarSair() {
   if (c.motorista && !c.motorista.morto) {
     // assalto: puxa o motorista pra fora
     const m = c.motorista; m.x = c.x + Math.cos(c.a + Math.PI / 2) * 40; m.y = c.y + Math.sin(c.a + Math.PI / 2) * 40;
-    m.medo = 8; m.dentroCarro = false; m.hp = Math.min(m.hp, 30);
+    m.medo = 8; m.dentroCarro = false; m.hp = Math.min(m.hp, 30); if (TIPOS_CARRO[c.modelo].moto) m.motoqueiro = true;
+    if (c.gangue) { m.hostil = true; m.ia = iaInimigo; m.armaVisivel = 'pistola'; m.persegue = true; m.hp = 35; c.gangue = false; c.nome = null; }
     if (m.policia) { crime(4); m.bravo = true; } else { crime(rnd() < 0.5 ? 1 : 0); m.xinga = 2; }
     W.peds.push(m);
     if (rnd() < 0.5) falarPed(m, pick(['MEU CARRO!!', 'ô ladrão!!', 'socorro, roubaram meu possante', 'vai se fuder nerivan', 'tava quitado, desgraça']));
@@ -268,7 +269,7 @@ function atualizaCarros(dt) {
     if (c.fogo > 0) {
       c.fogo -= dt; if (rnd() < 0.5) W.efeitos.push({ t: 'fumaca', x: c.x + rnd(-15, 15), y: c.y + rnd(-15, 15), r: 14, vida: 0.9, max: 0.9 });
       if (c.fogo <= 0) {
-        explodir(c.x, c.y, 140, 100, c.ultimoDano); c.lixo = true; c.fogo = 0;
+        if (TIPOS_CARRO[c.modelo].moto) explodir(c.x, c.y, 60, 25, c.ultimoDano); else explodir(c.x, c.y, 140, 100, c.ultimoDano); c.lixo = true; c.fogo = 0;
         if (c === j.carro) { j.carro = null; ferirJogador(200); }
         if (c.motorista && c.motorista !== j) { c.motorista.hp = 0; c.motorista.morto = true; }
       }
