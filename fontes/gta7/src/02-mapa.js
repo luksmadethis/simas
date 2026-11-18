@@ -15,6 +15,8 @@ const tile = (x, y) => (x < 0 || y < 0 || x >= MW || y >= MH) ? TL.AGUA : mapa[y
 const setTile = (x, y, t) => { if (x >= 0 && y >= 0 && x < MW && y < MH) mapa[y * MW + x] = t; };
 const tileEm = (wx, wy) => tile(Math.floor(wx / T), Math.floor(wy / T));
 const solidoEm = (wx, wy) => SOLIDO.has(tileEm(wx, wy));
+// parede de verdade (tiro e granada passam por cima da água)
+const paredeEm = (wx, wy) => tileEm(wx, wy) === TL.PREDIO;
 const regiaoEm = (wx, wy) => { const x = Math.floor(wx / T), y = Math.floor(wy / T); return (x < 0 || y < 0 || x >= MW || y >= MH) ? REG.CENTRO : regiaoTile[y * MW + x]; };
 const ehRua = (x, y) => tile(x, y) === TL.RUA;
 const ehPista = (x, y) => { const t = tile(x, y); return t === TL.RUA || t === TL.ESTRADA; };

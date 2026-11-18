@@ -41,11 +41,12 @@ let AVISO = null;
 // ---------- ferramentas pras missões ----------
 function chk() { if (!MISSAO.ativa) throw new Aborta(); }
 function diz(quem, txt) {
+  txt = trocaNomes(txt);
   chk();
   return new Promise((res, rej) => { MISSAO.dialogo = { quem, txt, res, rej, t: 0 }; }).then(() => chk());
 }
 async function conversa(...linhas) { for (const [q, t] of linhas) await diz(q, t); }
-function objetivo(txt) { MISSAO.objetivo = txt; }
+function objetivo(txt) { MISSAO.objetivo = trocaNomes(txt); }
 function aPe() { return !W.jog.carro; }
 function noCarro() { return !!W.jog.carro; }
 async function ate(cond) { chk(); await MISSAO.esperar(cond); chk(); }

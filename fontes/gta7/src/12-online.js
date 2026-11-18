@@ -87,7 +87,7 @@ const ONLINE = {
       const c = j.carro;
       this.enviar({ t: 'st', n: RANK.nome() || 'sem nome', sk: this.skin, cor: this.cor, x: Math.round(j.x), y: Math.round(j.y), a: +(c ? c.a : j.a).toFixed(2), ar: j.arma, hp: Math.round(j.hp), m: j.morto ? 1 : 0, ab: this.abates,
         c: c ? { m: c.modelo, cor: c.cor, l: c.listra || 0, v: Math.round(Math.hypot(c.vx, c.vy)) } : null,
-        r: { ca: j.camisa, cl: j.calca, ch: j.chapeu, ct: j.chapeuTipo, o: j.oculos ? 1 : 0, e: j.estampa, ja: j.jaqueta, co: j.corrente ? 1 : 0, mo: j.mochila, tc: j.tenisCor, ro: j.rodaAtiva } });
+        r: { ca: j.camisa, cl: j.calca, ch: j.chapeu, ct: j.chapeuTipo, o: j.oculos ? 1 : 0, e: j.estampa, ja: j.jaqueta, co: j.corrente ? 1 : 0, mo: j.mochila, tc: j.tenisCor, ro: j.rodaAtiva, ot: j.oculosTipo, ma: j.mascara, cs: j.costas, cc: j.costasCor, ci: j.cintura, fa: j.fantasia, cr: j.corte, cb: j.cabelo, ba: j.barba ? 1 : 0, pe: j.pele } });
     }
     const agora = performance.now();
     for (const [id, o] of this.outros) {
@@ -115,15 +115,18 @@ const ONLINE = {
     for (const o of this.outros.values()) {
       if (o.morto) continue;
       const r = o.r || {};
-      const pessoa = { x: o.x, y: o.y, a: o.a, anda: o.anda, rosto: o.sk, pele: '#c68642', camisa: r.ca || '#ff6ec7', calca: r.cl || '#1a1a2e', chapeu: r.ch, chapeuTipo: r.ct, oculos: !!r.o, estampa: r.e, jaqueta: r.ja, corrente: !!r.co, mochila: r.mo, tenisCor: r.tc, rodaAtiva: r.ro, corNome: o.cor };
+      const pessoa = { x: o.x, y: o.y, a: o.a, anda: o.anda, rosto: o.sk, pele: '#c68642', camisa: r.ca || '#ff6ec7', calca: r.cl || '#1a1a2e', chapeu: r.ch, chapeuTipo: r.ct, oculos: !!r.o, estampa: r.e, jaqueta: r.ja, corrente: !!r.co, mochila: r.mo, tenisCor: r.tc, rodaAtiva: r.ro, corNome: o.cor, oculosTipo: r.ot, mascara: r.ma, costas: r.cs, costasCor: r.cc, cintura: r.ci, fantasia: r.fa, corte: r.cr, cabelo: r.cb, barba: !!r.ba };
+      if (r.pe) pessoa.pele = r.pe;
       if (o.c) {
         const tc = TIPOS_CARRO[o.c.m] || TIPOS_CARRO.sedan;
         desenharCarro(g, { modelo: TIPOS_CARRO[o.c.m] ? o.c.m : 'sedan', x: o.x, y: o.y, a: o.a, w: tc.w, l: tc.l, hp: 1, hpMax: 1, cor: o.c.cor || '#888', listra: o.c.l || null, vx: Math.cos(o.a) * o.c.v, vy: Math.sin(o.a) * o.c.v, motor: 0, blind: 0, sirene: false, motorista: pessoa });
       } else desenharPessoa(g, pessoa, { arma: o.ar, nomes: false, escala: 1.45, jog: true });
+      g.save(); g.translate(o.x, o.y); g.scale(1, 1 / INCL);
       g.font = '900 13px system-ui'; g.textAlign = 'center'; const tag = `${o.n}${o.ab ? ' · 💀' + o.ab : ''}`, w = g.measureText(tag).width + 14;
-      g.fillStyle = 'rgba(0,0,0,.7)'; rr(g, o.x - w / 2, o.y - 62, w, 18, 6); g.fill(); g.fillStyle = o.cor || '#fff'; g.fillText(tag, o.x, o.y - 49);
-      barra(g, o.x - 22, o.y - 40, 44, 4, (o.hp || 0) / 100, '#e74c3c');
-      if (o.balaoT > 0 && o.balao) { g.font = 'bold 13px system-ui'; const bw = Math.min(260, g.measureText(o.balao).width + 18); g.fillStyle = 'rgba(255,255,255,.95)'; rr(g, o.x - bw / 2, o.y - 98, bw, 26, 10); g.fill(); g.fillStyle = '#111'; g.fillText(o.balao, o.x, o.y - 80); }
+      g.fillStyle = 'rgba(0,0,0,.7)'; rr(g, -w / 2, -100, w, 18, 6); g.fill(); g.fillStyle = o.cor || '#fff'; g.fillText(tag, 0, -87);
+      barra(g, -22, -80, 44, 4, (o.hp || 0) / 100, '#e74c3c');
+      if (o.balaoT > 0 && o.balao) { g.font = 'bold 13px system-ui'; const bw = Math.min(260, g.measureText(o.balao).width + 18); g.fillStyle = 'rgba(255,255,255,.95)'; rr(g, -bw / 2, -134, bw, 26, 10); g.fill(); g.fillStyle = '#111'; g.fillText(o.balao, 0, -116); }
+      g.restore();
     }
   },
   hud(g) {
@@ -156,10 +159,10 @@ function abrirLobbyOnline(save) {
   const sala0 = new URLSearchParams(location.search).get('sala') || 'geral';
   el.innerHTML = `<div class="caixa"><h2>🌐 GTA 7 ONLINE</h2><p class="sub">modo livre com a galera: mesma cidade, tiro valendo, placar de abate. a história fica no modo normal.</p>
     <label>teu nome</label><input id="lbNome" maxlength="20" value="${nomeAt.replace(/"/g, '')}" placeholder="teu nome">
-    <label>tua cara</label><div class="skins">${SKINS.map(s => `<button data-s="${s}" class="${s === skin ? 'on' : ''}"><img src="${(typeof FOTOS !== 'undefined' && FOTOS[s]) || ''}"><span>${s}</span></button>`).join('')}</div>
+    <label>escolhe teu personagem (cada um tem história e poder)</label><div class="skins">${SKINS.map(s => `<button data-s="${s}" class="${s === skin ? 'on' : ''}"><img src="${(typeof FOTOS !== 'undefined' && FOTOS[s]) || ''}"><span>${NOMES[s] && PERSONAGENS[s] ? PERSONAGENS[s].nomes[PERSONAGENS[s].nomes.length - 1] : s}</span></button>`).join('')}</div><div class="ficha">${fichaPersonagem(skin)}</div>
     <label>sala</label><input id="lbSala" maxlength="20" value="${sala0.replace(/"/g, '')}">
     <button class="vai">▶ ENTRAR NO ONLINE</button><button class="volta">voltar</button></div>`;
-  el.querySelectorAll('.skins button').forEach(b => b.onclick = () => { skin = b.dataset.s; el.querySelectorAll('.skins button').forEach(x => x.classList.toggle('on', x === b)); });
+  el.querySelectorAll('.skins button').forEach(b => b.onclick = () => { skin = b.dataset.s; el.querySelectorAll('.skins button').forEach(x => x.classList.toggle('on', x === b)); el.querySelector('.ficha').innerHTML = fichaPersonagem(skin); });
   el.querySelector('.volta').onclick = () => { el.style.display = 'none'; };
   el.querySelector('.vai').onclick = () => {
     const n = el.querySelector('#lbNome').value.replace(/\s+/g, ' ').trim().slice(0, 20); if (!n) { el.querySelector('#lbNome').focus(); return; }

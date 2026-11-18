@@ -10,6 +10,7 @@ function tremer(n) { cam.tremor = Math.min(22, Math.max(cam.tremor, n)); }
 // ---------- falas (balão com rosto) ----------
 const FALAS = [];
 function falar(quem, txt, dur = 3.5) {
+  txt = trocaNomes(txt);
   FALAS.push({ quem, txt, dur, t: 0 });
   if (FALAS.length > 3) FALAS.shift();
 }
@@ -51,7 +52,8 @@ function entrarSair() {
   RADIO.tocar(true);
   if (!W.radioAviso) { W.radioAviso = true; falar('poli', 'aqui é a Rádio Poli FM, o rei do entretenimento! aperta R pra trocar de estação', 4); }
 }
-function falarPed(p, txt) { W.efeitos.push({ t: 'texto', x: p.x, y: p.y - 30, txt, vida: 2.2, max: 2.2, cor: '#fff' }); }
+function falarPed(p, txt) {
+  txt = trocaNomes(txt); W.efeitos.push({ t: 'texto', x: p.x, y: p.y - 30, txt, vida: 2.2, max: 2.2, cor: '#fff' }); }
 
 // ---------- armas ----------
 function atirar(dx, dy) {
@@ -62,13 +64,19 @@ function atirar(dx, dy) {
   const ang = Math.atan2(dy, dx); j.a = ang;
   SOM.tiro(j.arma);
   if (j.arma === 'punho' || a.corpo) {
-    for (const p of W.peds) if (!p.morto && dist(p.x, p.y, j.x + Math.cos(ang) * 22, j.y + Math.sin(ang) * 22) < a.alcance) { feriPed(p, a.dano, j); p.x += Math.cos(ang) * 14; p.y += Math.sin(ang) * 14; }
+    W.efeitos.push({ t: 'golpe', x: j.x + Math.cos(ang) * 24, y: j.y + Math.sin(ang) * 24, a: ang, vida: 0.14, max: 0.14 });
+    for (const c of W.carros) if (c !== j.carro && c.hp > 0 && dist(c.x, c.y, j.x + Math.cos(ang) * 26, j.y + Math.sin(ang) * 26) < c.l * 0.45) { danoCarro(c, a.dano * 0.25, j); break; }
+    for (const p of W.peds) if (!p.morto && dist(p.x, p.y, j.x + Math.cos(ang) * 22, j.y + Math.sin(ang) * 22) < a.alcance) { feriPed(p, a.dano * (PERS === 'ltzin' && j.arma === 'punho' ? 3 : 1), j); if (PERS === 'ltzin' && j.arma === 'punho') W.efeitos.push({ t: 'raio', x: j.x, y: j.y, x2: p.x, y2: p.y, vida: 0.2, max: 0.2 }); p.x += Math.cos(ang) * 14; p.y += Math.sin(ang) * 14; }
     for (const ch of W.chefes) if (ch.levaSoco) ch.levaSoco(j.x + Math.cos(ang) * 22, j.y + Math.sin(ang) * 22, a.dano);
     return;
   }
   j.municao[j.arma]--;
-  const ox = j.x + Math.cos(ang) * 20, oy = j.y + Math.sin(ang) * 20;
-  if (a.joga) { W.jogados.push({ t: a.joga, x: ox, y: oy, vx: Math.cos(ang) * a.vel, vy: Math.sin(ang) * a.vel, vida: a.joga === 'granada' ? 1.6 : 0.75, dono: j, gira: 0 }); return; }
+  let ox = j.x + Math.cos(ang) * 20, oy = j.y + Math.sin(ang) * 20;
+  if (paredeEm(ox, oy)) { ox = j.x; oy = j.y; }
+  // granada/molotov caem onde o mouse tá (até o alcance máximo)
+  let velJ = a.vel;
+  if (a.joga && MOUSE.used && !TOQUE.ativo && !j.carro) { const mw = telaPraMundo(MOUSE.x, MOUSE.y), D = Math.min(a.alcance, Math.max(60, dist(j.x, j.y, mw.x, mw.y))), vd = a.joga === 'granada' ? 1.6 : 0.75; velJ = Math.min(a.vel * 1.3, D * Math.log(1 / 0.35) / (1 - Math.pow(0.35, vd))); }
+  if (a.joga) { W.jogados.push({ t: a.joga, x: ox, y: oy, vx: Math.cos(ang) * velJ, vy: Math.sin(ang) * velJ, vida: a.joga === 'granada' ? 1.6 : 0.75, dono: j, gira: 0 }); return; }
   if (a.chama) { for (let k = 0; k < 2; k++) { const aa = ang + rnd(-0.18, 0.18), v = rnd(300, 460); W.chamas.push({ x: ox, y: oy, vx: Math.cos(aa) * v, vy: Math.sin(aa) * v, vida: 0.42, dono: j }); } if (copsPerto(700)) crime(0.1); return; }
   if (a.explode) { W.foguetes.push({ x: ox, y: oy, vx: Math.cos(ang) * a.vel, vy: Math.sin(ang) * a.vel, vida: a.alcance / a.vel, dono: j }); return; }
   for (let k = 0; k < a.bala; k++) {
@@ -96,9 +104,9 @@ function atualizaBalas(dt) {
     const passos = 3;
     for (let s = 0; s < passos && b.vida > 0; s++) {
       b.x += b.vx * dt / passos; b.y += b.vy * dt / passos;
-      if (solidoEm(b.x, b.y)) { b.vida = 0; W.efeitos.push({ t: 'faisca', x: b.x, y: b.y, vida: 0.15, max: 0.15 }); break; }
+      if (paredeEm(b.x, b.y)) { b.vida = 0; W.efeitos.push({ t: 'faisca', x: b.x, y: b.y, vida: 0.15, max: 0.15 }); break; }
       if (b.dono === j) {
-        for (const p of W.peds) if (!p.morto && !p.dentroCarro && dist(p.x, p.y, b.x, b.y) < 13) { feriPed(p, b.dano, j); b.vida = 0; break; }
+        for (const p of W.peds) if (!p.morto && !p.dentroCarro && dist(p.x, p.y, b.x, b.y) < 17) { feriPed(p, b.dano, j); b.vida = 0; break; }
         if (b.vida > 0) for (const c of W.carros) if (c !== j.carro && c.hp > 0 && dist(c.x, c.y, b.x, b.y) < c.l * 0.42) { danoCarro(c, b.dano * 0.7, j); b.vida = 0; W.efeitos.push({ t: 'faisca', x: b.x, y: b.y, vida: 0.12, max: 0.12 }); break; }
         if (b.vida > 0) for (const ch of W.chefes) if (ch.levaTiro && ch.levaTiro(b.x, b.y, b.dano)) { b.vida = 0; break; }
       } else {
@@ -113,7 +121,7 @@ function atualizaBalas(dt) {
   for (const f of W.foguetes) {
     f.x += f.vx * dt; f.y += f.vy * dt; f.vida -= dt;
     if (rnd() < 0.8) W.efeitos.push({ t: 'fumaca', x: f.x, y: f.y, r: 8, vida: 0.5, max: 0.5 });
-    let bum = f.vida <= 0 || solidoEm(f.x, f.y);
+    let bum = f.vida <= 0 || paredeEm(f.x, f.y);
     if (!bum) for (const c of W.carros) if (c !== W.jog.carro && c.hp > 0 && dist(c.x, c.y, f.x, f.y) < c.l * 0.45) bum = true;
     if (!bum) for (const p of W.peds) if (!p.morto && dist(p.x, p.y, f.x, f.y) < 18) bum = true;
     if (!bum) for (const ch of W.chefes) if (ch.acertaArea && ch.acertaArea(f.x, f.y)) bum = true;
@@ -125,7 +133,8 @@ function atualizaBalas(dt) {
   for (const o of W.jogados) {
     o.vx *= Math.pow(0.35, dt); o.vy *= Math.pow(0.35, dt);
     const nx = o.x + o.vx * dt, ny = o.y + o.vy * dt;
-    if (solidoEm(nx, ny)) { o.vx *= -0.4; o.vy *= -0.4; } else { o.x = nx; o.y = ny; }
+    if (paredeEm(nx, ny)) { o.vx *= -0.4; o.vy *= -0.4; } else { o.x = nx; o.y = ny; }
+    if (o.vida < 0.05 && tileEm(o.x, o.y) === TL.AGUA) { o.vida = -1; W.efeitos.push({ t: 'onda', x: o.x, y: o.y, vida: 0.6, max: 0.6 }); if (o.t === 'molotov') continue; }
     o.vida -= dt; o.gira += dt * 12;
     if (o.vida <= 0) {
       if (o.t === 'granada') explodir(o.x, o.y, 150, 130, o.dono);
@@ -168,7 +177,7 @@ function atualizaJogadorPe(dt) {
   const corre = segura('shift') || (TOQUE.ativo && Math.hypot(mx, my) > 0.9);
   const roda = j.skate ? 'skate' : j.rodaAtiva;
   const tn = TENIS[j.tenis] || TENIS.chinelo;
-  const vel = roda === 'skate' ? (corre ? 430 : 360) : roda === 'patins' ? (corre ? 500 : 410) : (corre ? 250 : 160) * tn.vel;
+  const vel = (roda === 'skate' ? (corre ? 430 : 360) * (PERS === 'alan' ? 1.15 : 1) : roda === 'patins' ? (corre ? 500 : 410) : (corre ? 250 : 160) * tn.vel) * (PERS === 'meco' ? 1.25 : 1);
   const len = Math.hypot(mx, my);
   if (len > 0.1) {
     const nx = mx / Math.max(1, len), ny = my / Math.max(1, len);
@@ -181,7 +190,7 @@ function atualizaJogadorPe(dt) {
   }
   // mira
   let ax = Math.cos(j.a), ay = Math.sin(j.a);
-  if (MOUSE.used && !TOQUE.ativo) { const wx = MOUSE.x / cam.zoom + cam.x - VW / 2 / cam.zoom, wy = MOUSE.y / cam.zoom + cam.y - VH / 2 / cam.zoom; ax = wx - j.x; ay = wy - j.y; j.a = Math.atan2(ay, ax); }
+  if (MOUSE.used && !TOQUE.ativo) { const mw = telaPraMundo(MOUSE.x, MOUSE.y), wx = mw.x, wy = mw.y; ax = wx - j.x; ay = wy - j.y; j.a = Math.atan2(ay, ax); }
   else if (TOQUE.atira || segura(' ', 'control')) {
     // mira automática no inimigo mais perto
     const alvo = alvoMaisPerto(j.x, j.y, 520);
@@ -213,17 +222,20 @@ function atualizaJogadorCarro(dt) {
     if (Math.abs(d) < 2.3) { acel = true; vira = clamp(d * 2, -1, 1); } else { freio = true; vira = clamp(-d * 2, -1, 1); }
   }
   if (c.hp <= 0) { acel = false; }
+  // nitro (N ou botão 🔥): gasta a carga e recarrega devagar
+  if (c.nitro) { c.nitroCarga = c.nitroCarga ?? 100; const quer = (segura('n') || TOQUE.nitro) && c.nitroCarga > 0 && acel; c.nitroOn = quer; if (quer) { c.nitroCarga = Math.max(0, c.nitroCarga - 38 * dt); if (rnd() < 0.5) W.efeitos.push({ t: 'fumaca', x: c.x - Math.cos(c.a) * c.l * 0.55, y: c.y - Math.sin(c.a) * c.l * 0.55, r: 7, vida: 0.35, max: 0.35, escura: false }); } else c.nitroCarga = Math.min(100, c.nitroCarga + 9 * dt); } else c.nitroOn = false;
   fisicaCarro(c, dt, acel, freio, vira, mao);
   j.x = c.x; j.y = c.y;
   SOM.atualizaMotor(c.vel, true);
   if (c.derrapa > 180 && Math.abs(c.vel) > 200) { W.manchas.push({ t: 'pneu', x: c.x - Math.cos(c.a) * c.l * 0.35, y: c.y - Math.sin(c.a) * c.l * 0.35, a: c.a }); if (W.manchas.length > 500) W.manchas.splice(0, 60); }
   // atirar de dentro do carro (drive-by pros lados) com pistola/uzi
-  if ((MOUSE.down || TOQUE.atira || segura('control')) && ['pistola', 'uzi'].includes(j.arma)) {
-    const alvo = alvoMaisPerto(c.x, c.y, 500);
-    const ang = alvo ? Math.atan2(alvo.y - c.y, alvo.x - c.x) : c.a;
+  if ((MOUSE.down || TOQUE.atira || segura('control')) && ['pistola', 'uzi', 'fuzil', 'escopeta'].includes(j.arma)) {
+    let ang;
+    if (MOUSE.used && !TOQUE.ativo && MOUSE.down) { const mw = telaPraMundo(MOUSE.x, MOUSE.y); ang = Math.atan2(mw.y - c.y, mw.x - c.x); }
+    else { const alvo = alvoMaisPerto(c.x, c.y, 500); ang = alvo ? Math.atan2(alvo.y - c.y, alvo.x - c.x) : c.a; }
     const sa = j.a; atirar(Math.cos(ang), Math.sin(ang)); j.a = sa;
   }
-  if (apertou('h')) { SOM.buzina(); for (const p of W.peds) if (dist(p.x, p.y, c.x, c.y) < 200) p.medo = Math.max(p.medo, 2); }
+  if (apertou('h')) { SOM.buzina(c.buzina); for (const p of W.peds) if (dist(p.x, p.y, c.x, c.y) < 200) p.medo = Math.max(p.medo, 2); }
 }
 
 // ---------- pedestres ----------
@@ -363,7 +375,7 @@ function atualizaProcurado(dt) {
   if (W.procurado === 0) { W.calor = 0; return; }
   const visto = copsPerto(650);
   if (visto) W.semVer = 0; else W.semVer += dt;
-  const tempo = 6 + W.procurado * 3;
+  const tempo = (6 + W.procurado * 3) * (PERS === 'dudu' ? 0.5 : 1);
   if (W.semVer > tempo) {
     W.semVer = 0; W.procurado--; W.calor = W.procurado * 2;
     if (W.procurado === 0) { falar('luketa', 'despistou os home! boa, nerivan', 2.5); conta('fugas'); const nv = W.picoFuga || 1; if (nv >= 3) conta('fugaGrande'); pontuar(100 * nv, 'DESPISTOU'); W.picoFuga = 0; }

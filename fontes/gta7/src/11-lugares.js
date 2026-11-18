@@ -61,7 +61,7 @@ function menuEsconderijo() {
   abrirMenu('💻 ESCONDERIJO DO DUDU', [
     { txt: '💾 Salvar o jogo e dormir (vida cheia)', fn: () => { j.hp = 100; salvar(); CORTINA = { t: 0, txt: 'o Nerivan dormiu no sofá do Dudu. jogo salvo ✔' }; } },
     { txt: '📺 Ver as câmeras hackeadas da cidade', fn: () => { MAPA_ABERTO = true; } },
-    { txt: '📞 Ligar pras vovós (engenharia social)', preco: 0, fn: () => { const g = rndi(50, 400); j.grana += g; falar('luketa', `uma vovó caiu no golpe: +${fmt$(g)}. que feio, Nerivan`, 3); conta('golpes'); } }
+    { txt: '📞 Ligar pras vovós (engenharia social)', preco: 0, fn: () => { const g = rndi(50, 400) * (PERS === 'nerivan' ? 2 : 1); j.grana += g; falar('luketa', `uma vovó caiu no golpe: +${fmt$(g)}. que feio, Nerivan`, 3); conta('golpes'); } }
   ], 'wi-fi bom, cheiro de energético');
 }
 function menuCafe() {
@@ -106,7 +106,7 @@ function desenharInterior(g, dt) {
   g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, 0, VW, VH * 0.22);
   g.fillStyle = 'rgba(255,255,255,.06)'; for (let x = 0; x < VW; x += 60) g.fillRect(x, VH * 0.22, 2, VH);
   const t = W.tempo;
-  const placa = txt => { g.font = `900 ${Math.min(36, VW / 22)}px "Arial Black", system-ui`; g.textAlign = 'center'; textoContorno(g, txt, cx, VH * 0.13, '#ffd23f', 6); };
+  const placa = txt => { txt = trocaNomes(txt); g.font = `900 ${Math.min(36, VW / 22)}px "Arial Black", system-ui`; g.textAlign = 'center'; textoContorno(g, txt, cx, VH * 0.13, '#ffd23f', 6); };
   if (I.tipo === 'garagem' || I.tipo === 'desmanche') {
     g.strokeStyle = '#f1c40f'; g.lineWidth = 6; g.setLineDash([30, 20]); g.strokeRect(cx - 150, cy - 100, 300, 260); g.setLineDash([]);
     for (let k2 = 0; k2 < 8; k2++) { g.fillStyle = ['#c0392b', '#7f8c8d', '#2c3e50'][k2 % 3]; g.fillRect(40 + k2 * 50, VH * 0.06, 30, 50); }
@@ -118,8 +118,8 @@ function desenharInterior(g, dt) {
   } else if (I.tipo === 'roupas') {
     for (let k2 = 0; k2 < 10; k2++) { g.fillStyle = CAMISAS[k2 % CAMISAS.length]; g.fillRect(30 + k2 * 42, VH * 0.08, 30, 70); }
     g.fillStyle = '#b8c6d1'; rr(g, cx - 120, cy - 150, 240, 330, 20); g.fill(); g.fillStyle = '#dfe9f1'; rr(g, cx - 108, cy - 138, 216, 306, 16); g.fill();
-    const j = W.jog; g.save(); g.translate(cx, cy + 20); g.scale(4.2, 4.2);
-    desenharPessoa(g, { ...j, x: 0, y: 0, a: -Math.PI / 2 + Math.sin(t * 1.2) * 0.4, anda: t * 4 }, { nomes: false, arma: null, jog: true });
+    const j = W.jog; g.save(); g.translate(cx, cy + 20); g.scale(3.4, 3.4);
+    boneco(g, { ...j, a: Math.PI / 2 + Math.sin(t * 0.9) * 1.4, anda: t * 5, nadando: false }, 0, 28, { nomes: false, arma: null, jog: true, escala: 1 });
     g.restore(); placa('SIMAS STORE · PROVADOR');
   } else if (I.tipo === 'armas') {
     for (let k2 = 0; k2 < ORDEM_ARMAS.length; k2++) { const a = ORDEM_ARMAS[k2]; g.fillStyle = '#3d2b1f'; g.fillRect(30 + (k2 % 5) * 110, VH * 0.25 + Math.floor(k2 / 5) * 110, 96, 90); iconeArma(g, a, 78 + (k2 % 5) * 110, VH * 0.25 + 45 + Math.floor(k2 / 5) * 110, 2.4, '#ddd'); }
@@ -131,7 +131,7 @@ function desenharInterior(g, dt) {
   } else if (I.tipo === 'padaria' || I.tipo === 'cafe') {
     g.fillStyle = '#8d6e63'; g.fillRect(40, cy - 40, W2 - 80, 80); g.fillStyle = 'rgba(200,230,255,.35)'; g.fillRect(40, cy - 40, W2 - 80, 30);
     for (let k2 = 0; k2 < 9; k2++) { g.fillStyle = '#e0a458'; g.beginPath(); g.ellipse(80 + k2 * ((W2 - 160) / 8), cy + 10, 22, 12, 0, 0, 7); g.fill(); }
-    if (I.tipo === 'cafe') { const sib = { x: cx, y: cy - 110, a: Math.PI / 2, camisa: '#e67e22', calca: '#2c3e50', pele: '#c68642', cabelo: '#111', cabeloLongo: true }; g.save(); g.translate(cx, cy - 110); g.scale(3, 3); desenharPessoa(g, { ...sib, x: 0, y: 0 }, { nomes: false }); g.restore(); if ((t * 0.7 | 0) % 2) { g.font = 'bold 18px system-ui'; g.textAlign = 'center'; textoContorno(g, '"' + XINGOS_SIBITO[(t * 0.35 | 0) % XINGOS_SIBITO.length] + '"', cx, cy - 170, '#ffb3b3', 4); } }
+    if (I.tipo === 'cafe') { const sib = { x: cx, y: cy - 110, a: Math.PI / 2, camisa: '#e67e22', calca: '#2c3e50', pele: '#c68642', cabelo: '#111', cabeloLongo: true }; g.save(); g.translate(cx, cy - 60); g.scale(2.4, 2.4); boneco(g, { ...sib, a: Math.PI / 2 }, 0, 0, { nomes: false }); g.restore(); if ((t * 0.7 | 0) % 2) { g.font = 'bold 18px system-ui'; g.textAlign = 'center'; textoContorno(g, '"' + XINGOS_SIBITO[(t * 0.35 | 0) % XINGOS_SIBITO.length] + '"', cx, cy - 170, '#ffb3b3', 4); } }
     placa(I.tipo === 'cafe' ? 'CAFÉ DO PORTO' : 'PADARIA');
   } else if (I.tipo === 'fatal') {
     for (let k2 = 0; k2 < 6; k2++) { g.fillStyle = `hsla(${320 + k2 * 8},90%,${45 + Math.sin(t * 3 + k2) * 10}%,.5)`; g.beginPath(); g.arc(80 + k2 * 120, VH * 0.4 + Math.sin(t + k2) * 20, 50, 0, 7); g.fill(); }
@@ -161,7 +161,7 @@ function atualizaNado(dt) {
   const j = W.jog; if (j.carro || j.morto) { j.nadando = false; return; }
   j.nadando = tileEm(j.x, j.y) === TL.AGUA;
   if (j.nadando) {
-    j.folego = (j.folego ?? 100) - dt * 9;
+    j.folego = (j.folego ?? 100) - dt * 9 / (PERS === 'nauj' ? 3 : 1);
     if (rnd() < dt * 4) W.efeitos.push({ t: 'onda', x: j.x, y: j.y, vida: 1, max: 1 });
     if (j.folego <= 0) { j.folego = 0; ferirJogador(30 * dt / DIFIC); if (!W.avisoFolego) { W.avisoFolego = true; falar('luketa', 'tá sem fôlego! volta pra terra ou pega um barco!', 3); } }
     else if (!W.avisoNado) { W.avisoNado = true; falar('luketa', 'nadando! fica de olho no fôlego (barra azul). a lancha e o jet ski ficam nos píer', 4); }

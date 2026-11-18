@@ -9,7 +9,7 @@ let RODANDO = false, ultimo = 0, carroAntes = null, lojaAtual = null;
 function salvar() {
   const j = W.jog; if (!j) return;
   const d = { v: 1, grana: j.grana, tem: j.tem, municao: { ...j.municao, punho: 0 }, camisa: j.camisa, calca: j.calca, chapeu: j.chapeu, oculos: j.oculos, feitas: MISSAO.feitas, garagem: W.garagem, stats: W.stats,
-    roupa: { estampa: j.estampa, jaqueta: j.jaqueta, mochila: j.mochila, corrente: j.corrente, chapeuTipo: j.chapeuTipo, tenis: j.tenis, tenisCor: j.tenisCor, temTenis: j.temTenis, temRodas: j.temRodas },
+    roupa: { estampa: j.estampa, jaqueta: j.jaqueta, mochila: j.mochila, corrente: j.corrente, chapeuTipo: j.chapeuTipo, tenis: j.tenis, tenisCor: j.tenisCor, temTenis: j.temTenis, temRodas: j.temRodas, oculosTipo: j.oculosTipo, mascara: j.mascara, costas: j.costas, costasCor: j.costasCor, cintura: j.cintura, fantasia: j.fantasia, corte: j.corte, cabelo: j.cabelo, barba: j.barba, pele: j.pele },
     imoveis: W.imoveis || [], segredos: W.segredos || [], extras: W.extras || {}, pontos: Math.floor(W.pontos), trofeus: W.trofeus || [] };
   try { localStorage.setItem('gta7-save', JSON.stringify(d)); } catch (e) { }
 }
@@ -46,6 +46,7 @@ function estacionados() {
   }
 }
 
+let PERS_ESCOLHA = null;
 function comecar(save) {
   gerarMapa(); gerarMini(); carregarRostos();
   const ini = save ? LUGAR.dudu : LUGAR.policia;
@@ -58,6 +59,7 @@ function comecar(save) {
     Object.assign(j, save.roupa || {}); W.imoveis = save.imoveis || []; W.segredos = save.segredos || []; W.extras = save.extras || {}; W.pontos = save.pontos || 0; W.trofeus = save.trofeus || [];
   }
   espalharItens(); criarFixos(); criarFiguras(); estacionados(); criarSegredos(); criarBarcos(); criarTesouro();
+  if (ONLINE.ativo) aplicarPersonagemOnline(ONLINE.skin); else PERS = 'nerivan';
   if (MISSAO.feitas >= MISSOES.length) liberarFatal(false);
   cam.x = j.x; cam.y = j.y;
   povoarInicial();
@@ -118,13 +120,13 @@ function passo(dt) {
     { RADIO.atual = (RADIO.atual + 1) % RADIOS.length; RADIO.tocar(true); RADIO_AVISO = { t: 0 }; }
   }
   if (W.escorregou > 0) W.escorregou -= dt;
-  if (!j.morto && j.hp < 100 && W.tempo - (W.ultDano || 0) > 5) j.hp = Math.min(100, j.hp + 4 * dt);
+  if (!j.morto && j.hp < 100 && W.tempo - (W.ultDano || 0) > 5) j.hp = Math.min(100, j.hp + 4 * dt * (PERS === 'cas' ? 2 : 1));
   j.recarga = Math.max(0, j.recarga - dt);
   if (j.carro) atualizaJogadorCarro(dt); else atualizaJogadorPe(dt);
   if (j.carro !== carroAntes) { if (j.carro) { CARRO_AVISO = { txt: TIPOS_CARRO[j.carro.modelo].nome, t: 0 }; RADIO_AVISO = { t: 0 }; } carroAntes = j.carro; }
   if (!j.carro) SOM.atualizaMotor(0, false);
   atualizaPeds(dt); atualizaCarros(dt); colisoes(dt); atualizaBalas(dt); atualizaItens(dt); atualizaChefes(dt);
-  atualizaProcurado(dt); atualizaEfeitos(dt); povoar(dt, VW / cam.zoom, VH / cam.zoom);
+  atualizaProcurado(dt); atualizaEfeitos(dt); povoar(dt, VW / cam.zoom, VH / (cam.zoom * INCL));
   MISSAO.tick(dt); gatilhos(); atualizaNado(dt); atualizaConquistas(dt); atualizaGangueMoto(dt); atualizaDicas(dt); atualizaFiguras(dt); atualizaRenda(dt); atualizaSegredos(dt);
 }
 

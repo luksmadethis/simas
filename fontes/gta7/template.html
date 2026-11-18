@@ -61,6 +61,7 @@ canvas{display:block;cursor:crosshair}
 #toque .b-arma{right:calc(110px + env(safe-area-inset-right));bottom:calc(104px + env(safe-area-inset-bottom));width:54px;height:54px;font-size:20px}
 #toque .b-radio{right:calc(14px + env(safe-area-inset-right));top:calc(182px + env(safe-area-inset-top));width:44px;height:44px;font-size:18px}
 #toque .b-mapa{right:calc(64px + env(safe-area-inset-right));top:calc(182px + env(safe-area-inset-top));width:44px;height:44px;font-size:18px}
+#toque .b-nitro{right:calc(264px + env(safe-area-inset-right));top:calc(182px + env(safe-area-inset-top));width:44px;height:44px;font-size:18px}
 #toque .b-rodas{right:calc(164px + env(safe-area-inset-right));top:calc(182px + env(safe-area-inset-top));width:44px;height:44px;font-size:18px}
 #toque .b-pausa{right:calc(114px + env(safe-area-inset-right));top:calc(182px + env(safe-area-inset-top));width:44px;height:44px;font-size:16px}
 #radio{position:fixed;right:16px;bottom:16px;z-index:35;width:212px;padding:0 6px 6px;border-radius:12px;background:#15121f;border:3px solid #a29bfe;box-shadow:5px 5px 0 #000;opacity:0;pointer-events:none;transform:translateY(20px);transition:opacity .3s,transform .3s}
@@ -95,6 +96,13 @@ body.titulo-on #radio{right:auto;left:50%;transform:translateX(-50%);bottom:12px
 #lobby .vai{margin-top:16px;width:100%;font:900 20px "Arial Black",sans-serif;padding:14px;border-radius:12px;border:3px solid #000;background:#00e5ff;color:#111;box-shadow:5px 5px 0 #000;cursor:pointer}
 #lobby .volta{margin-top:8px;width:100%;padding:10px;border-radius:10px;border:0;background:#333;color:#fff;font-weight:700;cursor:pointer}
 @media (max-width:520px){#lobby .skins{grid-template-columns:repeat(4,1fr)}}
+#lobby .skins span{display:block;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#lobby .ficha{display:flex;gap:12px;margin-top:14px;background:#0d0b14;border:2px solid #2c2838;border-radius:10px;padding:12px;align-items:flex-start}
+#lobby .ficha img{width:86px;height:86px;border-radius:50%;border:3px solid #ffd23f;flex:none}
+#lobby .ficha h3{font:900 20px "Arial Black",sans-serif;color:#fff}
+#lobby .ficha b{color:#ff6ec7;font-size:12px;text-transform:uppercase;letter-spacing:1px}
+#lobby .ficha p{color:#ccc;font-size:13px;line-height:1.45;margin-top:6px}
+#lobby .ficha .poder{color:#00e5ff;font-weight:800}
 #chatOn{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:45;display:none;width:min(520px,92vw)}
 #chatOn input{width:100%;padding:12px 14px;border-radius:12px;border:3px solid #00e5ff;background:rgba(10,8,20,.95);color:#fff;font:700 16px system-ui}
 #toque .b-chat{right:calc(214px + env(safe-area-inset-right));top:calc(182px + env(safe-area-inset-top));width:44px;height:44px;font-size:18px}
@@ -123,7 +131,7 @@ body.titulo-on #radio{right:auto;left:50%;transform:translateX(-50%);bottom:12px
 <div id="toque">
   <div class="jo"><div class="bola"></div></div>
   <button class="b-tiro">🔫</button><button class="b-carro">🚗</button><button class="b-freio">FREIO</button><button class="b-arma">🔄</button>
-  <button class="b-radio">📻</button><button class="b-rodas">🛹</button><button class="b-mapa">🗺️</button><button class="b-pausa">⏸️</button><button class="b-chat">💬</button>
+  <button class="b-radio">📻</button><button class="b-rodas">🛹</button><button class="b-nitro">🚀</button><button class="b-mapa">🗺️</button><button class="b-pausa">⏸️</button><button class="b-chat">💬</button>
 </div>
 <div id="radio"><div class="topo">📻 RÁDIO POLI FM <span>R troca</span></div><div id="yt"></div></div>
 <button id="retry">↻ TENTAR DE NOVO</button>

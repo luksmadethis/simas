@@ -5,6 +5,7 @@ W.pontos = 0;
 const ST = () => W.stats;
 function pontuar(n, txt) {
   if (!n || !W.jog) return;
+  if (PERS === 'poli') n = Math.round(n * 1.25);
   W.pontos += n; HUD_PTS_T = 1.2;
   if (txt) W.efeitos.push({ t: 'texto', x: W.jog.x, y: W.jog.y - 46, txt: `${txt} +${n}`, vida: 1.4, max: 1.4, cor: '#7fd7ff' });
 }

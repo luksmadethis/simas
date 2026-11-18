@@ -54,6 +54,7 @@ function novoJogador(x, y) {
 }
 
 function novoPed(x, y, extra = {}) {
+  if (extra.nome && PERS !== 'nerivan') extra.nome = trocaNomes(extra.nome);
   return { tipo: 'ped', x, y, a: rnd(Math.PI * 2), vel: rnd(45, 70), dir: rndi(0, 3), hp: 30, pele: pick(PELES), cabelo: pick(CABELOS), camisa: pick(CAMISAS),
     medo: 0, anda: rnd(10), troca: rnd(1, 4), ...extra };
 }
@@ -152,7 +153,8 @@ function fisicaCarro(c, dt, acel, freio, vira, freioMao) {
   if (acel) vFrente += t.acel * (1 + c.motor * 0.15) * dt;
   if (freio) vFrente -= (vFrente > 20 ? t.acel * 1.6 : t.acel * 0.6) * dt;
   if (!acel && !freio) vFrente *= Math.pow(0.55, dt);
-  vFrente = clamp(vFrente, -vmax * 0.4, vmax);
+  if (c.nitroOn) vFrente += t.acel * 1.4 * dt;
+  vFrente = clamp(vFrente, -vmax * 0.4, vmax * (c.nitroOn ? 1.45 : 1));
   const ader = freioMao ? 1.2 : t.aderencia;
   vLado *= Math.exp(-ader * dt);
   if (freioMao) vFrente *= Math.pow(0.35, dt);
@@ -314,7 +316,7 @@ function copsPerto(r) {
 
 function crime(n) {
   if (!n || W.semPolicia) return;
-  W.calor += n; W.semVer = 0;
+  W.calor += n * (PERS === 'gelado' ? 0.5 : 1); W.semVer = 0;
   const novo = clamp(Math.ceil(W.calor / 3), 0, 5);
   if (novo > W.procurado) {
     W.procurado = novo; W.picoFuga = Math.max(W.picoFuga || 0, novo);
@@ -388,7 +390,7 @@ function iaTransito(c, dt) {
 // ---------- visão e caminho pelas ruas ----------
 function temVisao(ax, ay, bx, by) {
   const d = dist(ax, ay, bx, by), n = Math.ceil(d / 28);
-  for (let k = 1; k < n; k++) if (solidoEm(lerp(ax, bx, k / n), lerp(ay, by, k / n))) return false;
+  for (let k = 1; k < n; k++) if (paredeEm(lerp(ax, bx, k / n), lerp(ay, by, k / n))) return false;
   return true;
 }
 const noPos = (kx, ky) => ({ x: (GRID * kx + 1) * T, y: (GRID * ky + 1) * T });

@@ -84,7 +84,13 @@ const SOM = {
   grana() { this.bip(1200, 0.06, 0.12, 'square'); setTimeout(() => this.bip(1600, 0.1, 0.12, 'square'), 60); },
   missao() { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => this.bip(f, 0.18, 0.15, 'triangle'), i * 120)); },
   falha() { [400, 300, 200].forEach((f, i) => setTimeout(() => this.bip(f, 0.25, 0.15, 'sawtooth'), i * 160)); },
-  buzina() { this.bip(420, 0.35, 0.15, 'square'); this.bip(520, 0.35, 0.1, 'square'); },
+  buzina(tipo) {
+    if (tipo === 'corneta') { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => this.bip(f, 0.16, 0.12, 'sawtooth'), i * 130)); return; }
+    if (tipo === 'caminhao') { this.bip(150, 0.8, 0.2, 'sawtooth'); this.bip(190, 0.8, 0.15, 'sawtooth'); return; }
+    if (tipo === 'palhaco') { this.bip(900, 0.12, 0.15, 'square'); setTimeout(() => this.bip(600, 0.18, 0.15, 'square'), 140); return; }
+    if (tipo === 'galinha') { [880, 1100, 700].forEach((f, i) => setTimeout(() => this.bip(f, 0.09, 0.14, 'triangle'), i * 90)); return; }
+    this.bip(420, 0.35, 0.15, 'square'); this.bip(520, 0.35, 0.1, 'square');
+  },
   atualizaMotor(vel, ligado) {
     if (!this.ctx) return; const t = this.ctx.currentTime;
     this.motor.frequency.setTargetAtTime(35 + Math.abs(vel) * 0.18, t, 0.08);
