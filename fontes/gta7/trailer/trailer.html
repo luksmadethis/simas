@@ -1,0 +1,194 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body>
+<canvas id="c" width="1280" height="720"></canvas>
+<script>
+const C = document.getElementById('c'), g = C.getContext('2d'), W = 1280, H = 720, F = '"Inter Display", Inter, sans-serif';
+const NOMES = ['nerivan','ltzin','gelado','matt','meco','nauj','yori','alan','dudu','cas','poli','luketa'];
+const IM = {}; let carregadas = 0;
+for (const n of NOMES) { const im = new Image(); im.onload = () => carregadas++; im.src = 'file:///home/claude/simas/public/galera/' + n + '.jpg'; IM[n] = im; }
+window.pronto = () => carregadas === NOMES.length;
+const cl = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v)), sm = t => t * t * (3 - 2 * t), lp = (a, b, t) => a + (b - a) * t;
+const fase = (t, a, b) => cl((t - a) / (b - a));
+function hash(n) { const x = Math.sin(n * 127.1) * 43758.5453; return x - Math.floor(x); }
+function grao(t, forca = 0.07) { // film grain + vinheta
+  g.save(); g.globalAlpha = forca;
+  for (let i = 0; i < 900; i++) { const x = hash(i + t * 97) * W, y = hash(i * 3.1 + t * 53) * H; g.fillStyle = hash(i + t) > 0.5 ? '#fff' : '#000'; g.fillRect(x, y, 2, 2); }
+  g.restore();
+  const v = g.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.9); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.75)'); g.fillStyle = v; g.fillRect(0, 0, W, H);
+}
+function letterbox(k = 1) { g.fillStyle = '#000'; g.fillRect(0, 0, W, 70 * k); g.fillRect(0, H - 70 * k, W, 70 * k); }
+function flare(x, y, s, a) {
+  g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = a;
+  const r = g.createRadialGradient(x, y, 0, x, y, 260 * s); r.addColorStop(0, 'rgba(255,240,210,1)'); r.addColorStop(0.15, 'rgba(255,170,90,.6)'); r.addColorStop(1, 'rgba(255,80,120,0)');
+  g.fillStyle = r; g.fillRect(x - 300 * s, y - 300 * s, 600 * s, 600 * s);
+  g.fillStyle = 'rgba(255,200,160,.35)'; g.fillRect(0, y - 2 * s, W, 4 * s);
+  for (let k = 1; k <= 4; k++) { const fx = lp(x, W - x, k / 4), fy = lp(y, H - y, k / 4); g.fillStyle = `rgba(${120 + k * 30},${180 - k * 20},255,.18)`; g.beginPath(); g.arc(fx, fy, 20 + k * 14, 0, 7); g.fill(); }
+  g.restore();
+}
+function texto(t, x, y, tam, cor, alfa = 1, al = 'center', italico = true, esp = 0) {
+  g.save(); g.globalAlpha = alfa; g.font = `${italico ? 'italic ' : ''}900 ${tam}px ${F}`; g.textAlign = al; g.textBaseline = 'middle';
+  if (esp) g.letterSpacing = esp + 'px';
+  g.shadowColor = 'rgba(0,0,0,.85)'; g.shadowBlur = 18; g.lineWidth = Math.max(3, tam / 12); g.strokeStyle = 'rgba(0,0,0,.55)'; g.strokeText(t, x, y); g.fillStyle = cor; g.fillText(t, x, y); g.restore();
+}
+function ceuPorDoSol(t) {
+  const s = g.createLinearGradient(0, 0, 0, H); s.addColorStop(0, '#1a0b3d'); s.addColorStop(0.35, '#7a1f6e'); s.addColorStop(0.62, '#ff5e62'); s.addColorStop(0.8, '#ffb347'); s.addColorStop(1, '#ffd66b');
+  g.fillStyle = s; g.fillRect(0, 0, W, H);
+}
+function predios(seed, base, alt, cor, pan, janelas) {
+  g.fillStyle = cor; let x = -200 + (pan % 160);
+  for (let i = 0; x < W + 200; i++) {
+    const w = 50 + hash(seed + i) * 90, h = alt * (0.4 + hash(seed * 2 + i) * 0.9);
+    g.fillRect(x, base - h, w, h + 400);
+    if (hash(seed + i * 7) > 0.7) { g.fillRect(x + w / 2 - 2, base - h - 40, 4, 40); }
+    if (janelas) { for (let yy = base - h + 10; yy < base - 10; yy += 16) for (let xx = x + 6; xx < x + w - 8; xx += 12) if (hash(xx * 0.3 + yy * 1.7 + seed) > 0.62) { g.fillStyle = hash(xx + yy) > 0.5 ? 'rgba(255,210,120,.9)' : 'rgba(120,220,255,.8)'; g.fillRect(xx, yy, 5, 7); } g.fillStyle = cor; }
+    x += w + 6;
+  }
+}
+function palmeira(x, y, s) {
+  g.save(); g.translate(x, y); g.scale(s, s); g.strokeStyle = '#140818'; g.fillStyle = '#140818'; g.lineWidth = 14; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(30, -180, 10, -330); g.stroke();
+  for (let k = 0; k < 8; k++) { const a = -Math.PI / 2 + (k - 3.5) * 0.42; g.lineWidth = 9; g.beginPath(); g.moveTo(10, -330); g.quadraticCurveTo(10 + Math.cos(a) * 90, -330 + Math.sin(a) * 50 - 40, 10 + Math.cos(a) * 170, -330 + Math.sin(a) * 40 + 70); g.stroke(); }
+  g.restore();
+}
+function cena1(t) { // cidade no pôr do sol
+  const k = fase(t, 3, 8), pan = k * 260;
+  ceuPorDoSol(t);
+  const sx = 820 - k * 80, sy = 430 - k * 40;
+  const sol = g.createRadialGradient(sx, sy, 0, sx, sy, 320); sol.addColorStop(0, 'rgba(255,250,220,1)'); sol.addColorStop(0.18, 'rgba(255,220,140,.95)'); sol.addColorStop(0.4, 'rgba(255,140,100,.35)'); sol.addColorStop(1, 'rgba(255,100,120,0)');
+  g.fillStyle = sol; g.fillRect(0, 0, W, H);
+  // raios de luz
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2 + t * 0.05; g.fillStyle = 'rgba(255,200,150,.05)'; g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx + Math.cos(a) * 1600, sy + Math.sin(a) * 1600); g.lineTo(sx + Math.cos(a + 0.08) * 1600, sy + Math.sin(a + 0.08) * 1600); g.fill(); }
+  g.restore();
+  predios(3, 520, 260, 'rgba(80,30,90,.65)', pan * 0.3, false);
+  predios(7, 580, 320, 'rgba(45,15,60,.85)', pan * 0.6, true);
+  predios(11, 660, 300, '#1a0820', pan, true);
+  // névoa
+  const n = g.createLinearGradient(0, 500, 0, 720); n.addColorStop(0, 'rgba(255,120,140,0)'); n.addColorStop(1, 'rgba(255,120,140,.35)'); g.fillStyle = n; g.fillRect(0, 480, W, 240);
+  // pássaros
+  g.strokeStyle = '#1a0820'; g.lineWidth = 2; for (let i = 0; i < 9; i++) { const bx = (i * 140 + t * 60) % (W + 100) - 50, by = 160 + Math.sin(i * 2 + t) * 30 + i * 8, w = Math.sin(t * 8 + i) * 4; g.beginPath(); g.moveTo(bx - 8, by - w); g.lineTo(bx, by); g.lineTo(bx + 8, by - w); g.stroke(); }
+  palmeira(90 - pan * 1.4, 720, 1.05); palmeira(1180 - pan * 1.4, 740, 1.2); palmeira(1320 - pan * 1.4, 740, 0.9);
+  flare(sx, sy, 1, 0.55);
+  const a = fase(t, 4, 5) * (1 - fase(t, 7.3, 8));
+  texto('SÃO SIMAS', 90, 560, 64, '#fff', a, 'left'); texto('UM LUGAR ONDE NINGUÉM PAGA NADA', 92, 610, 18, '#ffd23f', a, 'left', false, 4);
+}
+function retrato(nome, t, a, b, titulo, sub, cor1, cor2, dir = 1) {
+  const k = fase(t, a, b), im = IM[nome];
+  const z = 1.15 + k * 0.18, ox = dir * (k - 0.5) * 80;
+  // fundo desfocado
+  const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, cor1); bg.addColorStop(1, cor2); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  g.save(); g.filter = 'blur(24px) saturate(1.4)'; g.globalAlpha = 0.5; g.drawImage(im, -100, -300, W + 200, W + 200); g.restore();
+  g.save(); g.globalCompositeOperation = 'multiply'; const s = H * z; g.drawImage(im, W * 0.62 - s / 2 + ox, H * 0.5 - s * 0.47, s, s); g.restore();
+  // luz de contorno neon
+  g.save(); g.globalCompositeOperation = 'screen'; const rl = g.createLinearGradient(W * 0.3, 0, W, 0); rl.addColorStop(0, 'rgba(0,0,0,0)'); rl.addColorStop(1, cor2); g.globalAlpha = 0.45; g.fillStyle = rl; g.fillRect(0, 0, W, H); g.restore();
+  // chuva
+  g.strokeStyle = 'rgba(220,230,255,.35)'; g.lineWidth = 1.5; for (let i = 0; i < 140; i++) { const x = hash(i) * W + t * 40, y = (hash(i * 7) * H + t * 1400) % H; g.beginPath(); g.moveTo(x % W, y); g.lineTo(x % W - 6, y + 28); g.stroke(); }
+  const e = sm(fase(t, a, a + 0.5)), sai = 1 - fase(t, b - 0.25, b);
+  texto(titulo, lp(-200, 80, e), 330, 92, '#fff', e * sai, 'left');
+  texto(sub, lp(-200, 84, e), 400, 22, '#ffd23f', e * sai, 'left', false, 5);
+}
+function perseguicao(t) { // estrada à noite com polícia
+  const k = fase(t, 14, 18);
+  g.fillStyle = '#05030c'; g.fillRect(0, 0, W, H);
+  const hz = 300;
+  const ceu = g.createLinearGradient(0, 0, 0, hz); ceu.addColorStop(0, '#05030c'); ceu.addColorStop(1, '#2a0d3e'); g.fillStyle = ceu; g.fillRect(0, 0, W, hz);
+  predios(19, hz + 5, 140, '#120820', k * 100, true);
+  g.fillStyle = '#111'; g.beginPath(); g.moveTo(W / 2 - 30, hz); g.lineTo(W / 2 + 30, hz); g.lineTo(W + 400, H); g.lineTo(-400, H); g.fill();
+  for (let i = 0; i < 14; i++) { const z = ((i / 14) + t * 1.8) % 1, zz = z * z, y = hz + zz * (H - hz), w = 4 + zz * 26; g.fillStyle = '#e8c547'; g.fillRect(W / 2 - w / 2, y, w, 8 + zz * 60); }
+  // rastros de luz
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 30; i++) { const lado = i % 2 ? 1 : -1, z = ((hash(i) + t * 1.3) % 1), zz = z * z, y = hz + zz * (H - hz), x = W / 2 + lado * (40 + zz * 700) * (0.5 + hash(i * 3)), len = 40 + zz * 300;
+    g.strokeStyle = lado > 0 ? 'rgba(255,40,60,.7)' : 'rgba(255,240,200,.7)'; g.lineWidth = 2 + zz * 6; g.beginPath(); g.moveTo(x, y); g.lineTo(x + lado * len * 0.6, y + len * 0.3); g.stroke(); }
+  g.restore();
+  // sirene
+  const p = (t * 6 | 0) % 2; g.save(); g.globalCompositeOperation = 'lighter';
+  const sr = g.createRadialGradient(p ? 0 : W, H / 2, 0, p ? 0 : W, H / 2, 700); sr.addColorStop(0, p ? 'rgba(255,30,30,.8)' : 'rgba(30,80,255,.8)'); sr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = sr; g.fillRect(0, 0, W, H); g.restore();
+  // carro do jogador (silhueta) no meio
+  g.fillStyle = '#000'; g.beginPath(); g.moveTo(W / 2 - 170, H - 80); g.lineTo(W / 2 - 140, H - 170); g.lineTo(W / 2 + 140, H - 170); g.lineTo(W / 2 + 170, H - 80); g.lineTo(W / 2 + 180, H); g.lineTo(W / 2 - 180, H); g.fill();
+  g.fillStyle = '#ff2b3b'; g.fillRect(W / 2 - 160, H - 120, 70, 12); g.fillRect(W / 2 + 90, H - 120, 70, 12);
+  g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(255,40,60,.35)'; g.beginPath(); g.arc(W / 2 - 125, H - 114, 60, 0, 7); g.arc(W / 2 + 125, H - 114, 60, 0, 7); g.fill(); g.restore();
+  // o Gelado piscando
+  if (t > 15.6 && t < 17.4 && (t * 10 | 0) % 3 !== 0) { const im = IM.gelado; g.save(); g.beginPath(); g.arc(W - 290, 260, 200, 0, 7); g.clip(); g.globalAlpha = 0.85; g.drawImage(im, W - 520, 30, 460, 460); g.globalAlpha = 1; const fr = g.createRadialGradient(W - 290, 260, 120, W - 290, 260, 200); fr.addColorStop(0, 'rgba(5,3,12,0)'); fr.addColorStop(1, 'rgba(5,3,12,1)'); g.fillStyle = fr; g.fillRect(W - 500, 50, 420, 420); g.restore(); texto('R$500 POR DIA', W - 290, 520, 40, '#ffd23f', 1); }
+  const a = fase(t, 14.3, 14.8) * (1 - fase(t, 17.6, 18));
+  texto('RAY TRACING · 8K · 240 FPS · FAROFA TRACING™', W / 2, 120, 22, '#fff', a, 'center', false, 4);
+}
+function robo(t) {
+  const k = fase(t, 18, 22);
+  const s = g.createLinearGradient(0, 0, 0, H); s.addColorStop(0, '#1a0000'); s.addColorStop(0.6, '#8a1a00'); s.addColorStop(1, '#ff6a00'); g.fillStyle = s; g.fillRect(0, 0, W, H);
+  // fumaça
+  for (let i = 0; i < 40; i++) { const x = hash(i) * W, y = H - ((hash(i * 3) * 400 + t * 60 * (0.5 + hash(i))) % 700); g.fillStyle = `rgba(20,0,0,${0.15 + hash(i * 5) * 0.2})`; g.beginPath(); g.arc(x, y, 60 + hash(i * 9) * 90, 0, 7); g.fill(); }
+  const sc = 1 + k * 0.25, cx = W / 2, by = H + 40;
+  g.save(); g.translate(cx, by); g.scale(sc, sc); g.fillStyle = '#080000';
+  g.fillRect(-140, -250, 90, 250); g.fillRect(50, -250, 90, 250); // pernas
+  g.fillRect(-230, -560, 460, 330); // corpo
+  g.fillRect(-330, -540, 110, 300); g.fillRect(220, -540, 110, 300); // braços
+  g.fillRect(-90, -680, 180, 130); // cabeça
+  g.fillRect(-320, -250, 30, 120); g.fillRect(290, -250, 30, 120);
+  g.restore();
+  // olhos e laser
+  const ey = by - 620 * sc, ex1 = cx - 40 * sc, ex2 = cx + 40 * sc;
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (const ex of [ex1, ex2]) { const r = g.createRadialGradient(ex, ey, 0, ex, ey, 60); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.2, 'rgba(255,30,60,1)'); r.addColorStop(1, 'rgba(255,0,0,0)'); g.fillStyle = r; g.fillRect(ex - 60, ey - 60, 120, 120); }
+  if (t > 19.4) { const a = -0.3 + Math.sin(t * 2) * 0.6; for (const ex of [ex1, ex2]) { g.strokeStyle = 'rgba(255,40,70,.9)'; g.lineWidth = 10; g.beginPath(); g.moveTo(ex, ey); g.lineTo(ex + Math.cos(a + Math.PI / 2) * 1400, ey + Math.sin(a + Math.PI / 2) * 1400); g.stroke(); g.strokeStyle = '#fff'; g.lineWidth = 3; g.stroke(); } }
+  for (let i = 0; i < 50; i++) { const x = hash(i + 4) * W, y = (hash(i * 2) * H - t * 300 * hash(i)) % H; g.fillStyle = 'rgba(255,200,80,.8)'; g.fillRect(x, (y + H) % H, 3, 3); }
+  g.restore();
+  const a = fase(t, 19, 19.6) * (1 - fase(t, 21.5, 22));
+  texto('ATÉ O CLAUDE ESTÁ CONTRA VOCÊ', W / 2, 140, 46, '#fff', a);
+  texto('(ele avisou que era má ideia)', W / 2, 190, 18, '#ffb3b3', a, 'center', false, 2);
+}
+function montagem(t) {
+  const lista = [['meco', 'O NEYMAR DO FUNK'], ['nauj', 'TEU GUIA FAVORITO'], ['yori', 'ALIMENTA O BRASIL'], ['alan', 'DESENHISTA DESVALORIZADO'], ['dudu', 'HACKER'], ['cas', 'SENTADO DESDE TERÇA'], ['poli', 'OUVIDO ABSOLUTO'], ['luketa', 'TEU GUIA']];
+  const i = Math.min(lista.length - 1, Math.floor((t - 22) / 0.375)), [n, txt] = lista[i], lt = ((t - 22) % 0.375) / 0.375;
+  const cores = [['#ff3d8b', '#ffd23f'], ['#00c9a7', '#2a6bff'], ['#f7971e', '#ffd200'], ['#8e2de2', '#ff3d8b']][i % 4];
+  const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, cores[0]); bg.addColorStop(1, cores[1]); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  g.save(); g.globalCompositeOperation = 'multiply'; const s = H * (1.25 + lt * 0.15); g.drawImage(IM[n], (i % 2 ? W * 0.3 : W * 0.7) - s / 2, H / 2 - s * 0.45, s, s); g.restore();
+  texto(txt, i % 2 ? W - 70 : 70, H - 140, 52, '#fff', 1, i % 2 ? 'right' : 'left');
+  if (lt < 0.15) { g.fillStyle = 'rgba(255,255,255,.7)'; g.fillRect(0, 0, W, H); }
+  // glitch
+  if (lt > 0.85) for (let k = 0; k < 8; k++) { const y = hash(k + t * 10) * H, h = 10 + hash(k) * 30; g.drawImage(C, 0, y, W, h, (hash(k * 3 + t) - 0.5) * 60, y, W, h); }
+}
+function logo(t) {
+  const k = fase(t, 25, 30);
+  g.fillStyle = '#07040d'; g.fillRect(0, 0, W, H);
+  const bg = g.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, 700); bg.addColorStop(0, 'rgba(255,61,139,.45)'); bg.addColorStop(1, 'rgba(7,4,13,0)'); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  const bat = sm(fase(t, 25, 25.35)), esc = lp(3.2, 1, bat) + Math.max(0, Math.sin((t - 25.35) * 30) * 0.03 * (1 - fase(t, 25.35, 26)));
+  if (t > 25.3) { const r = (t - 25.3) * 1600; g.strokeStyle = `rgba(255,255,255,${cl(1 - (t - 25.3) * 1.5)})`; g.lineWidth = 8; g.beginPath(); g.arc(W / 2, H / 2 - 30, r, 0, 7); g.stroke(); }
+  g.save(); g.translate(W / 2, H / 2 - 40); g.scale(esc, esc * 1.15); g.rotate(-0.06);
+  g.font = `italic 900 210px ${F}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = 'rgba(0,229,255,.7)'; g.fillText('GTA 7', -6, 0); g.fillStyle = 'rgba(255,40,80,.7)'; g.fillText('GTA 7', 6, 0);
+  const gr = g.createLinearGradient(0, -100, 0, 100); gr.addColorStop(0, '#fff'); gr.addColorStop(0.45, '#ffd23f'); gr.addColorStop(1, '#ff3d8b'); g.fillStyle = gr; g.fillText('GTA 7', 0, 0);
+  g.restore();
+  const a = fase(t, 25.8, 26.4);
+  texto('GRAND THEFT AUTO 7', W / 2, H / 2 + 110, 34, '#fff', a, 'center', true, 10);
+  const a2 = fase(t, 26.6, 27.2);
+  texto('JÁ DISPONÍVEL', W / 2, H / 2 + 175, 26, '#ffd23f', a2, 'center', false, 8);
+  texto('ofisimas.web.app/jogos/gta7', W / 2, H / 2 + 212, 18, '#ccc', a2, 'center', false, 3);
+  const a3 = fase(t, 28, 28.6);
+  texto('*gráficos meramente ilustrativos', W - 40, H - 100, 14, '#888', a3, 'right', false, 1);
+  flare(lp(-200, W + 200, fase(t, 25.3, 27)), H / 2 - 40, 0.8, 0.5 * (1 - fase(t, 26.5, 27)));
+}
+function abertura(t) {
+  g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+  const a = fase(t, 0.4, 1.2) * (1 - fase(t, 2.4, 3));
+  texto('SIMAS GAMES', W / 2, H / 2 - 10, 54, '#fff', a, 'center', false, 18);
+  texto('apresenta', W / 2, H / 2 + 44, 18, '#aaa', a, 'center', false, 8);
+  flare(lp(200, W - 200, fase(t, 0.5, 2.6)), H / 2 - 10, 0.7, a * 0.6);
+}
+window.draw = t => {
+  g.save();
+  if (t < 3) abertura(t);
+  else if (t < 8) cena1(t);
+  else if (t < 10) retrato('nerivan', t, 8, 10, 'NERIVAN', 'REI DA ENGENHARIA SOCIAL', '#ff9a3c', '#ff3d8b', 1);
+  else if (t < 12) retrato('ltzin', t, 10, 12, 'O REI DE RECIFE', 'ELE DÁ CHOQUE NO SEU SISTEMA', '#4dd8ff', '#7b5cff', -1);
+  else if (t < 14) retrato('gelado', t, 12, 14, 'SEGURANÇA GELADO', 'NÃO FAZ MENOS QUE R$500 POR DIA', '#ffd23f', '#ff4e50', 1);
+  else if (t < 18) perseguicao(t);
+  else if (t < 22) robo(t);
+  else if (t < 25) montagem(t);
+  else logo(t);
+  // transições: flash branco nos cortes grandes
+  for (const c of [3, 8, 14, 18, 22, 25]) { const d = Math.abs(t - c); if (d < 0.12) { g.fillStyle = `rgba(255,255,255,${(1 - d / 0.12) * 0.8})`; g.fillRect(0, 0, W, H); } }
+  // fade no fim e no começo pro loop
+  const f = Math.max(fase(t, 29.4, 30), 1 - fase(t, 0, 0.4)); if (f > 0) { g.fillStyle = `rgba(0,0,0,${f})`; g.fillRect(0, 0, W, H); }
+  grao(t, 0.05); letterbox(t > 25 ? 1 - fase(t, 25, 25.4) : 1);
+  g.restore();
+};
+</script></body></html>
