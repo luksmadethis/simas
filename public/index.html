@@ -38,7 +38,7 @@
   .links a:hover{color:var(--txt)}
 
   /* hero */
-  .hero{padding:70px 0 60px;text-align:center;position:relative}
+  .hero{padding:44px 0 34px;text-align:center;position:relative}
   .hero::before{content:"";position:absolute;inset:-40px -200px auto;height:420px;background:radial-gradient(closest-side,rgba(155,43,194,.25),transparent),radial-gradient(closest-side at 30% 60%,rgba(42,107,255,.18),transparent),radial-gradient(closest-side at 70% 40%,rgba(228,3,3,.14),transparent);z-index:-1;filter:blur(10px)}
   .hero h1{font-size:clamp(56px,11vw,120px);line-height:.95;font-weight:900;letter-spacing:-3px}
   .hero p{max-width:640px;margin:22px auto 0;font-size:clamp(16px,2.2vw,19px);color:#c9c4d6}
@@ -101,7 +101,16 @@
   @keyframes corre{to{background-position:-200% 0}}
   .wrap{position:relative;z-index:1}
   @media (prefers-reduced-motion:reduce){#barra{animation:none}}
-  @media(max-width:600px){.links{display:none}.hero{padding:40px 0}}
+  /* hub de apps */
+  .hub{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .tile{position:relative;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 20px;display:flex;flex-direction:column;gap:4px;transition:transform .15s,border-color .15s,background .15s}
+  .tile::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:var(--rainbow)}
+  .tile:hover{transform:translateY(-3px);border-color:#3b3550;background:var(--card2)}
+  .tile .ti{font-size:34px;line-height:1;margin-bottom:8px}
+  .tile b{font-size:19px;letter-spacing:-.3px}
+  .tile small{font-size:13.5px;color:var(--mut)}
+  @media(max-width:760px){.hub{grid-template-columns:repeat(2,1fr);gap:10px}.tile{padding:16px 14px}.tile b{font-size:16px}.tile .ti{font-size:28px}}
+  @media(max-width:600px){.hero{padding:26px 0 20px}}
 
 /* ===== cores LGBT animadas (o arco-íris anda devagar em tudo que usa --rainbow) ===== */
 @property --rbx{syntax:'<percentage>';inherits:true;initial-value:0%}
@@ -119,58 +128,21 @@
 <div class="wrap">
   <nav>
     <a href="#" class="logo" aria-label="Simas"><span>S</span><span>i</span><span>m</span><span>a</span><span>s</span></a>
-    <div class="links"><a href="/simastelas/">📺 SimasTelas</a><a href="/simasfitness/">💪 Fitness</a><a href="/simastok/">🎬 SimasTok</a><a href="/jogos/">🎮 Jogos</a><a href="/conversimas/">🔄 ConverSimas</a><a href="/sugestoes/">💡 Sugestões</a><a href="#galera">Galera</a><a href="#sobre">Sobre</a></div>
   </nav>
 
   <header class="hero">
     <h1><span class="grad">Simas</span></h1>
-    <p id="tagline">o puteiro oficial da galera porra. live, treino, zoeira e as merda q a gente inventa tudo jogado aqui, se nao gostou SAI FORA caralho</p>
-    <div class="cta">
-      <a class="btn main" href="#apps">▶ BORA caralho</a>
-      <a class="btn ghost" href="#galera">👥 ver os desgraçado</a>
-      <a class="btn ghost" href="/sugestoes/">💡 dar pitaco</a>
-    </div>
+    <p id="tagline">o puteiro oficial da galera. live, treino, zoeira e as merda q a gente inventa, tudo aqui</p>
   </header>
 
   <section id="apps">
-    <div class="kicker">Apps</div>
-    <h2>as porra q a gente usa</h2>
-    <div class="apps">
-      <a class="app" href="/simastelas/">
-        <div class="ic">📺</div>
-        <h3>SimasTelas</h3>
-        <p>a sala de live da cambada. tela e camera em 1080p 60fps, sem cadastro, entra e para de enrolar porra</p>
-        <ul><li>tela + camera</li><li>modo live</li><li>efeito 🦖</li><li>gravar os otario</li></ul>
-        <span class="btn main">entra logo nessa porra →</span>
-      </a>
-      <a class="app" href="/simasfitness/">
-        <div class="ic">💪</div>
-        <h3>Simas Fitness 2.0</h3>
-        <p>30 dia de treino pros sedentario tomar vergonha na cara. ranking mostra quem é o FRANGO #constancia</p>
-        <ul><li>30 dia de sofrimento</li><li>ficha diaria</li><li>ranking da vergonha</li></ul>
-        <span class="btn main">vai treinar vagabundo →</span>
-      </a>
-      <a class="app" href="/simastok/">
-        <div class="ic">🎬</div>
-        <h3>SimasTok</h3>
-        <p>o tiktok da quadrilha. video de qualidade duvidosa, arrasta pra cima e zoa</p>
-        <ul><li>video vertical</li><li>curtir e comentar</li><li>arrasta pra cima</li></ul>
-        <span class="btn main">abrir essa porra →</span>
-      </a>
-      <a class="app" href="/jogos/">
-        <div class="ic">🎮</div>
-        <h3>Jogos</h3>
-        <p>os joguinho da quadrilha. GALADO PULA (pula galho, foge de missil, cata R$500), DORME QUE A PATROA TÁ CHEGANDO (joga escondido e corre pra cama antes da Ana pegar) e MALANDO COM ZENSAT (guitar hero do funk do Zensat na favela de BH)</p>
-        <ul><li>Galado Pula</li><li>Dorme que a Patroa</li><li>Malando com Zensat</li><li>TOP 5</li></ul>
-        <span class="btn main">bora jogar porra →</span>
-      </a>
-      <a class="app" href="/conversimas/">
-        <div class="ic">🔄</div>
-        <h3>ConverSimas</h3>
-        <p>cola o link do youtube, tiktok ou insta e baixa em MP4 ou MP3</p>
-        <ul><li>ate 1080p</li><li>MP3</li><li>de graça</li></ul>
-        <span class="btn main">converter essa porra →</span>
-      </a>
+    <div class="hub">
+      <a class="tile" href="/simastelas/"><span class="ti">📺</span><b>SimasTelas</b><small>live de tela e camera em 1080p</small></a>
+      <a class="tile" href="/simastok/"><span class="ti">🎬</span><b>SimasTok</b><small>o tiktok da quadrilha</small></a>
+      <a class="tile" href="/jogos/"><span class="ti">🎮</span><b>Jogos</b><small>Galado Pula, Patroa e Malando</small></a>
+      <a class="tile" href="/simasfitness/"><span class="ti">💪</span><b>Simas Fitness</b><small>30 dia de treino e ranking</small></a>
+      <a class="tile" href="/conversimas/"><span class="ti">🔄</span><b>ConverSimas</b><small>link vira MP4 ou MP3</small></a>
+      <a class="tile" href="/sugestoes/"><span class="ti">💡</span><b>Sugestões</b><small>manda tua ideia pro site</small></a>
     </div>
   </section>
 
@@ -184,7 +156,7 @@
     <div class="kicker">Sobre</div>
     <h2>q porra é essa</h2>
     <div class="about" id="about">
-      <b>Simas</b> é a nossa quadrilha, um bando de desocupado q se junta pra jogar, fazer live, fingir q treina e inventar merda nova. foi dessa putaria q saiu o SimasTelas e o Simas Fitness. e vem MAIS por ai, se prepara fdp. e NO DIA 3 VAI SER REVELADO O SEXO DO BEBÊ #ChádeBebê (ate hj ninguem sabe quem é o pai)
+      <b>Simas</b> é a nossa quadrilha: um bando de desocupado q se junta pra jogar, fazer live, fingir q treina e inventar merda nova. e NO DIA 3 VAI SER REVELADO O SEXO DO BEBÊ #ChádeBebê
     </div>
   </section>
 
