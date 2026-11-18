@@ -141,9 +141,18 @@ function desenharInterior(g, dt) {
     for (let k2 = 0; k2 < ORDEM_ARMAS.length; k2++) { const a = ORDEM_ARMAS[k2]; g.fillStyle = '#3d2b1f'; g.fillRect(30 + (k2 % 5) * 110, VH * 0.25 + Math.floor(k2 / 5) * 110, 96, 90); iconeArma(g, a, 78 + (k2 % 5) * 110, VH * 0.25 + 45 + Math.floor(k2 / 5) * 110, 2.4, '#ddd'); }
     placa('ARSENAL');
   } else if (I.tipo === 'motors') {
+    if (I.prevModelo) {
+      const c = I.prevCarro && I.prevCarro.modelo === I.prevModelo ? I.prevCarro : (I.prevCarro = novoCarro(I.prevModelo, 0, 0, 0));
+      c.a = t * 0.9; const esc = Math.min(4, W2 / (c.l * 1.8));
+      g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(cx, cy + 50, c.l * esc * 0.62, c.l * esc * 0.3, 0, 0, 7); g.fill();
+      g.save(); g.translate(cx, cy + 50); g.scale(esc, esc * INCL * 0.75); const om = c.motorista; c.motorista = null; desenharCarro(g, c); g.restore();
+      g.font = `900 ${Math.min(26, VW / 34)}px system-ui`; g.textAlign = 'center'; textoContorno(g, TIPOS_CARRO[c.modelo].nome, cx, VH * 0.82, '#fff', 5);
+      placa('SIMAS MOTORS & IMÓVEIS');
+    } else {
     const ms = ['lambo', 'xj6', 'sw4'];
     ms.forEach((m, i) => { const c = novoCarro(m, 0, 0, -Math.PI / 2); g.save(); g.translate(cx - 160 + i * 160, cy + 40); g.rotate(Math.sin(t + i) * 0.15); g.scale(1.8, 1.8); desenharCarro(g, c); g.restore(); g.fillStyle = 'rgba(255,255,255,.15)'; g.beginPath(); g.ellipse(cx - 160 + i * 160, cy + 40, 90, 30, 0, 0, 7); g.fill(); });
     placa('SIMAS MOTORS & IMÓVEIS');
+    }
   } else if (I.tipo === 'padaria' || I.tipo === 'cafe') {
     g.fillStyle = '#8d6e63'; g.fillRect(40, cy - 40, W2 - 80, 80); g.fillStyle = 'rgba(200,230,255,.35)'; g.fillRect(40, cy - 40, W2 - 80, 30);
     for (let k2 = 0; k2 < 9; k2++) { g.fillStyle = '#e0a458'; g.beginPath(); g.ellipse(80 + k2 * ((W2 - 160) / 8), cy + 10, 22, 12, 0, 0, 7); g.fill(); }

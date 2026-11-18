@@ -141,7 +141,7 @@ const ONLINE = {
     for (const f of this.feed) { g.globalAlpha = Math.min(1, (7 - f.t) / 1); textoContorno(g, f.txt, x, y, f.cor, 3); y += peq ? 15 : 18; }
     g.globalAlpha = 1;
   },
-  mini(blip) { for (const o of this.outros.values()) if (!o.morto) blip(o.x, o.y, o.cor || '#fff', 5); },
+  mini(blip) { for (const o of this.outros.values()) if (!o.morto) { blip(o.x, o.y, '#000', 7); blip(o.x, o.y, o.cor || '#fff', 5); } },
   chat() {
     if (!this.ativo) return;
     const el = document.getElementById('chatOn'); el.style.display = 'flex'; const inp = el.querySelector('input'); inp.value = ''; setTimeout(() => inp.focus(), 30);

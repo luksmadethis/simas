@@ -54,6 +54,7 @@ function desenharHUD(dt) {
   // seta vermelha pro Gelado
   const gel = W.carros.find(c => c.modelo === 'gelado' && c.hp > 0 && c.ia && c.ia.tipo === 'policia');
   if (gel && !j.morto) desenharSeta(g, gel, '#ff3b3b', 'gelado');
+  if (ONLINE.ativo && !j.morto) for (const o of ONLINE.outros.values()) if (!o.morto && dist(o.x, o.y, j.x, j.y) > 700) desenharSeta(g, o, o.cor || '#00e5ff', o.sk);
 
   // ===== canto esquerdo: arma, vida, colete =====
   const x0 = 12, y0 = 10, bw = peq ? 118 : 150, bh = peq ? 50 : 60;
@@ -266,6 +267,16 @@ function desenharMapaGrande(g) {
   ic(LUGAR.cafe, '☕', 'Café do Porto'); ic(LUGAR.masadakun, '🛕', 'Masadakun'); ic(LUGAR.motors, '🏍️', 'Simas Motors'); ic(LUGAR.mirante, '⛰️', 'Mirante');
   const alvo = MISSAO.ativa ? MISSAO.alvo : lugarMissao(proximaMissao());
   if (alvo) { const x = x0 + alvo.x / T * k, y = y0 + alvo.y / T * k; g.strokeStyle = '#ffd23f'; g.lineWidth = 3; g.beginPath(); g.arc(x, y, 10 + Math.sin(W.tempo * 6) * 3, 0, 7); g.stroke(); }
+  ic(LUGAR.autodromo, '🏁', 'Autódromo'); ic(LUGAR.farol, '🗼', 'Farol');
+  textoContorno(g, 'LITORAL SUL', x0 + 160 * k, y0 + 256 * k, '#fff', 4);
+  // galera online no mapa (com foto e nome)
+  if (ONLINE.ativo) for (const o of ONLINE.outros.values()) {
+    const ox = x0 + o.x / T * k, oy = y0 + o.y / T * k, im = ROSTOS[o.sk];
+    g.fillStyle = o.cor || '#fff'; g.beginPath(); g.arc(ox, oy, 11, 0, 7); g.fill();
+    if (im && im.naturalWidth) { g.save(); g.beginPath(); g.arc(ox, oy, 9, 0, 7); g.clip(); g.drawImage(im, ox - 9, oy - 9, 18, 18); g.restore(); }
+    if (o.morto) { g.font = '14px system-ui'; g.fillText('💀', ox, oy + 5); }
+    g.font = 'bold 11px system-ui'; textoContorno(g, o.n || '?', ox, oy - 15, o.cor || '#fff', 3);
+  }
   const j = W.jog, jx = x0 + j.x / T * k, jy = y0 + j.y / T * k;
   g.fillStyle = (W.tempo * 3 | 0) % 2 ? '#fff' : '#ff6ec7'; g.beginPath(); g.arc(jx, jy, 6, 0, 7); g.fill(); g.strokeStyle = '#000'; g.lineWidth = 2; g.stroke();
   g.font = 'bold 13px system-ui'; textoContorno(g, (ehToque() ? 'toca no 🗺️' : 'M') + ' pra fechar · tem segredo escondido no mapa todo 👀', VW / 2, VH - 8, '#ddd', 3);
@@ -326,9 +337,13 @@ function desenharCreditos(g, dt) {
 }
 
 // ---------- menus em HTML (garagem, lojas, pausa) ----------
-function abrirMenu(titulo, itens, sub) {
+// prévia: pv = { alvo, chaves } -> ao passar o mouse aplica it.prev() e volta ao normal quando sai
+function voltaPrevia() { if (MENU && MENU.pv) { const { alvo, base } = MENU.pv; for (const k in base) alvo[k] = base[k]; } }
+function abrirMenu(titulo, itens, sub, pv) {
   titulo = trocaNomes(titulo); sub = trocaNomes(sub); for (const it of itens) it.txt = trocaNomes(it.txt);
+  voltaPrevia();
   MENU = { titulo };
+  if (pv) { const base = {}; for (const k of pv.chaves) base[k] = pv.alvo[k]; MENU.pv = { alvo: pv.alvo, base }; }
   const el = document.getElementById('menu');
   el.innerHTML = `<div class="caixa"><h2>${titulo}</h2>${sub ? `<p class="sub">${sub}</p>` : ''}<div class="lista"></div><button class="fechar">fechar (ESC)</button></div>`;
   const lista = el.querySelector('.lista');
@@ -336,9 +351,18 @@ function abrirMenu(titulo, itens, sub) {
     const b = document.createElement('button'); b.className = 'item' + (it.off ? ' off' : '');
     b.innerHTML = `<span>${it.txt}</span>${it.preco !== undefined ? `<b>${it.preco ? fmt$(it.preco) : 'grátis'}</b>` : ''}`;
     if (it.cor) b.style.borderLeft = `10px solid ${it.cor}`;
+    if (it.prev && MENU.pv) {
+      const mostra = () => { voltaPrevia(); it.prev(); };
+      b.addEventListener('mouseenter', mostra); b.addEventListener('focus', mostra);
+      b.addEventListener('mouseleave', voltaPrevia);
+    }
     b.onclick = () => {
       if (it.off) return;
+      // no celular: 1º toque mostra a prévia, 2º compra
+      if (it.prev && MENU.pv && ehToque() && it.preco && !b.dataset.armado) { lista.querySelectorAll('[data-armado]').forEach(x => { delete x.dataset.armado; x.classList.remove('armado'); }); voltaPrevia(); it.prev(); b.dataset.armado = 1; b.classList.add('armado'); b.querySelector('span').textContent = '👀 ' + it.txt + ' (toca de novo pra comprar)'; return; }
+      voltaPrevia();
       if (it.preco && W.jog.grana < it.preco) { b.classList.add('pobre'); b.querySelector('span').textContent = 'tá liso, ' + nomePers() + ' 💸'; SOM.falha(); return; }
+      if (MENU) MENU.pv = null;
       if (it.preco) W.jog.grana -= it.preco;
       SOM.grana(); const r = it.fn(); salvar();
       if (r !== false) (MENU && MENU.reabre) ? MENU.reabre() : fecharMenu();
@@ -349,7 +373,7 @@ function abrirMenu(titulo, itens, sub) {
   el.classList.add('aberto');
   const prim = el.querySelector('.item:not(.off)') || el.querySelector('.fechar'); if (prim && !ehToque()) prim.focus();
 }
-function fecharMenu() { const el = document.getElementById('menu'); el.classList.remove('aberto'); el.innerHTML = ''; MENU = null; if (INTERIOR) sairInterior(); }
+function fecharMenu() { voltaPrevia(); const el = document.getElementById('menu'); el.classList.remove('aberto'); el.innerHTML = ''; MENU = null; if (INTERIOR) sairInterior(); }
 
 const CORES_PINTURA = [['Rosa Simas', '#ff6ec7'], ['Preto Fosco', '#151515'], ['Branco Gelo', '#f2f2f2'], ['Vermelho Ferrari', '#d50000'], ['Azul Calcinha', '#7fb3ff'], ['Verde Bandeira', '#1e8e3e'], ['Amarelo Taxi', '#ffd000'], ['Roxo Baile', '#7d3cff'], ['Laranja Galado', '#ff8c1a'], ['Dourado Rei', '#c9a227'],
   ['Prata Uber', '#bdc3c7'], ['Grafite', '#4d5656'], ['Azul Marinho', '#1a2a6c'], ['Ciano Neon', '#00e5ff'], ['Verde Limão', '#a3e635'], ['Verde Militar', '#4a5d23'], ['Vinho Pastor', '#6d1a36'], ['Marrom Doce de Leite', '#8e5a2b'], ['Lilás Tia', '#c39bd3'], ['Coral', '#ff6f61'], ['Rosa Bebê', '#ffc0cb'], ['Bege Fiat', '#e5d3b3']];
@@ -357,22 +381,23 @@ const TUNE = ['roda', 'neon', 'adesivo', 'fume', 'aero', 'nitro', 'buzina'];
 function menuTuning(marina) {
   const c = W.jog.carro, j = W.jog; if (!c) return;
   const tc = TIPOS_CARRO[c.modelo], moto = !!tc.moto, barco = !!tc.barco;
-  const sub = (tit, itens) => () => { abrirMenu(tit, [...itens(), { txt: '⬅️ voltar', fn: () => { menuTuning(marina); return false; } }], `${fmt$(j.grana)} no bolso`); return false; };
+  const PV = { alvo: c, chaves: ['cor', ...TUNE, 'listra'] };
+  const sub = (tit, itens) => () => { abrirMenu(tit, [...itens(), { txt: '⬅️ voltar', fn: () => { menuTuning(marina); return false; } }], `passa o mouse pra ver · ${fmt$(j.grana)} no bolso`, PV); return false; };
   const ok = v => v ? ' ✔' : '';
   const itens = [];
-  if (barco) itens.push({ txt: '🎨 Pintar o barco', fn: sub('🎨 COR DO BARCO', () => CORES_PINTURA.map(([n, cc]) => ({ txt: n + ok(c.cor === cc), cor: cc, preco: 250, fn: () => { c.cor = cc; } }))) });
-  if (!barco) itens.push({ txt: moto ? '🛞 Cor das rodas da moto' : '🛞 Cor das rodas', fn: sub('🛞 RODAS', () => [['Cromada', '#dfe6e9'], ['Preta', '#111'], ['Dourada', '#c9a227'], ['Rosa', '#ff6ec7'], ['Vermelha', '#d50000'], ['Azul', '#2e86de'], ['Verde Neon', '#39ff14']].map(([n, cc]) => ({ txt: n + ok(c.roda === cc), cor: cc, preco: 200, fn: () => { c.roda = cc; } }))) });
-  itens.push({ txt: barco ? '💡 Luz neon no casco' : '💡 Neon embaixo', fn: sub('💡 NEON', () => [['Rosa', '#ff2fa0'], ['Azul', '#00b4ff'], ['Verde', '#39ff14'], ['Roxo', '#a020f0'], ['Vermelho', '#ff1a1a'], ['Amarelo', '#ffe600'], ['Branco', '#ffffff'], ['Arco-íris (muda de cor)', 'arco']].map(([n, cc]) => ({ txt: 'Neon ' + n + ok(c.neon === cc), cor: cc === 'arco' ? '#ff6ec7' : cc, preco: cc === 'arco' ? 1500 : 600, fn: () => { c.neon = cc; } })).concat([{ txt: 'tirar neon', off: !c.neon, fn: () => { c.neon = null; } }])) });
-  itens.push({ txt: '🔥 Adesivo', fn: sub('🔥 ADESIVOS', () => [['Chamas de rebaixado', 'chamas', 400], ['Listras de corrida', 'listras', 250], ['Arco-íris do Simas', 'arco', 500], ['Escrito SIMAS', 'simas', 300], ['Oncinha', 'oncinha', 350], ['Xadrez de largada', 'xadrez', 350], ['Camuflado do exército', 'camuflado', 400]].map(([n, a, p]) => ({ txt: n + ok(c.adesivo === a), preco: p, fn: () => { c.adesivo = a; c.listra = null; } })).concat([{ txt: 'tirar adesivo', off: !c.adesivo, fn: () => { c.adesivo = null; } }])) });
+  if (barco) itens.push({ txt: '🎨 Pintar o barco', fn: sub('🎨 COR DO BARCO', () => CORES_PINTURA.map(([n, cc]) => ({ txt: n + ok(c.cor === cc), cor: cc, preco: 250, prev: () => { c.cor = cc; }, fn: () => { c.cor = cc; } }))) });
+  if (!barco) itens.push({ txt: moto ? '🛞 Cor das rodas da moto' : '🛞 Cor das rodas', fn: sub('🛞 RODAS', () => [['Cromada', '#dfe6e9'], ['Preta', '#111'], ['Dourada', '#c9a227'], ['Rosa', '#ff6ec7'], ['Vermelha', '#d50000'], ['Azul', '#2e86de'], ['Verde Neon', '#39ff14']].map(([n, cc]) => ({ txt: n + ok(c.roda === cc), cor: cc, preco: 200, prev: () => { c.roda = cc; }, fn: () => { c.roda = cc; } }))) });
+  itens.push({ txt: barco ? '💡 Luz neon no casco' : '💡 Neon embaixo', fn: sub('💡 NEON', () => [['Rosa', '#ff2fa0'], ['Azul', '#00b4ff'], ['Verde', '#39ff14'], ['Roxo', '#a020f0'], ['Vermelho', '#ff1a1a'], ['Amarelo', '#ffe600'], ['Branco', '#ffffff'], ['Arco-íris (muda de cor)', 'arco']].map(([n, cc]) => ({ txt: 'Neon ' + n + ok(c.neon === cc), cor: cc === 'arco' ? '#ff6ec7' : cc, preco: cc === 'arco' ? 1500 : 600, prev: () => { c.neon = cc; }, fn: () => { c.neon = cc; } })).concat([{ txt: 'tirar neon', off: !c.neon, fn: () => { c.neon = null; } }])) });
+  itens.push({ txt: '🔥 Adesivo', fn: sub('🔥 ADESIVOS', () => [['Chamas de rebaixado', 'chamas', 400], ['Listras de corrida', 'listras', 250], ['Arco-íris do Simas', 'arco', 500], ['Escrito SIMAS', 'simas', 300], ['Oncinha', 'oncinha', 350], ['Xadrez de largada', 'xadrez', 350], ['Camuflado do exército', 'camuflado', 400]].map(([n, a, p]) => ({ txt: n + ok(c.adesivo === a), preco: p, prev: () => { c.adesivo = a; c.listra = null; }, fn: () => { c.adesivo = a; c.listra = null; } })).concat([{ txt: 'tirar adesivo', off: !c.adesivo, fn: () => { c.adesivo = null; } }])) });
   if (!moto && !barco) {
-    itens.push({ txt: '🕶️ Insulfilm fumê' + ok(c.fume), preco: c.fume ? undefined : 300, off: !!c.fume, fn: () => { c.fume = true; } });
-    itens.push({ txt: '🏁 Aerofólio' + ok(c.aero), preco: c.aero ? undefined : 700, off: !!c.aero, fn: () => { c.aero = true; } });
+    itens.push({ txt: '🕶️ Insulfilm fumê' + ok(c.fume), preco: c.fume ? undefined : 300, off: !!c.fume, prev: () => { c.fume = true; }, fn: () => { c.fume = true; } });
+    itens.push({ txt: '🏁 Aerofólio' + ok(c.aero), preco: c.aero ? undefined : 700, off: !!c.aero, prev: () => { c.aero = true; }, fn: () => { c.aero = true; } });
   }
   itens.push({ txt: '🚀 Nitro (aperta N acelerando)' + ok(c.nitro), preco: c.nitro ? undefined : (moto ? 1800 : 2500), off: !!c.nitro, fn: () => { c.nitro = true; c.nitroCarga = 100; } });
   itens.push({ txt: '📯 Buzina', fn: sub('📯 BUZINAS', () => [['Normal', null, 0], ['Corneta de baile', 'corneta', 300], ['Caminhão', 'caminhao', 300], ['Palhaço', 'palhaco', 200], ['Galinha do Galado', 'galinha', 250]].map(([n, b, p]) => ({ txt: n + ok(c.buzina === b), preco: p || undefined, fn: () => { c.buzina = b; SOM.buzina(b); } }))) });
   if (barco) itens.push({ txt: `🔧 Consertar (${Math.round(c.hp / c.hpMax * 100)}%)`, preco: c.hp < c.hpMax ? 150 : undefined, off: c.hp >= c.hpMax, fn: () => { c.hp = c.hpMax; } });
   else itens.push({ txt: '⬅️ voltar', fn: () => { menuGaragem(); return false; } });
-  abrirMenu(barco ? '⚓ MARINA SIMAS' : moto ? '✨ TUNING DA MOTO' : '✨ TUNING DO CARRO', itens, 'gira o veículo arrastando · H buzina · N nitro');
+  abrirMenu(barco ? '⚓ MARINA SIMAS' : moto ? '✨ TUNING DA MOTO' : '✨ TUNING DO CARRO', itens, 'passa o mouse pra ver · gira arrastando · H buzina · N nitro', PV);
 }
 function menuGaragem() {
   const j = W.jog, c = j.carro;
@@ -403,9 +428,9 @@ function menuGaragem() {
 let MENU_GAR_LUGAR = null;
 function menuPintura() {
   const c = W.jog.carro;
-  abrirMenu('🎨 ESCOLHE A COR', CORES_PINTURA.map(([n, cor]) => ({ txt: n, cor, fn: () => {
+  abrirMenu('🎨 ESCOLHE A COR', CORES_PINTURA.map(([n, cor]) => ({ txt: n, cor, prev: () => { c.cor = cor; }, fn: () => {
     c.cor = cor; if (W.procurado > 0) { W.procurado = 0; W.calor = 0; W.carros = W.carros.filter(x => !(x.ia && x.ia.tipo === 'policia' && dist(x.x, x.y, c.x, c.y) > 300)); falar('luketa', 'carro novo, placa nova. os home perderam teu rastro', 3); }
-  } })), 'já pago, só escolher');
+  } })), 'já pago, só escolher · passa o mouse pra ver', { alvo: c, chaves: ['cor'] });
 }
 const TENIS = {
   chinelo: { nome: 'Chinelo Havaiano', vel: 1, cor: '#2471a3', preco: 0 },
@@ -414,27 +439,38 @@ const TENIS = {
   neymar: { nome: 'Chuteira do Meco (pré-lesão)', vel: 1.3, cor: '#f1c40f', preco: 2500 },
   dourado: { nome: 'Tênis Dourado do Rei', vel: 1.38, cor: '#c9a227', preco: 6000 }
 };
+const CHAVES_ROUPA = ['camisa', 'estampa', 'jaqueta', 'calca', 'chapeu', 'chapeuTipo', 'oculos', 'oculosTipo', 'corrente', 'mochila', 'tenis', 'tenisCor'];
+const CORES_ROUPA = [['Rosa Simas', '#ff6ec7'], ['Vermelha', '#c0392b'], ['Preta Básica', '#151515'], ['Branca de Rico', '#f5f5f5'], ['Verde Galado', '#27ae60'], ['Amarela Seleção', '#f1c40f'], ['Azul Royal', '#2471a3'], ['Roxa Baile', '#7d3cff'], ['Laranja', '#e67e22'], ['Vinho', '#7b241c'], ['Ciano', '#00bcd4'], ['Lilás', '#c39bd3'], ['Verde Limão', '#a3e635'], ['Cinza Mescla', '#95a5a6'], ['Bege', '#e5d3b3'], ['Marrom', '#6e2c00']];
+const LOJA = {
+  camisas: { tit: '👕 Camisas lisas', itens: CORES_ROUPA.map(([n, c]) => ['Camisa ' + n, { camisa: c, estampa: null }, 100, c]) },
+  estampas: { tit: '🎨 Estampas', itens: [['Listrada', 'listrada', 180], ['Arco-íris do Simas', 'simas', 400], ['Xadrez de Festa Junina', 'xadrez', 200], ['Camuflada', 'camuflada', 300], ['Rubro-negra (genérica)', 'flamengo', 250], ['Havaiana de turista', 'havaiana', 220]].map(([n, e, p]) => [n, { estampa: e }, p]) },
+  zoadas: { tit: '🤪 Camisetas ZOADAS', itens: [['Camisa do Galado 🐔', 'galado', '#ff8c1a', 500], ['Smile de rave', 'smile', '#151515', 250], ['Caveira de metaleiro', 'caveira', '#151515', 300], ['Coração apaixonado (pro Ltzin)', 'coracao', '#ffc0cb', 250], ['Raio do Ltzin', 'raio', '#1a2a6c', 400], ['Camisa 171 (estelionato)', 'n171', '#c0392b', 171], ['Estampa de banana', 'banana', '#2e86de', 300], ['Smoking de camiseta (chique e pobre)', 'smoking', '#151515', 600], ['Fatia de pizza', 'pizza', '#f5f5f5', 280], ['ET de Varginha 👽', 'alien', '#151515', 350], ['Cifrão de quem faz 500 por dia', 'cifrao', '#1e8449', 500], ['Nuvem de chuva (tô triste)', 'nuvem', '#7fb3ff', 220], ['Melancia', 'melanciaE', '#e74c3c', 240], ['Abacaxi', 'abacaxi', '#f1c40f', 240]].map(([n, e, c, p]) => [n, { estampa: e, camisa: c }, p, c]) },
+  jaquetas: { tit: '🧥 Jaquetas', itens: [['Jaqueta Jeans', '#5d6d7e', 350], ['Jaqueta de Couro', '#1b1b1b', 700], ['Corta-vento Neon', '#a3e635', 400], ['Moletom Rosa', '#ff6ec7', 300], ['Jaqueta Dourada de Cafetão', '#c9a227', 1500], ['Moletom Azul', '#2e86de', 300]].map(([n, c, p]) => [n, { jaqueta: c }, p, c]).concat([['Sem jaqueta', { jaqueta: null }, 0]]) },
+  calcas: { tit: '👖 Calças e bermudas', itens: [['Bermuda Jeans', '#2c3e50'], ['Calça Preta', '#111'], ['Bermuda Florida', '#e67e22'], ['Calça Branca de Pagodeiro', '#f5f5f5'], ['Tactel Azul', '#2980b9'], ['Moletom Cinza', '#7f8c8d'], ['Calça Rosa Choque', '#ff2fa0'], ['Calça Verde Militar', '#4a5d23'], ['Legging de Oncinha', '#c8a165']].map(([n, c]) => [n, { calca: c }, 100, c]) },
+  bones: { tit: '🧢 Bonés e chapéus', itens: [['Boné Rosa', '#ff6ec7', 'bone', 150], ['Boné Preto', '#111', 'bone', 150], ['Boné Vermelho', '#c0392b', 'bone', 150], ['Boné Branco', '#f5f5f5', 'bone', 150], ['Chapéu de Cowboy (Juazeiro)', '#8e5a2b', 'cowboy', 400], ['Bucket Hat', '#f5f5f5', 'bucket', 250], ['Bucket Hat Preto', '#111', 'bucket', 250], ['Capacete de motoboy', '#e67e22', 'capacete', 300]].map(([n, c, t, p]) => [n, { chapeu: c, chapeuTipo: t }, p, c]).concat([['Sem nada na cabeça', { chapeu: null, chapeuTipo: null }, 0]]) },
+  chapeusZ: { tit: '🤡 Chapéus ZOADOS', itens: [['Cone de trânsito roubado', '#ff6b00', 'cone', 350], ['Chapéu de mestre-cuca', '#fff', 'chef', 400], ['Coroa do Rei de Recife (réplica)', '#f1c40f', 'coroa', 3000], ['Chapéu de pirata', '#111', 'pirata', 600], ['Capacete viking', '#95a5a6', 'viking', 800], ['Orelhinha de gato', '#111', 'gato', 300], ['Orelhinha de gato rosa', '#ff6ec7', 'gato', 300], ['Chapéu de aniversário', '#fff', 'festa', 150], ['Cartola de mágico', '#111', 'cartola', 900], ['Sombrero gigante', '#d4ac0d', 'sombrero', 700], ['Hélice de criança', '#e74c3c', 'helice', 250], ['Galinha na cabeça', '#fff', 'galinha', 800], ['Melancia de capacete', '#27ae60', 'melancia', 350], ['Chapéu de palha de festa junina', '#d4ac0d', 'palha', 200], ['Chifre de unicórnio 🦄', '#ff6ec7', 'unicornio', 900], ['Chapéu de mago', '#5b2c6f', 'mago', 750], ['Auréola de santo (mentira)', '#f1c40f', 'aureola', 1200], ['Antena de ET', '#39ff14', 'antena', 400]].map(([n, c, t, p]) => [n, { chapeu: c, chapeuTipo: t }, p, c]) },
+  oculos: { tit: '🕶️ Óculos e bling', itens: [['Óculos Juliet', { oculos: true, oculosTipo: 'juliet' }, 200], ['Óculos de nerd (igual do Yori)', { oculos: true, oculosTipo: 'nerd' }, 150], ['Óculos de coração', { oculos: true, oculosTipo: 'coracao' }, 300], ['Óculos de estrela', { oculos: true, oculosTipo: 'estrela' }, 350], ['Sem óculos', { oculos: false }, 0], ['Corrente de ouro (ostentação)', { corrente: true }, 2000], ['Sem corrente', { corrente: false }, 0], ['Mochila de entregador', { mochila: '#c0392b' }, 150], ['Mochila rosa', { mochila: '#ff6ec7' }, 200], ['Sem mochila', { mochila: null }, 0]] }
+};
+const chaveItem = c => Object.entries(c).map(([k, v]) => k + '=' + v).join('|');
 function menuRoupas() {
-  const j = W.jog;
-  const sub = (titulo, itens) => () => { abrirMenu(titulo, [...itens(), { txt: '⬅️ voltar', fn: () => { menuRoupas(); return false; } }], `${fmt$(j.grana)} no bolso`); return false; };
-  const cores = [['Rosa Simas', '#ff6ec7'], ['Vermelha', '#c0392b'], ['Preta Básica', '#151515'], ['Branca de Rico', '#f5f5f5'], ['Verde Galado', '#27ae60'], ['Amarela Seleção', '#f1c40f'], ['Azul Royal', '#2471a3'], ['Roxa Baile', '#7d3cff'], ['Laranja', '#e67e22'], ['Vinho', '#7b241c'], ['Ciano', '#00bcd4'], ['Lilás', '#c39bd3'], ['Verde Limão', '#a3e635'], ['Cinza Mescla', '#95a5a6'], ['Bege', '#e5d3b3'], ['Marrom', '#6e2c00']];
+  const j = W.jog; j.inv = j.inv || [];
+  const sub = cat => () => {
+    const L = LOJA[cat];
+    const itens = L.itens.map(([n, campos, preco, cor]) => {
+      const key = chaveItem(campos), tem = !preco || j.inv.includes(key), usando = Object.entries(campos).every(([k, v]) => (j[k] ?? null) === v);
+      return { txt: n + (usando ? ' ✔ usando' : tem && preco ? ' · já é teu' : ''), cor, preco: tem ? undefined : preco, prev: () => Object.assign(j, campos), fn: () => { if (!j.inv.includes(key)) j.inv.push(key); Object.assign(j, campos); MENU.reabre = sub(cat); } };
+    });
+    abrirMenu(L.tit, [...itens, { txt: '⬅️ voltar', fn: () => { menuRoupas(); return false; } }], `passa o mouse pra provar · o que tu compra fica teu · ${fmt$(j.grana)} no bolso`, { alvo: j, chaves: CHAVES_ROUPA });
+    return false;
+  };
+  const vale = cat => { const t = LOJA[cat].itens.length, m = LOJA[cat].itens.filter(([, c, p]) => p && j.inv.includes(chaveItem(c))).length; return m ? ` (${m} teu${m > 1 ? 's' : ''})` : ''; };
   abrirMenu('👕 SIMAS STORE', [
-    { txt: '👕 Camisas (16 cores)', fn: sub('👕 CAMISAS', () => cores.map(([n, c]) => ({ txt: 'Camisa ' + n, cor: c, preco: 100, fn: () => { j.camisa = c; j.estampa = null; } }))) },
-    { txt: '🎨 Estampas normais', fn: sub('🎨 ESTAMPAS', () => [['Listrada', 'listrada', 180], ['Arco-íris do Simas', 'simas', 400], ['Xadrez de Festa Junina', 'xadrez', 200], ['Camuflada', 'camuflada', 300], ['Rubro-negra (genérica)', 'flamengo', 250], ['Havaiana de turista', 'havaiana', 220]].map(([n, e, p]) => ({ txt: n, preco: p, fn: () => { j.estampa = e; } })).concat([{ txt: 'tirar estampa', fn: () => { j.estampa = null; } }])) },
-    { txt: '🤪 Camisetas ZOADAS', fn: sub('🤪 CAMISETAS ZOADAS', () => [['Camisa do Galado 🐔', 'galado', '#ff8c1a', 500], ['Smile de rave', 'smile', '#151515', 250], ['Caveira de metaleiro', 'caveira', '#151515', 300], ['Coração apaixonado (pro Ltzin)', 'coracao', '#ffc0cb', 250], ['Raio do Ltzin', 'raio', '#1a2a6c', 400], ['Camisa 171 (estelionato)', 'n171', '#c0392b', 171], ['Estampa de banana', 'banana', '#2e86de', 300], ['Smoking de camiseta (chique e pobre)', 'smoking', '#151515', 600]].map(([n, e, c, p]) => ({ txt: n + (j.estampa === e ? ' ✔' : ''), cor: c, preco: p, fn: () => { j.estampa = e; j.camisa = c; } }))) },
-    { txt: '🧥 Jaquetas', fn: sub('🧥 JAQUETAS', () => [['Jaqueta Jeans', '#5d6d7e', 350], ['Jaqueta de Couro', '#1b1b1b', 700], ['Corta-vento Neon', '#a3e635', 400], ['Moletom Rosa', '#ff6ec7', 300]].map(([n, c, p]) => ({ txt: n, cor: c, preco: p, fn: () => { j.jaqueta = c; } })).concat([{ txt: 'tirar jaqueta', fn: () => { j.jaqueta = null; } }])) },
-    { txt: '👖 Calças e bermudas', fn: sub('👖 CALÇAS', () => [['Bermuda Jeans', '#2c3e50'], ['Calça Preta', '#111'], ['Bermuda Florida', '#e67e22'], ['Calça Branca de Pagodeiro', '#f5f5f5'], ['Tactel Azul', '#2980b9'], ['Moletom Cinza', '#7f8c8d']].map(([n, c]) => ({ txt: n, cor: c, preco: 100, fn: () => { j.calca = c; } }))) },
-    { txt: '🧢 Bonés e chapéus normais', fn: sub('🧢 CABEÇA', () => [['Boné Rosa', '#ff6ec7', 'bone', 150], ['Boné Preto', '#111', 'bone', 150], ['Boné Vermelho', '#c0392b', 'bone', 150], ['Chapéu de Cowboy (Juazeiro)', '#8e5a2b', 'cowboy', 400], ['Bucket Hat', '#f5f5f5', 'bucket', 250], ['Bucket Hat Preto', '#111', 'bucket', 250], ['Capacete de motoboy', '#e67e22', 'capacete', 300]].map(([n, c, t, p]) => ({ txt: n, cor: c, preco: p, fn: () => { j.chapeu = c; j.chapeuTipo = t; } })).concat([{ txt: 'tirar o que tá na cabeça', off: !j.chapeu, fn: () => { j.chapeu = null; j.chapeuTipo = null; } }])) },
-    { txt: '🤡 Chapéus ZOADOS', fn: sub('🤡 CHAPÉUS ZOADOS', () => [['Cone de trânsito roubado', '#ff6b00', 'cone', 350], ['Chapéu de mestre-cuca', '#fff', 'chef', 400], ['Coroa do Rei de Recife (réplica)', '#f1c40f', 'coroa', 3000], ['Chapéu de pirata', '#111', 'pirata', 600], ['Capacete viking', '#95a5a6', 'viking', 800], ['Orelhinha de gato', '#111', 'gato', 300], ['Orelhinha de gato rosa', '#ff6ec7', 'gato', 300], ['Chapéu de aniversário', '#fff', 'festa', 150], ['Cartola de mágico', '#111', 'cartola', 900], ['Sombrero gigante', '#d4ac0d', 'sombrero', 700], ['Hélice de criança', '#e74c3c', 'helice', 250], ['Galinha na cabeça', '#fff', 'galinha', 800], ['Melancia de capacete', '#27ae60', 'melancia', 350], ['Chapéu de palha de festa junina', '#d4ac0d', 'palha', 200]].map(([n, c, t, p]) => ({ txt: n + (j.chapeuTipo === t && j.chapeu ? ' ✔' : ''), cor: c, preco: p, fn: () => { j.chapeu = c; j.chapeuTipo = t; } }))) },
-    { txt: '💎 Acessórios', fn: sub('💎 ACESSÓRIOS', () => [
-      ...[['🕶️ Óculos Juliet', 'juliet', 200], ['🤓 Óculos de nerd (igual do Yori)', 'nerd', 150], ['💘 Óculos de coração', 'coracao', 300], ['⭐ Óculos de estrela', 'estrela', 350]].map(([n, t, p]) => ({ txt: n + (j.oculos && (j.oculosTipo || 'juliet') === t ? ' ✔' : ''), preco: p, fn: () => { j.oculos = true; j.oculosTipo = t; } })),
-      { txt: 'tirar óculos', off: !j.oculos, fn: () => { j.oculos = false; } },
-      { txt: j.corrente ? '⛓️ Tirar a corrente' : '⛓️ Corrente de ouro (ostentação)', preco: j.corrente ? undefined : 2000, fn: () => { j.corrente = !j.corrente; } },
-      { txt: j.mochila ? '🎒 Tirar a mochila' : '🎒 Mochila de entregador', preco: j.mochila ? undefined : 150, fn: () => { j.mochila = j.mochila ? null : '#c0392b'; } }]) },
-    { txt: '👟 Tênis (corre mais)', fn: sub('👟 TÊNIS', () => Object.entries(TENIS).map(([k, t]) => ({ txt: `${t.nome} (+${Math.round((t.vel - 1) * 100)}% correndo)${j.tenis === k ? ' ✔' : ''}`, cor: t.cor, preco: (j.temTenis || {})[k] || !t.preco ? undefined : t.preco, fn: () => { j.temTenis = j.temTenis || {}; j.temTenis[k] = true; j.tenis = k; j.tenisCor = t.cor; } }))) },
-    { txt: '🛹 Skate e patins (aperta K pra usar)', fn: sub('🛹 RODAS', () => [
+    ...Object.keys(LOJA).map(cat => ({ txt: LOJA[cat].tit + vale(cat), fn: sub(cat) })),
+    { txt: '👟 Tênis (corre mais)', fn: () => { abrirMenu('👟 TÊNIS', Object.entries(TENIS).map(([k, t]) => ({ txt: `${t.nome} (+${Math.round((t.vel - 1) * 100)}% correndo)${j.tenis === k ? ' ✔ usando' : (j.temTenis || {})[k] ? ' · já é teu' : ''}`, cor: t.cor, preco: (j.temTenis || {})[k] || !t.preco ? undefined : t.preco, prev: () => { j.tenisCor = t.cor; }, fn: () => { j.temTenis = j.temTenis || {}; j.temTenis[k] = true; j.tenis = k; j.tenisCor = t.cor; } })).concat([{ txt: '⬅️ voltar', fn: () => { menuRoupas(); return false; } }]), `${fmt$(j.grana)} no bolso`, { alvo: j, chaves: CHAVES_ROUPA }); return false; } },
+    { txt: '🛹 Skate e patins (aperta K pra usar)', fn: () => { abrirMenu('🛹 RODAS', [
       { txt: '🛹 Skate Simas SK8' + ((j.temRodas || {}).skate ? ' ✔ (tem)' : ''), preco: (j.temRodas || {}).skate ? undefined : 600, off: !!(j.temRodas || {}).skate, fn: () => { j.temRodas = j.temRodas || {}; j.temRodas.skate = true; j.rodaAtiva = 'skate'; } },
-      { txt: '⛸️ Patins Neon' + ((j.temRodas || {}).patins ? ' ✔ (tem)' : ''), preco: (j.temRodas || {}).patins ? undefined : 900, off: !!(j.temRodas || {}).patins, fn: () => { j.temRodas = j.temRodas || {}; j.temRodas.patins = true; j.rodaAtiva = 'patins'; } }]) }
+      { txt: '⛸️ Patins Neon' + ((j.temRodas || {}).patins ? ' ✔ (tem)' : ''), preco: (j.temRodas || {}).patins ? undefined : 900, off: !!(j.temRodas || {}).patins, fn: () => { j.temRodas = j.temRodas || {}; j.temRodas.patins = true; j.rodaAtiva = 'patins'; } },
+      { txt: '⬅️ voltar', fn: () => { menuRoupas(); return false; } }], `${fmt$(j.grana)} no bolso`); return false; } }
   ], 'estilo é tudo, Nerivan · ' + fmt$(j.grana) + ' no bolso');
 }
 function trocarRodas() {
@@ -456,11 +492,11 @@ const IMOVEIS = [
 function menuMotors() {
   const j = W.jog;
   abrirMenu('🏍️ SIMAS MOTORS & IMÓVEIS', [
-    { txt: '🚗 Comprar veículo', fn: () => { abrirMenu('🚗 VEÍCULOS', VEICULOS_VENDA.map(([m, p]) => ({ txt: TIPOS_CARRO[m].nome + (TIPOS_CARRO[m].moto ? ' 🏍️' : ''), preco: p, fn: () => {
+    { txt: '🚗 Comprar veículo', fn: () => { abrirMenu('🚗 VEÍCULOS', VEICULOS_VENDA.map(([m, p]) => ({ txt: TIPOS_CARRO[m].nome + (TIPOS_CARRO[m].moto ? ' 🏍️' : ''), preco: p, prev: () => { if (INTERIOR) INTERIOR.prevModelo = m; }, fn: () => {
       const L = LUGAR.motors, c = novoCarro(m, L.x, L.y + 10, 0, { doJogador: true }); W.carros.push(c);
       if (j.carro) entrarSair(); j.x = c.x; j.y = c.y; c.motorista = j; j.carro = c; RADIO.tocar(true); CARRO_AVISO = { txt: TIPOS_CARRO[m].nome, t: 0 };
       falar('luketa', 'comprado! e é teu de verdade, sem nota fiscal falsa. guarda na garagem pra não perder', 3.5);
-    } })), 'zero bala, com 0 km (de rolê)'); return false; } },
+    } })), 'passa o mouse pra ver o veículo · zero bala, com 0 km (de rolê)', INTERIOR ? { alvo: INTERIOR, chaves: ['prevModelo'] } : null); return false; } },
     { txt: '🏠 Comprar imóvel (dá aluguel todo dia)', fn: () => { abrirMenu('🏠 IMÓVEIS', IMOVEIS.map(im => ({ txt: `${im.nome} · rende ${fmt$(im.renda)}/dia${(W.imoveis || []).includes(im.id) ? ' ✔ teu' : ''}`, preco: (W.imoveis || []).includes(im.id) ? undefined : im.preco, off: (W.imoveis || []).includes(im.id), fn: () => {
       W.imoveis = W.imoveis || []; W.imoveis.push(im.id); falar('luketa', `${im.nome} é teu! o aluguel cai de 2 em 2 minutos`, 3.5);
     } })), 'cada dia no jogo dura 2 minutos'); return false; } }

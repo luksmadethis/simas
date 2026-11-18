@@ -9,7 +9,7 @@ let RODANDO = false, ultimo = 0, carroAntes = null, lojaAtual = null;
 function salvar() {
   const j = W.jog; if (!j) return;
   const d = { v: 1, grana: j.grana, tem: j.tem, municao: { ...j.municao, punho: 0 }, camisa: j.camisa, calca: j.calca, chapeu: j.chapeu, oculos: j.oculos, feitas: MISSAO.feitas, garagem: W.garagem, stats: W.stats,
-    roupa: { estampa: j.estampa, jaqueta: j.jaqueta, mochila: j.mochila, corrente: j.corrente, chapeuTipo: j.chapeuTipo, tenis: j.tenis, tenisCor: j.tenisCor, temTenis: j.temTenis, temRodas: j.temRodas, oculosTipo: j.oculosTipo, mascara: j.mascara, costas: j.costas, costasCor: j.costasCor, cintura: j.cintura, fantasia: j.fantasia, corte: j.corte, cabelo: j.cabelo, barba: j.barba, pele: j.pele },
+    roupa: { estampa: j.estampa, jaqueta: j.jaqueta, mochila: j.mochila, corrente: j.corrente, chapeuTipo: j.chapeuTipo, tenis: j.tenis, tenisCor: j.tenisCor, temTenis: j.temTenis, temRodas: j.temRodas, inv: j.inv || [], oculosTipo: j.oculosTipo, mascara: j.mascara, costas: j.costas, costasCor: j.costasCor, cintura: j.cintura, fantasia: j.fantasia, corte: j.corte, cabelo: j.cabelo, barba: j.barba, pele: j.pele },
     imoveis: W.imoveis || [], segredos: W.segredos || [], extras: W.extras || {}, pontos: Math.floor(W.pontos), trofeus: W.trofeus || [] };
   try { localStorage.setItem('gta7-save', JSON.stringify(d)); } catch (e) { }
 }
