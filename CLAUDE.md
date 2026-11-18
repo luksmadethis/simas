@@ -97,6 +97,6 @@ Fundo escuro (#0d0c12), cores do arco-íris LGBT, **animadas** em todas as pági
 Home: arco-íris (escondido no topo, aparece na primeira rolada) que desce serpenteando conforme o scroll e barra de progresso arco-íris no topo. O mouse é o normal: a varinha e o brilho foram removidos porque deixavam o site lento.
 
 ## Pendências
-- Fotos da galera: padrão terno preto + gravata borboleta + fundo branco (o dono gera numa IA de imagem). Salvar em `public/galera/<nome>.jpg` (360x360, rosto no centro com um respiro em cima e a gravata aparecendo embaixo) e pôr no `foto`. Todos os 12 já têm.
+- Fotos da galera: padrão terno preto + gravata borboleta + fundo branco (o dono gera numa IA de imagem). Salvar em `public/galera/<nome>.jpg` (360x360) e pôr no `foto` (aumentar o `?v=`). **Enquadramento padrão:** detector de rosto YuNet (opencv), rosto ocupando 50% da altura, centro do rosto a 45% do topo, centralizado no x, fundo completado com a cor do canto. Rosto de perfil pode precisar de ajuste manual (o Alan usa 43% e centro deslocado pro cabelo). Todos os 12 já têm.
 - Cloudinary do SimasTok: cloud `k4mjzxdz`, preset unsigned `nv5gv6px` (pasta simastok). Tem um vídeo de teste `simastok/emymgeykftu2cajkjiir` lá (não tá no feed).
 - (caixinha já começa aberta)
