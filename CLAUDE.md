@@ -10,7 +10,7 @@ Site do grupo de amigos **Simas** em **https://ofisimas.web.app**, hospedado no 
 - `/simasfitness/`: Simas Fitness 2.0, desafio fitness de 30 dias com ranking e fórum
 - `/sugestoes/`: caixinha de sugestões da galera
 - `/simastok/`: SimasTok, vídeos verticais tipo TikTok
-- `/conversimas/`: ConverSimas, baixa vídeo do YouTube/TikTok/Instagram em MP4 (até 1080p) ou MP3
+- `/conversimas/`: ConverSimas, baixa vídeo do TikTok/Instagram/X em MP4 (até 1080p) ou MP3
 - `/jogos/`: aba de joguinhos (hoje: `/jogos/galado-pula/`, `/jogos/dorme-patroa/` e `/jogos/malandro-hero/`)
 
 O site é interno da galera. O tom dos textos é **escrachado de propósito**: palavrão, português chucro, minúsculo com erros e CAPS em palavras de destaque, e piada interna.
@@ -29,7 +29,7 @@ O site é interno da galera. O tom dos textos é **escrachado de propósito**: p
   - `public/jogos/galado-pula/`: jogo Galado Pula (`index.html`, `galado.js` = desenho do personagem, `cabeca.webp` = rosto do Gelado recortado)
   - `public/jogos/dorme-patroa/`: jogo Dorme que a Patroa tá Chegando (`index.html`, `cena.js` = quarto + Cas + Ana + rostos 2D desenhados)
   - `public/conversimas/index.html`: página do ConverSimas (constante `API` = URL do servidor no Render)
-  - `conversimas/`: o SERVIDOR do ConverSimas (Python FastAPI + yt-dlp + ffmpeg + deno, `Dockerfile`), hospedado no **Render grátis** pelo `render.yaml` (Blueprint). Dorme depois de 15 min parado (~1 min pra acordar), banda grátis ~5 GB/mês. Limites: `MAX_SEG` (15 min de vídeo) e `POR_DIA` (25 por IP). Fluxo: `POST /job` → `GET /job/<id>` (progresso) → `GET /job/<id>/arquivo`. O workflow `conversimas-atualiza.yml` muda `conversimas/versao.txt` toda segunda pra o Render reconstruir com o yt-dlp novo. YouTube às vezes bloqueia servidor de nuvem.
+  - `conversimas/`: o SERVIDOR do ConverSimas (Python FastAPI + yt-dlp + ffmpeg + deno, `Dockerfile`), hospedado no **Render grátis** pelo `render.yaml` (Blueprint). Dorme depois de 15 min parado (~1 min pra acordar), banda grátis ~5 GB/mês. Limites: `MAX_SEG` (15 min de vídeo) e `POR_DIA` (25 por IP). Fluxo: `POST /job` → `GET /job/<id>` (progresso) → `GET /job/<id>/arquivo`. O workflow `conversimas-atualiza.yml` muda `conversimas/versao.txt` toda segunda pra o Render reconstruir com o yt-dlp novo. **YouTube NÃO funciona**: o Render é bloqueado pelo YouTube (429/403 já na página; testado com token PO do bgutil, que tá instalado e rodando, e não resolveu). A página avisa "youtube por enquanto não rola" e barra o link antes de mandar. Só resolveria com cookies de conta Google ou internet residencial. Endpoint `/diag` mostra o estado.
   - `public/jogos/malandro-hero/`: jogo Malando com Zensat (`index.html`, `charts.json` = notas de cada música, `musicas/<slug>.mp3`)
   - `firestore.rules`: regras de segurança do banco (Firestore) do projeto
   - `firebase.json`: config da hospedagem (site `ofisimas`, cleanUrls, trailingSlash, HTML sem cache)
