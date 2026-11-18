@@ -37,6 +37,8 @@
   .item .bg{position:absolute;inset:-40px;background-size:cover;background-position:center;filter:blur(30px) brightness(.35);transform:scale(1.1)}
   .stage{position:relative;height:100%;width:100%;max-width:min(100%,calc((100dvh - 64px) * 9 / 16 + 120px));display:flex;align-items:center;justify-content:center}
   .stage video{width:100%;height:100%;object-fit:contain;background:transparent;display:block}
+  .vinheta{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;z-index:4;opacity:0;pointer-events:none;transition:opacity .25s}
+  .vinheta.on{opacity:1;pointer-events:auto}
   .tapzone{position:absolute;inset:0;z-index:2}
   .playic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:3;pointer-events:none;font-size:70px;opacity:0;transition:opacity .2s;text-shadow:0 2px 20px #000}
   .item.paused .playic{opacity:.85}
@@ -402,7 +404,7 @@ function criar(v) {
   const el = document.createElement('section'); el.className = 'item'; el.dataset.id = v.id;
   const bg = document.createElement('div'); bg.className = 'bg'; bg.style.backgroundImage = `url("${purl(v)}")`;
   const stage = document.createElement('div'); stage.className = 'stage';
-  const video = document.createElement('video'); video.loop = true; video.playsInline = true; video.muted = mudo; video.preload = 'none'; video.poster = purl(v);
+  const video = document.createElement('video'); video.loop = false; video.playsInline = true; video.muted = mudo; video.preload = 'none'; video.poster = purl(v);
   video.volume = volume; video.setAttribute('playsinline', ''); video.setAttribute('webkit-playsinline', '');
   const tap = document.createElement('div'); tap.className = 'tapzone';
   const pic = document.createElement('div'); pic.className = 'playic'; pic.textContent = '▶';
@@ -453,6 +455,8 @@ function criar(v) {
   tap.addEventListener('pointerup', fimSeg); tap.addEventListener('pointercancel', fimSeg); tap.addEventListener('pointerleave', fimSeg);
   tap.addEventListener('contextmenu', e => e.preventDefault());
 
+  // acabou o vídeo: toca a vinheta do SimasTok por cima e depois recomeça (igual o final do tiktok)
+  video.addEventListener('ended', () => { if (atual === it) tocaVinheta(it); else { video.currentTime = 0; } });
   // conta visualização depois de 2s assistindo (uma vez por vídeo nesta aba)
   video.addEventListener('timeupdate', () => {
     if (!it.contou && video.currentTime > 2) { it.contou = true; db.doc('tok/' + it.v.id).update({ views: (it.v.views || 0) + 1 }).catch(() => {}); }
@@ -533,7 +537,27 @@ function coracao(ev, stage) {
   stage.appendChild(h); setTimeout(() => h.remove(), 850);
 }
 
+// vinheta: um vídeo só, reaproveitado, que entra por cima do vídeo que acabou
+const vinheta = document.createElement('video');
+vinheta.src = '/simastok/outro.mp4'; vinheta.preload = 'auto'; vinheta.playsInline = true; vinheta.setAttribute('playsinline', '');
+vinheta.className = 'vinheta';
+let vinhetaDe = null;
+function tocaVinheta(it) {
+  vinhetaDe = it;
+  it.el.querySelector('.stage').appendChild(vinheta);
+  vinheta.muted = mudo; vinheta.volume = typeof volume === 'number' ? volume : 1; vinheta.currentTime = 0;
+  vinheta.classList.add('on');
+  vinheta.play().catch(() => fimVinheta());
+}
+function fimVinheta() {
+  vinheta.classList.remove('on'); vinheta.pause();
+  const it = vinhetaDe; vinhetaDe = null;
+  if (it && atual === it && !it.el.classList.contains('paused')) { it.video.currentTime = 0; it.video.play().catch(() => {}); }
+}
+vinheta.addEventListener('ended', fimVinheta);
+vinheta.addEventListener('click', fimVinheta);
 function ativar(it) {
+  if (vinhetaDe && vinhetaDe !== it) { vinheta.classList.remove('on'); vinheta.pause(); vinhetaDe = null; }
   if (atual === it) return;
   if (atual) { atual.video.pause(); }
   atual = it; it.el.classList.remove('paused');
