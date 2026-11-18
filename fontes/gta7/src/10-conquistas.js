@@ -36,6 +36,9 @@ const TROFEUS = [
   ['sibito', '🤬', 'Saco de Pancada', 'ouve 20 xingamentos da Sibito', s => s.xingado >= 20],
   ['morreu10', '💀', 'Paga Nada, Primo', 'morre 10 vezes', s => s.mortes >= 10],
   ['preso5', '🚔', 'Freguês da Delegacia', 'é preso 5 vezes', s => s.presos >= 5],
+  ['nadador', '🏊', 'Peixe de Favela', 'nada 30 segundos', s => s.nado >= 30],
+  ['marinheiro', '🚤', 'Marinheiro de Primeira Viagem', 'pilota um barco', s => s.barco >= 1],
+  ['bau', '🏴‍☠️', 'Pirata do Simas', 'acha o baú da Ilha do Gelado', s => s.bau >= 1],
   ['arsenal', '🧨', 'Arsenal Completo', 'tem todas as armas', s => W.jog && ORDEM_ARMAS.every(k => W.jog.tem[k])]
 ];
 let trofeuTimer = 1;
@@ -46,6 +49,8 @@ function atualizaConquistas(dt) {
   if (j.carro && j.carro.derrapa > 180 && Math.abs(j.carro.vel) > 220) { W.driftT = (W.driftT || 0) + dt; maxStat('driftMax', W.driftT); }
   else if (W.driftT) { if (W.driftT > 1) pontuar(Math.floor(W.driftT * 25), 'DRIFT ' + W.driftT.toFixed(1) + 's'); W.driftT = 0; }
   maxStat('maxEstrela', W.procurado);
+  if (j.nadando) conta('nado', dt);
+  if (j.carro && TIPOS_CARRO[j.carro.modelo].barco) maxStat('barco', 1);
   const reg = regiaoEm(j.x, j.y);
   if (reg === REG.INDONESIA) maxStat('indonesia', 1);
   if (LUGAR.mirante && dist(j.x, j.y, LUGAR.mirante.x, LUGAR.mirante.y) < 300) maxStat('mirante', 1);

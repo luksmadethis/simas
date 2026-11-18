@@ -364,6 +364,10 @@ function gerarIndonesia(r) {
   addPredio(217, 92, 8, 8, 0.9, '#b03a2e', { teto: '#7b241c', placa: 'PURA SIMAS', neon: '#f1c40f', pagode: true });
   for (const [x, y] of [[214, 140], [226, 146], [216, 168], [228, 112], [214, 118]]) if (retLivre(x, y, 3, 3)) addPredio(x, y, 3, 3, 0.3, pick(['#c8a165', '#a0522d', '#d2b48c']), { teto: '#5d4037', palha: true });
   LUGAR.masadakun = { x: 221 * T, y: 102 * T, nome: 'Templo (Indonésia)' };
+  // Ilha do Gelado: só dá pra chegar de barco (ou nadando muito)
+  for (let y = 18; y < 33; y++) for (let x = 207; x < 224; x++) { const d = Math.hypot((x - 215.5) / 7, (y - 25.5) / 6); if (d < 1) setTile(x, y, d > 0.65 ? TL.AREIA : TL.GRAMA); }
+  for (let k = 0; k < 6; k++) deco.push({ t: 'palmeira', x: (211 + r() * 9) * T, y: (21 + r() * 9) * T, s: 1 });
+  LUGAR.ilha = { x: 215.5 * T, y: 25.5 * T };
   LUGAR.indonesia = { x: 214 * T, y: 157 * T };
   for (let k = 0; k < 140; k++) { const x = 196 + r() * 46, y = 55 + r() * 150; const t = tile(x | 0, y | 0); if (t === TL.GRAMA || t === TL.AREIA) deco.push({ t: t === TL.AREIA ? 'palmeira' : (r() < 0.5 ? 'palmeira' : 'arvore'), x: x * T, y: y * T, s: 0.8 + r() * 0.6, selva: true }); }
 }

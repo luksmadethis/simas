@@ -180,7 +180,7 @@ function desenharPessoa(g, p, opt = {}) {
   // cabeça
   const rosto = p.rosto && ROSTOS[p.rosto];
   if (rosto && rosto.complete && rosto.naturalWidth) {
-    const r = (p === W.jog ? 6.6 : 8.2) * s;
+    const r = (p === W.jog || opt.jog ? 6.6 : 8.2) * s;
     g.fillStyle = 'rgba(0,0,0,.5)'; g.beginPath(); g.arc(0, 0, r + 2.5, 0, 7); g.fill();
     g.save(); g.beginPath(); g.arc(0, 0, r, 0, 7); g.clip(); g.drawImage(rosto, -r, -r * 1.05, r * 2, r * 2.1); g.restore();
     g.strokeStyle = p.corNome || p.borda || '#fff'; g.lineWidth = 2.5; g.beginPath(); g.arc(0, 0, r, 0, 7); g.stroke();
@@ -281,6 +281,7 @@ function desenharMoto(g, c, t) {
 function desenharCarro(g, c) {
   const L = c.l, Wd = c.w, t = TIPOS_CARRO[c.modelo];
   if (t.moto) return desenharMoto(g, c, t);
+  if (t.barco) return desenharBarco(g, c, t);
   g.save(); g.translate(c.x, c.y);
   g.fillStyle = 'rgba(0,0,0,.35)'; g.save(); g.translate(5, 7); g.rotate(c.a); rr(g, -L / 2, -Wd / 2, L, Wd, 10); g.fill(); g.restore();
   g.rotate(c.a);
@@ -487,7 +488,7 @@ function desenharMundo() {
   for (const c of W.carros) if (dentro(c.x, c.y)) desenharCarro(g, c);
   for (const p of W.peds) if (!p.morto && !p.dentroCarro && !p.escondido && dentro(p.x, p.y)) desenharPessoa(g, p, { arma: p.armaVisivel, escala: p.rosto || p.nome ? 1.25 : 1.1 });
   const j = W.jog;
-  if (!j.carro && !j.morto) desenharPessoa(g, j, { arma: j.arma, nomes: false, anel: true, escala: 1.45 });
+  if (!j.carro && !j.morto) { if (j.nadando) { g.save(); g.globalAlpha = 0.55; g.fillStyle = '#1d4f8f'; g.beginPath(); g.arc(j.x, j.y, 30, 0, 7); g.fill(); g.restore(); } desenharPessoa(g, j, { arma: j.nadando ? null : j.arma, nomes: false, anel: true, escala: 1.45 }); if (j.nadando) { g.strokeStyle = 'rgba(255,255,255,.6)'; g.lineWidth = 3; g.beginPath(); g.arc(j.x, j.y, 24 + Math.sin(W.tempo * 6) * 4, 0, 7); g.stroke(); } }
   if (!j.carro && j.morto) desenharPessoa(g, { ...j, morto: true });
   for (const ch of W.chefes) ch.desenhar && ch.desenhar(g);
   // balas
@@ -512,6 +513,7 @@ function desenharMundo() {
       const gr = g.createRadialGradient(e.x, e.y, 0, e.x, e.y, r); gr.addColorStop(0, `rgba(255,255,200,${k})`); gr.addColorStop(0.4, `rgba(255,140,0,${k})`); gr.addColorStop(1, 'rgba(120,20,0,0)');
       g.fillStyle = gr; g.beginPath(); g.arc(e.x, e.y, r, 0, 7); g.fill();
     } else if (e.t === 'fumaca') { g.fillStyle = e.escura ? `rgba(30,30,30,${k * 0.5})` : `rgba(90,90,90,${k * 0.45})`; g.beginPath(); g.arc(e.x, e.y, e.r, 0, 7); g.fill(); }
+    else if (e.t === 'onda') { g.strokeStyle = `rgba(255,255,255,${k * 0.6})`; g.lineWidth = 2; g.beginPath(); g.arc(e.x, e.y, 10 + (1 - k) * 30, 0, 7); g.stroke(); }
     else if (e.t === 'clarao') { g.fillStyle = 'rgba(255,240,150,.9)'; g.beginPath(); g.arc(e.x, e.y, 10, 0, 7); g.fill(); }
     else if (e.t === 'faisca') { g.fillStyle = '#ffd23f'; for (let i = 0; i < 4; i++) g.fillRect(e.x + rnd(-8, 8), e.y + rnd(-8, 8), 3, 3); }
     else if (e.t === 'raio') { g.strokeStyle = `rgba(0,229,255,${k})`; g.lineWidth = 4; g.beginPath(); g.moveTo(e.x, e.y); for (let i = 1; i <= 6; i++) g.lineTo(lerp(e.x, e.x2, i / 6) + (i < 6 ? rnd(-14, 14) : 0), lerp(e.y, e.y2, i / 6) + (i < 6 ? rnd(-14, 14) : 0)); g.stroke(); }

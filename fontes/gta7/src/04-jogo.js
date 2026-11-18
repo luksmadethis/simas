@@ -28,7 +28,7 @@ function entrarSair() {
     // sai pelo lado esquerdo
     const ang = c.a - Math.PI / 2;
     let sx = c.x + Math.cos(ang) * (c.w / 2 + 18), sy = c.y + Math.sin(ang) * (c.w / 2 + 18);
-    if (solidoEm(sx, sy)) { sx = c.x - Math.cos(ang) * (c.w / 2 + 18); sy = c.y - Math.sin(ang) * (c.w / 2 + 18); }
+    if (tileEm(sx, sy) === TL.PREDIO) { sx = c.x - Math.cos(ang) * (c.w / 2 + 18); sy = c.y - Math.sin(ang) * (c.w / 2 + 18); }
     j.x = sx; j.y = sy; j.carro = null; c.motorista = null; c.ia = null; c.vx *= 0.3; c.vy *= 0.3; c.vel = 0;
     SOM.atualizaMotor(0, false); RADIO.tocar(false);
     return;
@@ -173,12 +173,12 @@ function atualizaJogadorPe(dt) {
   if (len > 0.1) {
     const nx = mx / Math.max(1, len), ny = my / Math.max(1, len);
     const ox = j.x, oy = j.y;
-    j.x += nx * vel * dt; if (solidoEm(j.x, j.y) || solidoEm(j.x + Math.sign(nx) * 10, j.y)) j.x = ox;
-    j.y += ny * vel * dt; if (solidoEm(j.x, j.y) || solidoEm(j.x, j.y + Math.sign(ny) * 10)) j.y = oy;
+    const parede = (x, y) => tileEm(x, y) === TL.PREDIO, v2 = j.nadando ? 95 : vel;
+    j.x += nx * v2 * dt; if (parede(j.x, j.y) || parede(j.x + Math.sign(nx) * 10, j.y)) j.x = ox;
+    j.y += ny * v2 * dt; if (parede(j.x, j.y) || parede(j.x, j.y + Math.sign(ny) * 10)) j.y = oy;
     if (!MOUSE.used || TOQUE.ativo) j.a = Math.atan2(ny, nx);
     j.anda += dt * (corre ? 14 : 9);
   }
-  if (tileEm(j.x, j.y) === TL.AGUA) { ferirJogador(40 * dt); if (!W.avisoAgua) { W.avisoAgua = true; falar('luketa', 'sai da água, tu não sabe nadar não, cria de favela!', 3); } }
   // mira
   let ax = Math.cos(j.a), ay = Math.sin(j.a);
   if (MOUSE.used && !TOQUE.ativo) { const wx = MOUSE.x / cam.zoom + cam.x - VW / 2 / cam.zoom, wy = MOUSE.y / cam.zoom + cam.y - VH / 2 / cam.zoom; ax = wx - j.x; ay = wy - j.y; j.a = Math.atan2(ay, ax); }

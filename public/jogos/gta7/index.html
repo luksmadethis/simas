@@ -76,6 +76,8 @@ body.titulo-on #radio{right:auto;left:50%;transform:translateX(-50%);bottom:12px
 #menu .lista{padding:10px 14px}
 #menu .fechar{margin:0 14px 14px;width:calc(100% - 28px)}
 #menu .item{border-radius:4px;font-weight:700}
+#menu.interior{background:transparent;justify-content:flex-end;padding-right:3vw}
+@media (max-width:700px){#menu.interior{justify-content:center;align-items:flex-end;padding:0 8px 8px}#menu.interior .caixa{max-height:58vh}}
 #menu .item:focus{outline:none;background:#ffd23f;color:#111;border-color:#fff;transform:translateX(4px)}
 #menu .item:focus b{color:#0b6b0b}
 #gire{display:none}
@@ -627,6 +629,10 @@ function gerarIndonesia(r) {
   addPredio(217, 92, 8, 8, 0.9, '#b03a2e', { teto: '#7b241c', placa: 'PURA SIMAS', neon: '#f1c40f', pagode: true });
   for (const [x, y] of [[214, 140], [226, 146], [216, 168], [228, 112], [214, 118]]) if (retLivre(x, y, 3, 3)) addPredio(x, y, 3, 3, 0.3, pick(['#c8a165', '#a0522d', '#d2b48c']), { teto: '#5d4037', palha: true });
   LUGAR.masadakun = { x: 221 * T, y: 102 * T, nome: 'Templo (Indonésia)' };
+  // Ilha do Gelado: só dá pra chegar de barco (ou nadando muito)
+  for (let y = 18; y < 33; y++) for (let x = 207; x < 224; x++) { const d = Math.hypot((x - 215.5) / 7, (y - 25.5) / 6); if (d < 1) setTile(x, y, d > 0.65 ? TL.AREIA : TL.GRAMA); }
+  for (let k = 0; k < 6; k++) deco.push({ t: 'palmeira', x: (211 + r() * 9) * T, y: (21 + r() * 9) * T, s: 1 });
+  LUGAR.ilha = { x: 215.5 * T, y: 25.5 * T };
   LUGAR.indonesia = { x: 214 * T, y: 157 * T };
   for (let k = 0; k < 140; k++) { const x = 196 + r() * 46, y = 55 + r() * 150; const t = tile(x | 0, y | 0); if (t === TL.GRAMA || t === TL.AREIA) deco.push({ t: t === TL.AREIA ? 'palmeira' : (r() < 0.5 ? 'palmeira' : 'arvore'), x: x * T, y: y * T, s: 0.8 + r() * 0.6, selva: true }); }
 }
@@ -735,6 +741,8 @@ const TIPOS_CARRO = {
   cg:       { nome: 'CG Titan 160', vmax: 640, acel: 650, curva: 3.5, aderencia: 7.5, hp: 60, w: 18, l: 50, cores: ['#111', '#c0392b', '#2471a3'], moto: true },
   trilha:   { nome: 'Moto de Trilha', vmax: 660, acel: 760, curva: 3.8, aderencia: 6.5, hp: 65, w: 18, l: 50, cores: ['#f39c12', '#27ae60', '#ecf0f1'], moto: true },
   xj6:      { nome: 'XJ6 do Grau', vmax: 900, acel: 950, curva: 3.4, aderencia: 8, hp: 70, w: 20, l: 54, cores: ['#111', '#ff6ec7', '#2980b9'], moto: true },
+  lancha:   { nome: 'Lancha', vmax: 640, acel: 420, curva: 2.0, aderencia: 2.2, hp: 200, w: 40, l: 96, cores: ['#ecf0f1', '#2471a3', '#c0392b'], barco: true },
+  jetski:   { nome: 'Jet Ski', vmax: 720, acel: 650, curva: 3.0, aderencia: 2.6, hp: 90, w: 22, l: 52, cores: ['#f1c40f', '#ff6ec7', '#1abc9c'], barco: true, jetski: true },
   choque:   { nome: 'Choque-Móvel do Ltzin', vmax: 600, acel: 500, curva: 2.2, aderencia: 7, hp: 1800, w: 60, l: 112, cores: ['#d4ac0d'], chefe: true }
 };
 
@@ -838,7 +846,10 @@ function cantosCarro(c, folga = 0) {
   const ca = Math.cos(c.a), sa = Math.sin(c.a), hl = c.l / 2 + folga, hw = c.w / 2 + folga;
   return [[hl, hw], [hl, -hw], [-hl, hw], [-hl, -hw], [hl, 0], [-hl, 0], [0, hw], [0, -hw]].map(([px, py]) => [c.x + px * ca - py * sa, c.y + px * sa + py * ca]);
 }
-function bateuPredio(c) { for (const [x, y] of cantosCarro(c)) if (solidoEm(x, y)) return true; return false; }
+function bateuPredio(c) {
+  if (TIPOS_CARRO[c.modelo].barco) { for (const [x, y] of cantosCarro(c)) if (!ehAguaBarco(x, y)) return true; return false; }
+  for (const [x, y] of cantosCarro(c)) if (tileEm(x, y) === TL.PREDIO) return true; return false;
+}
 
 function fisicaCarro(c, dt, acel, freio, vira, freioMao) {
   const t = TIPOS_CARRO[c.modelo];
@@ -885,8 +896,8 @@ function moverCarro(c, dt) {
     const vn = c.vx * nx + c.vy * ny; if (vn < 0) { c.vx -= 1.5 * vn * nx; c.vy -= 1.5 * vn * ny; }
     if (v > 180) { danoCarro(c, v * 0.04); SOM.batida(v / 700); if (c === W.jog.carro) { W.ultBatida = W.tempo; W.forcaBatida = v; tremer(5); } }
   });
-  // tá na água? afunda
-  if (tileEm(c.x, c.y) === TL.AGUA) danoCarro(c, 999);
+  // tá na água? afunda (barco não)
+  if (!TIPOS_CARRO[c.modelo].barco && tileEm(c.x, c.y) === TL.AGUA && !ehPonte(Math.floor(c.x / T), Math.floor(c.y / T))) afundarCarro(c, dt);
 }
 
 function cairDaMoto(c, v) {
@@ -1227,7 +1238,7 @@ function entrarSair() {
     // sai pelo lado esquerdo
     const ang = c.a - Math.PI / 2;
     let sx = c.x + Math.cos(ang) * (c.w / 2 + 18), sy = c.y + Math.sin(ang) * (c.w / 2 + 18);
-    if (solidoEm(sx, sy)) { sx = c.x - Math.cos(ang) * (c.w / 2 + 18); sy = c.y - Math.sin(ang) * (c.w / 2 + 18); }
+    if (tileEm(sx, sy) === TL.PREDIO) { sx = c.x - Math.cos(ang) * (c.w / 2 + 18); sy = c.y - Math.sin(ang) * (c.w / 2 + 18); }
     j.x = sx; j.y = sy; j.carro = null; c.motorista = null; c.ia = null; c.vx *= 0.3; c.vy *= 0.3; c.vel = 0;
     SOM.atualizaMotor(0, false); RADIO.tocar(false);
     return;
@@ -1372,12 +1383,12 @@ function atualizaJogadorPe(dt) {
   if (len > 0.1) {
     const nx = mx / Math.max(1, len), ny = my / Math.max(1, len);
     const ox = j.x, oy = j.y;
-    j.x += nx * vel * dt; if (solidoEm(j.x, j.y) || solidoEm(j.x + Math.sign(nx) * 10, j.y)) j.x = ox;
-    j.y += ny * vel * dt; if (solidoEm(j.x, j.y) || solidoEm(j.x, j.y + Math.sign(ny) * 10)) j.y = oy;
+    const parede = (x, y) => tileEm(x, y) === TL.PREDIO, v2 = j.nadando ? 95 : vel;
+    j.x += nx * v2 * dt; if (parede(j.x, j.y) || parede(j.x + Math.sign(nx) * 10, j.y)) j.x = ox;
+    j.y += ny * v2 * dt; if (parede(j.x, j.y) || parede(j.x, j.y + Math.sign(ny) * 10)) j.y = oy;
     if (!MOUSE.used || TOQUE.ativo) j.a = Math.atan2(ny, nx);
     j.anda += dt * (corre ? 14 : 9);
   }
-  if (tileEm(j.x, j.y) === TL.AGUA) { ferirJogador(40 * dt); if (!W.avisoAgua) { W.avisoAgua = true; falar('luketa', 'sai da água, tu não sabe nadar não, cria de favela!', 3); } }
   // mira
   let ax = Math.cos(j.a), ay = Math.sin(j.a);
   if (MOUSE.used && !TOQUE.ativo) { const wx = MOUSE.x / cam.zoom + cam.x - VW / 2 / cam.zoom, wy = MOUSE.y / cam.zoom + cam.y - VH / 2 / cam.zoom; ax = wx - j.x; ay = wy - j.y; j.a = Math.atan2(ay, ax); }
@@ -1839,7 +1850,7 @@ function desenharPessoa(g, p, opt = {}) {
   // cabeça
   const rosto = p.rosto && ROSTOS[p.rosto];
   if (rosto && rosto.complete && rosto.naturalWidth) {
-    const r = (p === W.jog ? 6.6 : 8.2) * s;
+    const r = (p === W.jog || opt.jog ? 6.6 : 8.2) * s;
     g.fillStyle = 'rgba(0,0,0,.5)'; g.beginPath(); g.arc(0, 0, r + 2.5, 0, 7); g.fill();
     g.save(); g.beginPath(); g.arc(0, 0, r, 0, 7); g.clip(); g.drawImage(rosto, -r, -r * 1.05, r * 2, r * 2.1); g.restore();
     g.strokeStyle = p.corNome || p.borda || '#fff'; g.lineWidth = 2.5; g.beginPath(); g.arc(0, 0, r, 0, 7); g.stroke();
@@ -1940,6 +1951,7 @@ function desenharMoto(g, c, t) {
 function desenharCarro(g, c) {
   const L = c.l, Wd = c.w, t = TIPOS_CARRO[c.modelo];
   if (t.moto) return desenharMoto(g, c, t);
+  if (t.barco) return desenharBarco(g, c, t);
   g.save(); g.translate(c.x, c.y);
   g.fillStyle = 'rgba(0,0,0,.35)'; g.save(); g.translate(5, 7); g.rotate(c.a); rr(g, -L / 2, -Wd / 2, L, Wd, 10); g.fill(); g.restore();
   g.rotate(c.a);
@@ -2146,7 +2158,7 @@ function desenharMundo() {
   for (const c of W.carros) if (dentro(c.x, c.y)) desenharCarro(g, c);
   for (const p of W.peds) if (!p.morto && !p.dentroCarro && !p.escondido && dentro(p.x, p.y)) desenharPessoa(g, p, { arma: p.armaVisivel, escala: p.rosto || p.nome ? 1.25 : 1.1 });
   const j = W.jog;
-  if (!j.carro && !j.morto) desenharPessoa(g, j, { arma: j.arma, nomes: false, anel: true, escala: 1.45 });
+  if (!j.carro && !j.morto) { if (j.nadando) { g.save(); g.globalAlpha = 0.55; g.fillStyle = '#1d4f8f'; g.beginPath(); g.arc(j.x, j.y, 30, 0, 7); g.fill(); g.restore(); } desenharPessoa(g, j, { arma: j.nadando ? null : j.arma, nomes: false, anel: true, escala: 1.45 }); if (j.nadando) { g.strokeStyle = 'rgba(255,255,255,.6)'; g.lineWidth = 3; g.beginPath(); g.arc(j.x, j.y, 24 + Math.sin(W.tempo * 6) * 4, 0, 7); g.stroke(); } }
   if (!j.carro && j.morto) desenharPessoa(g, { ...j, morto: true });
   for (const ch of W.chefes) ch.desenhar && ch.desenhar(g);
   // balas
@@ -2171,6 +2183,7 @@ function desenharMundo() {
       const gr = g.createRadialGradient(e.x, e.y, 0, e.x, e.y, r); gr.addColorStop(0, `rgba(255,255,200,${k})`); gr.addColorStop(0.4, `rgba(255,140,0,${k})`); gr.addColorStop(1, 'rgba(120,20,0,0)');
       g.fillStyle = gr; g.beginPath(); g.arc(e.x, e.y, r, 0, 7); g.fill();
     } else if (e.t === 'fumaca') { g.fillStyle = e.escura ? `rgba(30,30,30,${k * 0.5})` : `rgba(90,90,90,${k * 0.45})`; g.beginPath(); g.arc(e.x, e.y, e.r, 0, 7); g.fill(); }
+    else if (e.t === 'onda') { g.strokeStyle = `rgba(255,255,255,${k * 0.6})`; g.lineWidth = 2; g.beginPath(); g.arc(e.x, e.y, 10 + (1 - k) * 30, 0, 7); g.stroke(); }
     else if (e.t === 'clarao') { g.fillStyle = 'rgba(255,240,150,.9)'; g.beginPath(); g.arc(e.x, e.y, 10, 0, 7); g.fill(); }
     else if (e.t === 'faisca') { g.fillStyle = '#ffd23f'; for (let i = 0; i < 4; i++) g.fillRect(e.x + rnd(-8, 8), e.y + rnd(-8, 8), 3, 3); }
     else if (e.t === 'raio') { g.strokeStyle = `rgba(0,229,255,${k})`; g.lineWidth = 4; g.beginPath(); g.moveTo(e.x, e.y); for (let i = 1; i <= 6; i++) g.lineTo(lerp(e.x, e.x2, i / 6) + (i < 6 ? rnd(-14, 14) : 0), lerp(e.y, e.y2, i / 6) + (i < 6 ? rnd(-14, 14) : 0)); g.stroke(); }
@@ -3367,7 +3380,17 @@ function desenharHUD(dt) {
     g.font = `bold ${peq ? 14 : 18}px system-ui`; quebraTexto(g, CORTINA.txt, Math.min(620, VW - 40)).forEach((l, i) => textoContorno(g, l, VW / 2, VH * 0.4 + 44 + i * 26, '#fff', 4));
     g.globalAlpha = 1; if (CORTINA.t > 4.1) CORTINA = null;
   }
+  // entrar nos lugares
+  if (INTERACAO && !j.morto && !MISSAO.dialogo) {
+    const tx = (toque ? 'toca 🚗' : 'E') + ' · entrar: ' + INTERACAO.ic + ' ' + INTERACAO.nome, w = Math.min(VW - 30, 60 + tx.length * 8);
+    const y0b = VH - (toque ? 236 : 96);
+    g.fillStyle = 'rgba(10,8,20,.85)'; rr(g, VW / 2 - w / 2, y0b, w, 34, 10); g.fill(); g.strokeStyle = '#ffd23f'; g.lineWidth = 2; g.stroke();
+    g.font = 'bold 15px system-ui'; g.textAlign = 'center'; g.fillStyle = '#fff'; g.fillText(tx, VW / 2, y0b + 22);
+  }
+  // fôlego nadando
+  if (j.nadando) { const w = 160; g.font = 'bold 11px system-ui'; g.textAlign = 'center'; textoContorno(g, '🫧 FÔLEGO', VW / 2, VH - (toque ? 270 : 130), '#bfe9ff', 3); barra(g, VW / 2 - w / 2, VH - (toque ? 264 : 124), w, 9, (j.folego ?? 100) / 100, j.folego < 25 ? '#e74c3c' : '#5dade2'); }
   desenharTrofeuAviso(g, dt);
+  if (INTERIOR) desenharInterior(g, dt);
   if (MISSAO.dialogo) desenharDialogo(g, dt);
   if (TELA_FIM) desenharFim(g, dt);
   if (MAPA_ABERTO) desenharMapaGrande(g);
@@ -3399,7 +3422,7 @@ function desenharSeta(g, alvo, cor, rosto) {
 }
 
 function desenharMini(g) {
-  const j = W.jog, s = ehToque() ? 110 : 170, x0 = ehToque() ? VW - 110 - 14 : 14, y0 = ehToque() ? 50 : VH - s - 14, zoom = 1.6; // tiles por pixel inverso
+  const j = W.jog, s = ehToque() ? 120 : 190, x0 = ehToque() ? VW - 120 - 14 : 14, y0 = ehToque() ? 50 : VH - s - 14, zoom = 1.25; // tiles por pixel inverso
   g.save();
   g.beginPath(); g.arc(x0 + s / 2, y0 + s / 2, s / 2, 0, 7); g.fillStyle = '#123'; g.fill(); g.clip();
   const tx = j.x / T, ty = j.y / T;
@@ -3409,13 +3432,16 @@ function desenharMini(g) {
     let bx = (wx / T - tx) * zoom + x0 + s / 2, by = (wy / T - ty) * zoom + y0 + s / 2;
     const dx = bx - (x0 + s / 2), dy = by - (y0 + s / 2), dd = Math.hypot(dx, dy), max = s / 2 - 7;
     if (dd > max) { bx = x0 + s / 2 + dx / dd * max; by = y0 + s / 2 + dy / dd * max; }
-    if (ic) { g.font = '13px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(ic, bx, by); g.textBaseline = 'alphabetic'; return; }
+    if (ic) { g.font = (s > 150 ? 13 : 11) + 'px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(ic, bx, by); g.textBaseline = 'alphabetic'; return; }
     g.fillStyle = cor; g.beginPath(); g.arc(bx, by, r, 0, 7); g.fill(); g.strokeStyle = '#000'; g.lineWidth = 1.5; g.stroke();
   };
   for (const c of W.carros) if (c.policia && c.ia && c.ia.tipo === 'policia') blip(c.x, c.y, c.modelo === 'gelado' ? '#ffd23f' : (W.tempo * 4 | 0) % 2 ? '#ff3b3b' : '#3b6bff', c.modelo === 'gelado' ? 6 : 3);
   for (const p of W.peds) if ((p.hostil || p.policia) && !p.morto) blip(p.x, p.y, '#ff3b3b', 2.5);
   for (const c of W.carros) if (c.gangue && c.hp > 0) blip(c.x, c.y, '#ff8c00', 3.5);
-  blip(LUGAR.garagem.x, LUGAR.garagem.y, '#ff9f1c', 4); blip(LUGAR.garagemBH.x, LUGAR.garagemBH.y, '#ff9f1c', 4);
+  for (const l of LUGARES) { const p = LUGAR[l.k]; if (p) blip(p.x, p.y, 0, 0, l.ic); }
+  for (const [k, ic] of [['cas', '🪑'], ['skate', '🛹'], ['yori', '🥭'], ['nauj', '🌿'], ['baile', '🔊'], ['gelado', '🕶️'], ['poli', '🎙️'], ['matheus', '🤖'], ['ltzin', '👑'], ['mirante', '⛰️']]) if (LUGAR[k]) blip(LUGAR[k].x, LUGAR[k].y, 0, 0, ic);
+  for (const m of extrasDisponiveis()) { const p = lugarMissao(m); blip(p.x, p.y, '#00e5ff', 5); }
+  for (const c of W.carros) if (TIPOS_CARRO[c.modelo].barco && !c.motorista) blip(c.x, c.y, 0, 0, '🚤');
   const alvo = MISSAO.ativa ? MISSAO.alvo : lugarMissao(proximaMissao());
   if (alvo) blip(alvo.x, alvo.y, '#ffd23f', 6);
   g.restore();
@@ -3527,7 +3553,7 @@ function abrirMenu(titulo, itens, sub) {
   el.classList.add('aberto');
   const prim = el.querySelector('.item:not(.off)') || el.querySelector('.fechar'); if (prim && !ehToque()) prim.focus();
 }
-function fecharMenu() { const el = document.getElementById('menu'); el.classList.remove('aberto'); el.innerHTML = ''; MENU = null; }
+function fecharMenu() { const el = document.getElementById('menu'); el.classList.remove('aberto'); el.innerHTML = ''; MENU = null; if (INTERIOR) sairInterior(); }
 
 const CORES_PINTURA = [['Rosa Simas', '#ff6ec7'], ['Preto Fosco', '#151515'], ['Branco Gelo', '#f2f2f2'], ['Vermelho Ferrari', '#d50000'], ['Azul Calcinha', '#7fb3ff'], ['Verde Bandeira', '#1e8e3e'], ['Amarelo Taxi', '#ffd000'], ['Roxo Baile', '#7d3cff'], ['Laranja Galado', '#ff8c1a'], ['Dourado Rei', '#c9a227']];
 function menuGaragem() {
@@ -3801,7 +3827,7 @@ function comecar(save) {
     MISSAO.feitas = save.feitas || 0; W.garagem = save.garagem || []; W.stats = { ...W.stats, ...(save.stats || {}) };
     Object.assign(j, save.roupa || {}); W.imoveis = save.imoveis || []; W.segredos = save.segredos || []; W.extras = save.extras || {}; W.pontos = save.pontos || 0; W.trofeus = save.trofeus || [];
   }
-  espalharItens(); criarFixos(); criarFiguras(); estacionados(); criarSegredos();
+  espalharItens(); criarFixos(); criarFiguras(); estacionados(); criarSegredos(); criarBarcos(); criarTesouro();
   if (MISSAO.feitas >= MISSOES.length) liberarFatal(false);
   cam.x = j.x; cam.y = j.y;
   povoarInicial();
@@ -3814,29 +3840,8 @@ function comecar(save) {
 
 function gatilhos() {
   const j = W.jog; if (j.morto || MISSAO.dialogo) return;
-  // lojas e garagem
-  let perto = null;
-  for (const k of ['garagem', 'garagemBH']) if (dist(j.x, j.y, LUGAR[k].x, LUGAR[k].y) < (j.carro ? 75 : 55)) perto = k;
-  if (!j.carro) { if (dist(j.x, j.y, LUGAR.fatal.x, LUGAR.fatal.y) < 45) perto = 'fatal'; if (dist(j.x, j.y, LUGAR.motors.x, LUGAR.motors.y) < 50) perto = 'motors'; if (dist(j.x, j.y, LUGAR.padaria.x, LUGAR.padaria.y) < 45 && !MISSAO.ativa) perto = 'padaria'; if (dist(j.x, j.y, LUGAR.roupas.x, LUGAR.roupas.y) < 45) perto = 'roupas'; if (dist(j.x, j.y, LUGAR.armas.x, LUGAR.armas.y) < 45) perto = 'armas'; }
-  if (perto && perto !== lojaAtual && !(j.carro && Math.abs(j.carro.vel) > 260)) {
-    lojaAtual = perto;
-    if (perto === 'motors') menuMotors();
-    else if (perto === 'padaria') menuPadaria();
-    else if (perto === 'fatal') { if (FATAL_ABERTO) menuFatal(); else falar('luketa', 'tá FECHADO: o Ltzin derrubou o sistema do Fatal Model. derrota ele que reabre', 3.5); }
-    else if (perto === 'roupas') menuRoupas(); else if (perto === 'armas') menuArmas(); else { MENU_GAR_LUGAR = LUGAR[perto]; menuGaragem(); }
-    if (j.carro) { j.carro.vx = j.carro.vy = 0; j.carro.vel = 0; }
-  }
-  if (!perto) lojaAtual = null;
-  // desmanche: vende o carro
-  if (j.carro && !j.carro.missao && dist(j.x, j.y, LUGAR.desmanche.x, LUGAR.desmanche.y) < 80 && Math.abs(j.carro.vel) < 300) {
-    const c = j.carro, base = { popular: 300, sedan: 450, esporte: 900, pickup: 600, caminhao: 800, policia: 1000, gelado: 2500 }[c.modelo] || 400;
-    const v = Math.round(base * (0.4 + 0.6 * c.hp / c.hpMax) * (1 + c.motor * 0.2 + c.blind * 0.2) / 10) * 10;
-    entrarSair(); c.lixo = true; W.carros = W.carros.filter(x => x !== c);
-    j.grana += v; SOM.grana(); tremer(6);
-    AVISO = { titulo: '+' + fmt$(v), sub: 'o desmanche comprou teu ' + TIPOS_CARRO[c.modelo].nome, cor: '#7CFC00', t: 0, dur: 2.5 };
-    falar('luketa', pick(['vendido! carro roubado vira peça no Mercado Livre', 'grana fácil, Nerivan. rouba outro', 'negócio fechado!']), 3);
-    salvar();
-  }
+  // lugares (entra com E): só marca qual tá perto
+  INTERACAO = (MENU || INTERIOR) ? null : lugarPerto();
   // começar missão
   if (!MISSAO.ativa && W.procurado === 0) for (const m of extrasDisponiveis()) { const p = lugarMissao(m); if (dist(j.x, j.y, p.x, p.y) < 55) { if (j.carro) { j.carro.vx = j.carro.vy = 0; j.carro.vel = 0; } iniciarMissao(m); break; } }
   if (!MISSAO.ativa) {
@@ -3873,7 +3878,7 @@ function passo(dt) {
     atualizaPeds(dt); atualizaCarros(dt); atualizaBalas(dt); atualizaEfeitos(dt); atualizaChefes(dt);
     return;
   }
-  if (apertou('e', 'f')) entrarSair();
+  if (apertou('e', 'f')) { if (INTERACAO) entrarLugar(INTERACAO); else entrarSair(); }
   if (apertou('tab', 'q')) trocarArma(1);
   if (apertou('k')) trocarRodas();
   if (apertou('r') && j.carro) {
@@ -3887,7 +3892,7 @@ function passo(dt) {
   if (!j.carro) SOM.atualizaMotor(0, false);
   atualizaPeds(dt); atualizaCarros(dt); colisoes(dt); atualizaBalas(dt); atualizaItens(dt); atualizaChefes(dt);
   atualizaProcurado(dt); atualizaEfeitos(dt); povoar(dt, VW / cam.zoom, VH / cam.zoom);
-  MISSAO.tick(dt); gatilhos(); atualizaConquistas(dt); atualizaGangueMoto(dt); atualizaDicas(dt); atualizaFiguras(dt); atualizaRenda(dt); atualizaSegredos(dt);
+  MISSAO.tick(dt); gatilhos(); atualizaNado(dt); atualizaConquistas(dt); atualizaGangueMoto(dt); atualizaDicas(dt); atualizaFiguras(dt); atualizaRenda(dt); atualizaSegredos(dt);
 }
 
 // som do baile do Meco: uma música do "Malando com Zensat", sem grave até devolver o paredão
@@ -4000,6 +4005,9 @@ const TROFEUS = [
   ['sibito', '🤬', 'Saco de Pancada', 'ouve 20 xingamentos da Sibito', s => s.xingado >= 20],
   ['morreu10', '💀', 'Paga Nada, Primo', 'morre 10 vezes', s => s.mortes >= 10],
   ['preso5', '🚔', 'Freguês da Delegacia', 'é preso 5 vezes', s => s.presos >= 5],
+  ['nadador', '🏊', 'Peixe de Favela', 'nada 30 segundos', s => s.nado >= 30],
+  ['marinheiro', '🚤', 'Marinheiro de Primeira Viagem', 'pilota um barco', s => s.barco >= 1],
+  ['bau', '🏴‍☠️', 'Pirata do Simas', 'acha o baú da Ilha do Gelado', s => s.bau >= 1],
   ['arsenal', '🧨', 'Arsenal Completo', 'tem todas as armas', s => W.jog && ORDEM_ARMAS.every(k => W.jog.tem[k])]
 ];
 let trofeuTimer = 1;
@@ -4010,6 +4018,8 @@ function atualizaConquistas(dt) {
   if (j.carro && j.carro.derrapa > 180 && Math.abs(j.carro.vel) > 220) { W.driftT = (W.driftT || 0) + dt; maxStat('driftMax', W.driftT); }
   else if (W.driftT) { if (W.driftT > 1) pontuar(Math.floor(W.driftT * 25), 'DRIFT ' + W.driftT.toFixed(1) + 's'); W.driftT = 0; }
   maxStat('maxEstrela', W.procurado);
+  if (j.nadando) conta('nado', dt);
+  if (j.carro && TIPOS_CARRO[j.carro.modelo].barco) maxStat('barco', 1);
   const reg = regiaoEm(j.x, j.y);
   if (reg === REG.INDONESIA) maxStat('indonesia', 1);
   if (LUGAR.mirante && dist(j.x, j.y, LUGAR.mirante.x, LUGAR.mirante.y) < 300) maxStat('mirante', 1);
@@ -4089,6 +4099,212 @@ function mostraTopTitulo() {
   el.innerHTML = RANK.top.length ? '<b>📊 TOP 5</b>' + RANK.top.slice(0, 5).map((r, i) => `<span>${['🥇', '🥈', '🥉', '4º', '5º'][i]} ${esc(r.nome)} <i>${r.pts.toLocaleString('pt-BR')}</i></span>`).join('') : '';
 }
 RANK.iniciar();
+
+// =========================================================
+// ENTRAR NOS LUGARES (com tela de dentro), ÁGUA, NADO E BARCO
+// =========================================================
+const LUGARES = [
+  { k: 'garagem', nome: 'Garagem do Nerivan', ic: '🔧', carro: true, int: 'garagem', acao: () => { MENU_GAR_LUGAR = LUGAR.garagem; menuGaragem(); } },
+  { k: 'garagemBH', nome: 'Garagem do Nerivan (BH)', ic: '🔧', carro: true, int: 'garagem', acao: () => { MENU_GAR_LUGAR = LUGAR.garagemBH; menuGaragem(); } },
+  { k: 'desmanche', nome: 'Desmanche', ic: '🔩', carro: true, so: 'carro', int: 'desmanche', acao: () => menuDesmanche() },
+  { k: 'roupas', nome: 'Simas Store', ic: '👕', int: 'roupas', acao: () => menuRoupas() },
+  { k: 'armas', nome: 'Arsenal', ic: '🔫', int: 'armas', acao: () => menuArmas() },
+  { k: 'motors', nome: 'Simas Motors', ic: '🏍️', int: 'motors', acao: () => menuMotors() },
+  { k: 'padaria', nome: 'Padaria', ic: '🥐', int: 'padaria', acao: () => menuPadaria() },
+  { k: 'fatal', nome: 'Fatal Model', ic: '💋', int: 'fatal', acao: () => FATAL_ABERTO ? menuFatal() : (falar('luketa', 'tá FECHADO: o Ltzin derrubou o sistema do Fatal Model. derrota ele que reabre', 3.5), sairInterior()) },
+  { k: 'hospital', nome: 'Hospital', ic: '🏥', int: 'hospital', acao: () => menuHospital() },
+  { k: 'policia', nome: 'Delegacia', ic: '🚔', int: 'delegacia', acao: () => menuDelegacia() },
+  { k: 'dudu', nome: 'Esconderijo do Dudu', ic: '💻', int: 'dudu', acao: () => menuEsconderijo() },
+  { k: 'cafe', nome: 'Café do Porto', ic: '☕', int: 'cafe', acao: () => menuCafe() },
+  { k: 'masadakun', nome: 'Templo', ic: '🛕', int: 'templo', acao: () => menuTemplo() }
+];
+let INTERACAO = null, INTERIOR = null;
+function lugarPerto() {
+  const j = W.jog; if (j.morto) return null;
+  let m = null, md = 1e9;
+  for (const l of LUGARES) {
+    const p = LUGAR[l.k]; if (!p) continue;
+    if (j.carro && !l.carro) continue; if (!j.carro && l.so === 'carro') continue;
+    const d = dist(j.x, j.y, p.x, p.y), r = j.carro ? 95 : 75;
+    if (d < r && d < md) { md = d; m = l; }
+  }
+  return m;
+}
+function entrarLugar(l) {
+  const j = W.jog;
+  if (j.carro) { j.carro.vx = j.carro.vy = 0; j.carro.vel = 0; }
+  INTERIOR = { tipo: l.int, nome: l.nome, t: 0 };
+  SOM.bip(330, 0.15, 0.1, 'sine'); setTimeout(() => SOM.bip(440, 0.12, 0.1, 'sine'), 90);
+  document.getElementById('menu').classList.add('interior');
+  l.acao();
+}
+function sairInterior() {
+  INTERIOR = null; document.getElementById('menu').classList.remove('interior');
+}
+
+// ---------- menus dos lugares novos ----------
+function menuHospital() {
+  const j = W.jog;
+  abrirMenu('🏥 HOSPITAL SIMAS', [
+    { txt: '🩹 Curativo (vida cheia)', preco: 100, off: j.hp >= 100, fn: () => { j.hp = 100; } },
+    { txt: '💉 Vacina anti-Gelado (colete cheio)', preco: 350, off: j.colete >= 100, fn: () => { j.colete = 100; } },
+    { txt: '🧠 Consulta com psicólogo (pelo que tu fez)', preco: 60, fn: () => { falar('luketa', 'o psicólogo desistiu de tu na metade da sessão', 3); } }
+  ], 'SUS de luxo, aceita PIX');
+}
+function menuDelegacia() {
+  const j = W.jog, est = W.procurado, preco = 400 * Math.max(1, est);
+  abrirMenu('🚔 DELEGACIA', [
+    { txt: est ? `💸 Suborno pro delegado (zera ${est} estrela${est > 1 ? 's' : ''})` : '💸 Suborno (tu nem tá procurado, mas ele aceita)', preco, fn: () => { W.procurado = 0; W.calor = 0; W.carros = W.carros.filter(c => !(c.ia && c.ia.tipo === 'policia')); falar('luketa', 'o delegado contou a grana e esqueceu tua cara', 3); } },
+    { txt: '📋 Fazer B.O. contra o Ltzin', fn: () => { falar('luketa', 'o escrivão riu e jogou o papel fora', 2.5); } }
+  ], 'aqui tudo se resolve, é só ter o dinheiro certo');
+}
+function menuEsconderijo() {
+  const j = W.jog;
+  abrirMenu('💻 ESCONDERIJO DO DUDU', [
+    { txt: '💾 Salvar o jogo e dormir (vida cheia)', fn: () => { j.hp = 100; salvar(); CORTINA = { t: 0, txt: 'o Nerivan dormiu no sofá do Dudu. jogo salvo ✔' }; } },
+    { txt: '📺 Ver as câmeras hackeadas da cidade', fn: () => { MAPA_ABERTO = true; } },
+    { txt: '📞 Ligar pras vovós (engenharia social)', preco: 0, fn: () => { const g = rndi(50, 400); j.grana += g; falar('luketa', `uma vovó caiu no golpe: +${fmt$(g)}. que feio, Nerivan`, 3); conta('golpes'); } }
+  ], 'wi-fi bom, cheiro de energético');
+}
+function menuCafe() {
+  const j = W.jog;
+  abrirMenu('☕ CAFÉ DO PORTO', [
+    { txt: '☕ Cafezinho (+15 de vida)', preco: 6, fn: () => { j.hp = Math.min(100, j.hp + 15); falar('sibito', pick(XINGOS_SIBITO), 2.5); conta('xingado'); } },
+    { txt: '🥮 Bolo de rolo (+35 de vida)', preco: 18, fn: () => { j.hp = Math.min(100, j.hp + 35); } },
+    { txt: '🗣️ Puxar papo com a Sibito', fn: () => { for (let k = 0; k < 3; k++) setTimeout(() => { falar('sibito', pick(XINGOS_SIBITO), 2.2); conta('xingado'); }, k * 900); } }
+  ], 'o melhor café de Recife (a atendente não)');
+}
+function menuTemplo() {
+  const j = W.jog;
+  abrirMenu('🛕 PURA SIMAS', [
+    { txt: '🧘 Meditar (vida e colete cheios)', fn: () => { j.hp = 100; j.colete = 100; CORTINA = { t: 0, txt: 'o Nerivan meditou com a Masadakun e achou a paz interior. por 5 minutos.' }; } },
+    { txt: '🙏 Pedir perdão pelos golpes', fn: () => { falar('masadakun', 'até os deuses riram, mano', 3); } }
+  ], 'om... selamat datang');
+}
+function menuDesmanche() {
+  const j = W.jog, c = j.carro;
+  if (!c) { sairInterior(); return; }
+  const base = { popular: 300, sedan: 450, esporte: 900, pickup: 600, caminhao: 800, policia: 1000, gelado: 2500, lambo: 6000, sw4: 1500, onibus: 900, xj6: 1100, cg: 400, biz: 250, trilha: 500, fusca: 350, gol: 400, taxi: 500 }[c.modelo] || 400;
+  const v = Math.round(base * (0.4 + 0.6 * c.hp / c.hpMax) * (1 + c.motor * 0.2 + c.blind * 0.2) / 10) * 10;
+  abrirMenu('🔩 DESMANCHE', [
+    { txt: `💰 Vender ${TIPOS_CARRO[c.modelo].nome} por ${fmt$(v)}`, off: !!c.missao, fn: () => {
+      entrarSair(); c.lixo = true; W.carros = W.carros.filter(x => x !== c);
+      j.grana += v; SOM.grana(); tremer(6); pontuar(Math.floor(v / 20));
+      AVISO = { titulo: '+' + fmt$(v), sub: 'o desmanche comprou teu ' + TIPOS_CARRO[c.modelo].nome, cor: '#7CFC00', t: 0, dur: 2.5 };
+      falar('luketa', pick(['vendido! carro roubado vira peça no Mercado Livre', 'grana fácil, Nerivan. rouba outro', 'negócio fechado!']), 3); salvar();
+    } }
+  ], 'a gente não pergunta de onde veio');
+}
+
+// ---------- tela de dentro de cada lugar ----------
+function desenharInterior(g, dt) {
+  const I = INTERIOR; if (!I) return;
+  I.t += dt; const k = Math.min(1, I.t / 0.35);
+  g.save(); g.globalAlpha = k;
+  const pisoCor = { garagem: '#3d3d45', desmanche: '#3a2f2a', roupas: '#e8dfd2', armas: '#2b2b2b', motors: '#d8dce0', padaria: '#c9a77c', fatal: '#2a0a1e', hospital: '#e9f1f4', delegacia: '#4a5560', dudu: '#14181c', cafe: '#6e4b2a', templo: '#7b241c' }[I.tipo] || '#333';
+  g.fillStyle = pisoCor; g.fillRect(0, 0, VW, VH);
+  const W2 = VW * 0.62, cx = W2 / 2, cy = VH / 2;
+  // parede de cima
+  g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, 0, VW, VH * 0.22);
+  g.fillStyle = 'rgba(255,255,255,.06)'; for (let x = 0; x < VW; x += 60) g.fillRect(x, VH * 0.22, 2, VH);
+  const t = W.tempo;
+  const placa = txt => { g.font = `900 ${Math.min(36, VW / 22)}px "Arial Black", system-ui`; g.textAlign = 'center'; textoContorno(g, txt, cx, VH * 0.13, '#ffd23f', 6); };
+  if (I.tipo === 'garagem' || I.tipo === 'desmanche') {
+    g.strokeStyle = '#f1c40f'; g.lineWidth = 6; g.setLineDash([30, 20]); g.strokeRect(cx - 150, cy - 100, 300, 260); g.setLineDash([]);
+    for (let k2 = 0; k2 < 8; k2++) { g.fillStyle = ['#c0392b', '#7f8c8d', '#2c3e50'][k2 % 3]; g.fillRect(40 + k2 * 50, VH * 0.06, 30, 50); }
+    if (I.tipo === 'desmanche') for (let k2 = 0; k2 < 6; k2++) { g.fillStyle = '#5d4037'; g.beginPath(); g.arc(60 + k2 * 70, VH - 80, 26, 0, 7); g.fill(); }
+    const c = W.jog.carro;
+    if (c) { g.save(); g.translate(cx, cy + 30); g.scale(2.6, 2.6); const ox = c.x, oy = c.y, oa = c.a, on = c.nome; c.x = 0; c.y = 0; c.a = -Math.PI / 2; c.nome = null; desenharCarro(g, c); c.x = ox; c.y = oy; c.a = oa; c.nome = on; g.restore(); }
+    else { g.font = '20px system-ui'; g.textAlign = 'center'; textoContorno(g, 'vaga livre', cx, cy + 30, '#aaa', 3); }
+    placa(I.tipo === 'desmanche' ? 'DESMANCHE' : 'GARAGEM DO NERIVAN');
+  } else if (I.tipo === 'roupas') {
+    for (let k2 = 0; k2 < 10; k2++) { g.fillStyle = CAMISAS[k2 % CAMISAS.length]; g.fillRect(30 + k2 * 42, VH * 0.08, 30, 70); }
+    g.fillStyle = '#b8c6d1'; rr(g, cx - 120, cy - 150, 240, 330, 20); g.fill(); g.fillStyle = '#dfe9f1'; rr(g, cx - 108, cy - 138, 216, 306, 16); g.fill();
+    const j = W.jog; g.save(); g.translate(cx, cy + 20); g.scale(4.2, 4.2);
+    desenharPessoa(g, { ...j, x: 0, y: 0, a: -Math.PI / 2 + Math.sin(t * 1.2) * 0.4, anda: t * 4 }, { nomes: false, arma: null, jog: true });
+    g.restore(); placa('SIMAS STORE · PROVADOR');
+  } else if (I.tipo === 'armas') {
+    for (let k2 = 0; k2 < ORDEM_ARMAS.length; k2++) { const a = ORDEM_ARMAS[k2]; g.fillStyle = '#3d2b1f'; g.fillRect(30 + (k2 % 5) * 110, VH * 0.25 + Math.floor(k2 / 5) * 110, 96, 90); iconeArma(g, a, 78 + (k2 % 5) * 110, VH * 0.25 + 45 + Math.floor(k2 / 5) * 110, 2.4, '#ddd'); }
+    placa('ARSENAL');
+  } else if (I.tipo === 'motors') {
+    const ms = ['lambo', 'xj6', 'sw4'];
+    ms.forEach((m, i) => { const c = novoCarro(m, 0, 0, -Math.PI / 2); g.save(); g.translate(cx - 160 + i * 160, cy + 40); g.rotate(Math.sin(t + i) * 0.15); g.scale(1.8, 1.8); desenharCarro(g, c); g.restore(); g.fillStyle = 'rgba(255,255,255,.15)'; g.beginPath(); g.ellipse(cx - 160 + i * 160, cy + 40, 90, 30, 0, 0, 7); g.fill(); });
+    placa('SIMAS MOTORS & IMÓVEIS');
+  } else if (I.tipo === 'padaria' || I.tipo === 'cafe') {
+    g.fillStyle = '#8d6e63'; g.fillRect(40, cy - 40, W2 - 80, 80); g.fillStyle = 'rgba(200,230,255,.35)'; g.fillRect(40, cy - 40, W2 - 80, 30);
+    for (let k2 = 0; k2 < 9; k2++) { g.fillStyle = '#e0a458'; g.beginPath(); g.ellipse(80 + k2 * ((W2 - 160) / 8), cy + 10, 22, 12, 0, 0, 7); g.fill(); }
+    if (I.tipo === 'cafe') { const sib = { x: cx, y: cy - 110, a: Math.PI / 2, camisa: '#e67e22', calca: '#2c3e50', pele: '#c68642', cabelo: '#111', cabeloLongo: true }; g.save(); g.translate(cx, cy - 110); g.scale(3, 3); desenharPessoa(g, { ...sib, x: 0, y: 0 }, { nomes: false }); g.restore(); if ((t * 0.7 | 0) % 2) { g.font = 'bold 18px system-ui'; g.textAlign = 'center'; textoContorno(g, '"' + XINGOS_SIBITO[(t * 0.35 | 0) % XINGOS_SIBITO.length] + '"', cx, cy - 170, '#ffb3b3', 4); } }
+    placa(I.tipo === 'cafe' ? 'CAFÉ DO PORTO' : 'PADARIA');
+  } else if (I.tipo === 'fatal') {
+    for (let k2 = 0; k2 < 6; k2++) { g.fillStyle = `hsla(${320 + k2 * 8},90%,${45 + Math.sin(t * 3 + k2) * 10}%,.5)`; g.beginPath(); g.arc(80 + k2 * 120, VH * 0.4 + Math.sin(t + k2) * 20, 50, 0, 7); g.fill(); }
+    g.fillStyle = '#b3134f'; rr(g, cx - 200, cy + 60, 400, 70, 30); g.fill();
+    placa('FATAL MODEL');
+  } else if (I.tipo === 'hospital') {
+    for (let k2 = 0; k2 < 3; k2++) { g.fillStyle = '#fff'; g.fillRect(60 + k2 * 160, cy - 30, 110, 180); g.fillStyle = '#74b9ff'; g.fillRect(60 + k2 * 160, cy - 30, 110, 40); }
+    g.fillStyle = '#e74c3c'; g.fillRect(cx - 40, VH * 0.05, 80, 24); g.fillRect(cx - 12, VH * 0.05 - 28, 24, 80); placa('');
+  } else if (I.tipo === 'delegacia') {
+    g.fillStyle = '#5d4037'; g.fillRect(cx - 180, cy - 20, 360, 90); g.fillStyle = '#ecf0f1'; for (let k2 = 0; k2 < 5; k2++) g.fillRect(cx - 160 + k2 * 70, cy - 10, 40, 28);
+    for (let k2 = 0; k2 < 7; k2++) { g.fillStyle = '#7f8c8d'; g.fillRect(30 + k2 * 26, VH * 0.25, 8, VH * 0.55); }
+    placa('DELEGACIA');
+  } else if (I.tipo === 'dudu') {
+    for (let k2 = 0; k2 < 6; k2++) { g.fillStyle = '#111'; g.fillRect(40 + (k2 % 3) * 160, VH * 0.25 + Math.floor(k2 / 3) * 120, 140, 90); g.fillStyle = '#00ff9c'; g.font = '11px monospace'; g.textAlign = 'left'; for (let l = 0; l < 6; l++) g.fillText(((t * 7 + l * 13 + k2 * 5) | 0).toString(16).repeat(3).slice(0, 18), 48 + (k2 % 3) * 160, VH * 0.25 + 18 + l * 12 + Math.floor(k2 / 3) * 120); }
+    placa('ESCONDERIJO DO DUDU');
+  } else if (I.tipo === 'templo') {
+    for (let k2 = 0; k2 < 3; k2++) { g.fillStyle = k2 % 2 ? '#a93226' : '#7b241c'; g.fillRect(cx - 200 + k2 * 40, cy - 140 + k2 * 40, 400 - k2 * 80, 300 - k2 * 80); }
+    g.fillStyle = '#f1c40f'; g.beginPath(); g.arc(cx, cy + 10, 40 + Math.sin(t * 2) * 4, 0, 7); g.fill(); placa('PURA SIMAS');
+  }
+  g.font = 'bold 13px system-ui'; g.textAlign = 'center'; textoContorno(g, ehToque() ? 'toca em "fechar" pra sair' : 'ESC pra sair', cx, VH - 24, '#ddd', 3);
+  g.restore();
+}
+
+// ---------- água: nado, barco, afundar ----------
+function ehAguaBarco(x, y) { const t = tileEm(x, y); return t === TL.AGUA || ehPonte(Math.floor(x / T), Math.floor(y / T)); }
+function atualizaNado(dt) {
+  const j = W.jog; if (j.carro || j.morto) { j.nadando = false; return; }
+  j.nadando = tileEm(j.x, j.y) === TL.AGUA;
+  if (j.nadando) {
+    j.folego = (j.folego ?? 100) - dt * 9;
+    if (rnd() < dt * 4) W.efeitos.push({ t: 'onda', x: j.x, y: j.y, vida: 1, max: 1 });
+    if (j.folego <= 0) { j.folego = 0; ferirJogador(30 * dt / DIFIC); if (!W.avisoFolego) { W.avisoFolego = true; falar('luketa', 'tá sem fôlego! volta pra terra ou pega um barco!', 3); } }
+    else if (!W.avisoNado) { W.avisoNado = true; falar('luketa', 'nadando! fica de olho no fôlego (barra azul). a lancha e o jet ski ficam nos píer', 4); }
+  } else { j.folego = Math.min(100, (j.folego ?? 100) + dt * 30); W.avisoFolego = false; }
+}
+function afundarCarro(c, dt) {
+  c.afunda = (c.afunda || 0) + dt; c.vx *= Math.pow(0.15, dt); c.vy *= Math.pow(0.15, dt);
+  if (rnd() < 0.6) W.efeitos.push({ t: 'onda', x: c.x + rnd(-20, 20), y: c.y + rnd(-20, 20), vida: 1, max: 1 });
+  if (c.afunda > 1.8) {
+    c.lixo = true; c.hp = 0;
+    if (c === W.jog.carro) { const j = W.jog; j.carro = null; c.motorista = null; j.x = c.x; j.y = c.y; SOM.atualizaMotor(0, false); RADIO.tocar(false); falar('luketa', pick(['AFUNDOU! nada, Nerivan, NADA', 'carro não é submarino, gênio']), 3); }
+  }
+}
+// barcos parados nos píer
+const PIERS = [[8, 172], [190, 141], [190, 150], [242, 128], [100, 190]];
+function criarBarcos() {
+  const tipos = ['lancha', 'jetski'];
+  PIERS.forEach(([tx, ty], i) => {
+    let p = null;
+    for (let r = 0; r < 8 && !p; r++) for (let a = 0; a < 16; a++) { const x = tx + Math.cos(a / 16 * 7) * r, y = ty + Math.sin(a / 16 * 7) * r; if (tile(x | 0, y | 0) === TL.AGUA && tile((x + 1) | 0, y | 0) === TL.AGUA && tile((x - 1) | 0, y | 0) === TL.AGUA) { p = { x: x * T, y: y * T }; break; } }
+    if (p) W.carros.push(novoCarro(tipos[i % 2], p.x, p.y, 0, { fixo: true }));
+  });
+}
+function desenharBarco(g, c, t) {
+  const L = c.l, Wd = c.w;
+  g.save(); g.translate(c.x, c.y); g.rotate(c.a);
+  const v = Math.hypot(c.vx, c.vy);
+  if (v > 60) { g.fillStyle = 'rgba(255,255,255,.35)'; g.beginPath(); g.moveTo(-L / 2, -Wd / 2); g.lineTo(-L / 2 - v * 0.35, -Wd * 1.4); g.lineTo(-L / 2 - v * 0.35, Wd * 1.4); g.lineTo(-L / 2, Wd / 2); g.fill(); }
+  g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(4, 4, L / 2, Wd / 2, 0, 0, 7); g.fill();
+  g.fillStyle = c.cor; g.beginPath(); g.moveTo(L / 2, 0); g.quadraticCurveTo(L * 0.2, -Wd / 2, -L / 2, -Wd / 2); g.lineTo(-L / 2, Wd / 2); g.quadraticCurveTo(L * 0.2, Wd / 2, L / 2, 0); g.fill();
+  g.strokeStyle = escurecer(c.cor, 0.6); g.lineWidth = 2; g.stroke();
+  g.fillStyle = '#ecf0f1'; if (t.jetski) g.fillRect(-L * 0.25, -Wd * 0.25, L * 0.35, Wd * 0.5); else { g.fillRect(-L * 0.15, -Wd * 0.35, L * 0.3, Wd * 0.7); g.fillStyle = 'rgba(150,200,255,.7)'; g.fillRect(L * 0.1, -Wd * 0.3, 6, Wd * 0.6); }
+  const m = c.motorista;
+  if (m) { g.rotate(-c.a); const im = m.rosto && ROSTOS[m.rosto]; if (im && im.naturalWidth) { g.save(); g.beginPath(); g.arc(0, 0, 11, 0, 7); g.clip(); g.drawImage(im, -11, -11, 22, 22); g.restore(); g.strokeStyle = '#ffd23f'; g.lineWidth = 2; g.beginPath(); g.arc(0, 0, 11, 0, 7); g.stroke(); } else { g.fillStyle = m.pele || '#c68642'; g.beginPath(); g.arc(0, 0, 8, 0, 7); g.fill(); } }
+  g.restore();
+}
+
+function criarTesouro() {
+  if ((W.stats || {}).bau) return;
+  W.itens.push({ t: 'pacote', icone: '💰', x: 215.5 * T, y: 25.5 * T, fica: false, fn: () => { conta('bau'); W.jog.grana += 2000; pontuar(400); AVISO = { titulo: 'BAÚ DO PIRATA', sub: 'achou o tesouro da Ilha do Gelado: +R$ 2.000', cor: '#f1c40f', t: 0, dur: 4 }; SOM.missao(); salvar(); } });
+}
 
 </script>
 </body>

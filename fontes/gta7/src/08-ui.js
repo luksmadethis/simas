@@ -167,7 +167,17 @@ function desenharHUD(dt) {
     g.font = `bold ${peq ? 14 : 18}px system-ui`; quebraTexto(g, CORTINA.txt, Math.min(620, VW - 40)).forEach((l, i) => textoContorno(g, l, VW / 2, VH * 0.4 + 44 + i * 26, '#fff', 4));
     g.globalAlpha = 1; if (CORTINA.t > 4.1) CORTINA = null;
   }
+  // entrar nos lugares
+  if (INTERACAO && !j.morto && !MISSAO.dialogo) {
+    const tx = (toque ? 'toca 🚗' : 'E') + ' · entrar: ' + INTERACAO.ic + ' ' + INTERACAO.nome, w = Math.min(VW - 30, 60 + tx.length * 8);
+    const y0b = VH - (toque ? 236 : 96);
+    g.fillStyle = 'rgba(10,8,20,.85)'; rr(g, VW / 2 - w / 2, y0b, w, 34, 10); g.fill(); g.strokeStyle = '#ffd23f'; g.lineWidth = 2; g.stroke();
+    g.font = 'bold 15px system-ui'; g.textAlign = 'center'; g.fillStyle = '#fff'; g.fillText(tx, VW / 2, y0b + 22);
+  }
+  // fôlego nadando
+  if (j.nadando) { const w = 160; g.font = 'bold 11px system-ui'; g.textAlign = 'center'; textoContorno(g, '🫧 FÔLEGO', VW / 2, VH - (toque ? 270 : 130), '#bfe9ff', 3); barra(g, VW / 2 - w / 2, VH - (toque ? 264 : 124), w, 9, (j.folego ?? 100) / 100, j.folego < 25 ? '#e74c3c' : '#5dade2'); }
   desenharTrofeuAviso(g, dt);
+  if (INTERIOR) desenharInterior(g, dt);
   if (MISSAO.dialogo) desenharDialogo(g, dt);
   if (TELA_FIM) desenharFim(g, dt);
   if (MAPA_ABERTO) desenharMapaGrande(g);
@@ -199,7 +209,7 @@ function desenharSeta(g, alvo, cor, rosto) {
 }
 
 function desenharMini(g) {
-  const j = W.jog, s = ehToque() ? 110 : 170, x0 = ehToque() ? VW - 110 - 14 : 14, y0 = ehToque() ? 50 : VH - s - 14, zoom = 1.6; // tiles por pixel inverso
+  const j = W.jog, s = ehToque() ? 120 : 190, x0 = ehToque() ? VW - 120 - 14 : 14, y0 = ehToque() ? 50 : VH - s - 14, zoom = 1.25; // tiles por pixel inverso
   g.save();
   g.beginPath(); g.arc(x0 + s / 2, y0 + s / 2, s / 2, 0, 7); g.fillStyle = '#123'; g.fill(); g.clip();
   const tx = j.x / T, ty = j.y / T;
@@ -209,13 +219,16 @@ function desenharMini(g) {
     let bx = (wx / T - tx) * zoom + x0 + s / 2, by = (wy / T - ty) * zoom + y0 + s / 2;
     const dx = bx - (x0 + s / 2), dy = by - (y0 + s / 2), dd = Math.hypot(dx, dy), max = s / 2 - 7;
     if (dd > max) { bx = x0 + s / 2 + dx / dd * max; by = y0 + s / 2 + dy / dd * max; }
-    if (ic) { g.font = '13px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(ic, bx, by); g.textBaseline = 'alphabetic'; return; }
+    if (ic) { g.font = (s > 150 ? 13 : 11) + 'px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(ic, bx, by); g.textBaseline = 'alphabetic'; return; }
     g.fillStyle = cor; g.beginPath(); g.arc(bx, by, r, 0, 7); g.fill(); g.strokeStyle = '#000'; g.lineWidth = 1.5; g.stroke();
   };
   for (const c of W.carros) if (c.policia && c.ia && c.ia.tipo === 'policia') blip(c.x, c.y, c.modelo === 'gelado' ? '#ffd23f' : (W.tempo * 4 | 0) % 2 ? '#ff3b3b' : '#3b6bff', c.modelo === 'gelado' ? 6 : 3);
   for (const p of W.peds) if ((p.hostil || p.policia) && !p.morto) blip(p.x, p.y, '#ff3b3b', 2.5);
   for (const c of W.carros) if (c.gangue && c.hp > 0) blip(c.x, c.y, '#ff8c00', 3.5);
-  blip(LUGAR.garagem.x, LUGAR.garagem.y, '#ff9f1c', 4); blip(LUGAR.garagemBH.x, LUGAR.garagemBH.y, '#ff9f1c', 4);
+  for (const l of LUGARES) { const p = LUGAR[l.k]; if (p) blip(p.x, p.y, 0, 0, l.ic); }
+  for (const [k, ic] of [['cas', '🪑'], ['skate', '🛹'], ['yori', '🥭'], ['nauj', '🌿'], ['baile', '🔊'], ['gelado', '🕶️'], ['poli', '🎙️'], ['matheus', '🤖'], ['ltzin', '👑'], ['mirante', '⛰️']]) if (LUGAR[k]) blip(LUGAR[k].x, LUGAR[k].y, 0, 0, ic);
+  for (const m of extrasDisponiveis()) { const p = lugarMissao(m); blip(p.x, p.y, '#00e5ff', 5); }
+  for (const c of W.carros) if (TIPOS_CARRO[c.modelo].barco && !c.motorista) blip(c.x, c.y, 0, 0, '🚤');
   const alvo = MISSAO.ativa ? MISSAO.alvo : lugarMissao(proximaMissao());
   if (alvo) blip(alvo.x, alvo.y, '#ffd23f', 6);
   g.restore();
@@ -327,7 +340,7 @@ function abrirMenu(titulo, itens, sub) {
   el.classList.add('aberto');
   const prim = el.querySelector('.item:not(.off)') || el.querySelector('.fechar'); if (prim && !ehToque()) prim.focus();
 }
-function fecharMenu() { const el = document.getElementById('menu'); el.classList.remove('aberto'); el.innerHTML = ''; MENU = null; }
+function fecharMenu() { const el = document.getElementById('menu'); el.classList.remove('aberto'); el.innerHTML = ''; MENU = null; if (INTERIOR) sairInterior(); }
 
 const CORES_PINTURA = [['Rosa Simas', '#ff6ec7'], ['Preto Fosco', '#151515'], ['Branco Gelo', '#f2f2f2'], ['Vermelho Ferrari', '#d50000'], ['Azul Calcinha', '#7fb3ff'], ['Verde Bandeira', '#1e8e3e'], ['Amarelo Taxi', '#ffd000'], ['Roxo Baile', '#7d3cff'], ['Laranja Galado', '#ff8c1a'], ['Dourado Rei', '#c9a227']];
 function menuGaragem() {

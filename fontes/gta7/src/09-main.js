@@ -57,7 +57,7 @@ function comecar(save) {
     MISSAO.feitas = save.feitas || 0; W.garagem = save.garagem || []; W.stats = { ...W.stats, ...(save.stats || {}) };
     Object.assign(j, save.roupa || {}); W.imoveis = save.imoveis || []; W.segredos = save.segredos || []; W.extras = save.extras || {}; W.pontos = save.pontos || 0; W.trofeus = save.trofeus || [];
   }
-  espalharItens(); criarFixos(); criarFiguras(); estacionados(); criarSegredos();
+  espalharItens(); criarFixos(); criarFiguras(); estacionados(); criarSegredos(); criarBarcos(); criarTesouro();
   if (MISSAO.feitas >= MISSOES.length) liberarFatal(false);
   cam.x = j.x; cam.y = j.y;
   povoarInicial();
@@ -70,29 +70,8 @@ function comecar(save) {
 
 function gatilhos() {
   const j = W.jog; if (j.morto || MISSAO.dialogo) return;
-  // lojas e garagem
-  let perto = null;
-  for (const k of ['garagem', 'garagemBH']) if (dist(j.x, j.y, LUGAR[k].x, LUGAR[k].y) < (j.carro ? 75 : 55)) perto = k;
-  if (!j.carro) { if (dist(j.x, j.y, LUGAR.fatal.x, LUGAR.fatal.y) < 45) perto = 'fatal'; if (dist(j.x, j.y, LUGAR.motors.x, LUGAR.motors.y) < 50) perto = 'motors'; if (dist(j.x, j.y, LUGAR.padaria.x, LUGAR.padaria.y) < 45 && !MISSAO.ativa) perto = 'padaria'; if (dist(j.x, j.y, LUGAR.roupas.x, LUGAR.roupas.y) < 45) perto = 'roupas'; if (dist(j.x, j.y, LUGAR.armas.x, LUGAR.armas.y) < 45) perto = 'armas'; }
-  if (perto && perto !== lojaAtual && !(j.carro && Math.abs(j.carro.vel) > 260)) {
-    lojaAtual = perto;
-    if (perto === 'motors') menuMotors();
-    else if (perto === 'padaria') menuPadaria();
-    else if (perto === 'fatal') { if (FATAL_ABERTO) menuFatal(); else falar('luketa', 'tá FECHADO: o Ltzin derrubou o sistema do Fatal Model. derrota ele que reabre', 3.5); }
-    else if (perto === 'roupas') menuRoupas(); else if (perto === 'armas') menuArmas(); else { MENU_GAR_LUGAR = LUGAR[perto]; menuGaragem(); }
-    if (j.carro) { j.carro.vx = j.carro.vy = 0; j.carro.vel = 0; }
-  }
-  if (!perto) lojaAtual = null;
-  // desmanche: vende o carro
-  if (j.carro && !j.carro.missao && dist(j.x, j.y, LUGAR.desmanche.x, LUGAR.desmanche.y) < 80 && Math.abs(j.carro.vel) < 300) {
-    const c = j.carro, base = { popular: 300, sedan: 450, esporte: 900, pickup: 600, caminhao: 800, policia: 1000, gelado: 2500 }[c.modelo] || 400;
-    const v = Math.round(base * (0.4 + 0.6 * c.hp / c.hpMax) * (1 + c.motor * 0.2 + c.blind * 0.2) / 10) * 10;
-    entrarSair(); c.lixo = true; W.carros = W.carros.filter(x => x !== c);
-    j.grana += v; SOM.grana(); tremer(6);
-    AVISO = { titulo: '+' + fmt$(v), sub: 'o desmanche comprou teu ' + TIPOS_CARRO[c.modelo].nome, cor: '#7CFC00', t: 0, dur: 2.5 };
-    falar('luketa', pick(['vendido! carro roubado vira peça no Mercado Livre', 'grana fácil, Nerivan. rouba outro', 'negócio fechado!']), 3);
-    salvar();
-  }
+  // lugares (entra com E): só marca qual tá perto
+  INTERACAO = (MENU || INTERIOR) ? null : lugarPerto();
   // começar missão
   if (!MISSAO.ativa && W.procurado === 0) for (const m of extrasDisponiveis()) { const p = lugarMissao(m); if (dist(j.x, j.y, p.x, p.y) < 55) { if (j.carro) { j.carro.vx = j.carro.vy = 0; j.carro.vel = 0; } iniciarMissao(m); break; } }
   if (!MISSAO.ativa) {
@@ -129,7 +108,7 @@ function passo(dt) {
     atualizaPeds(dt); atualizaCarros(dt); atualizaBalas(dt); atualizaEfeitos(dt); atualizaChefes(dt);
     return;
   }
-  if (apertou('e', 'f')) entrarSair();
+  if (apertou('e', 'f')) { if (INTERACAO) entrarLugar(INTERACAO); else entrarSair(); }
   if (apertou('tab', 'q')) trocarArma(1);
   if (apertou('k')) trocarRodas();
   if (apertou('r') && j.carro) {
@@ -143,7 +122,7 @@ function passo(dt) {
   if (!j.carro) SOM.atualizaMotor(0, false);
   atualizaPeds(dt); atualizaCarros(dt); colisoes(dt); atualizaBalas(dt); atualizaItens(dt); atualizaChefes(dt);
   atualizaProcurado(dt); atualizaEfeitos(dt); povoar(dt, VW / cam.zoom, VH / cam.zoom);
-  MISSAO.tick(dt); gatilhos(); atualizaConquistas(dt); atualizaGangueMoto(dt); atualizaDicas(dt); atualizaFiguras(dt); atualizaRenda(dt); atualizaSegredos(dt);
+  MISSAO.tick(dt); gatilhos(); atualizaNado(dt); atualizaConquistas(dt); atualizaGangueMoto(dt); atualizaDicas(dt); atualizaFiguras(dt); atualizaRenda(dt); atualizaSegredos(dt);
 }
 
 // som do baile do Meco: uma música do "Malando com Zensat", sem grave até devolver o paredão

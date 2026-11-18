@@ -33,6 +33,8 @@ const TIPOS_CARRO = {
   cg:       { nome: 'CG Titan 160', vmax: 640, acel: 650, curva: 3.5, aderencia: 7.5, hp: 60, w: 18, l: 50, cores: ['#111', '#c0392b', '#2471a3'], moto: true },
   trilha:   { nome: 'Moto de Trilha', vmax: 660, acel: 760, curva: 3.8, aderencia: 6.5, hp: 65, w: 18, l: 50, cores: ['#f39c12', '#27ae60', '#ecf0f1'], moto: true },
   xj6:      { nome: 'XJ6 do Grau', vmax: 900, acel: 950, curva: 3.4, aderencia: 8, hp: 70, w: 20, l: 54, cores: ['#111', '#ff6ec7', '#2980b9'], moto: true },
+  lancha:   { nome: 'Lancha', vmax: 640, acel: 420, curva: 2.0, aderencia: 2.2, hp: 200, w: 40, l: 96, cores: ['#ecf0f1', '#2471a3', '#c0392b'], barco: true },
+  jetski:   { nome: 'Jet Ski', vmax: 720, acel: 650, curva: 3.0, aderencia: 2.6, hp: 90, w: 22, l: 52, cores: ['#f1c40f', '#ff6ec7', '#1abc9c'], barco: true, jetski: true },
   choque:   { nome: 'Choque-Móvel do Ltzin', vmax: 600, acel: 500, curva: 2.2, aderencia: 7, hp: 1800, w: 60, l: 112, cores: ['#d4ac0d'], chefe: true }
 };
 
@@ -136,7 +138,10 @@ function cantosCarro(c, folga = 0) {
   const ca = Math.cos(c.a), sa = Math.sin(c.a), hl = c.l / 2 + folga, hw = c.w / 2 + folga;
   return [[hl, hw], [hl, -hw], [-hl, hw], [-hl, -hw], [hl, 0], [-hl, 0], [0, hw], [0, -hw]].map(([px, py]) => [c.x + px * ca - py * sa, c.y + px * sa + py * ca]);
 }
-function bateuPredio(c) { for (const [x, y] of cantosCarro(c)) if (solidoEm(x, y)) return true; return false; }
+function bateuPredio(c) {
+  if (TIPOS_CARRO[c.modelo].barco) { for (const [x, y] of cantosCarro(c)) if (!ehAguaBarco(x, y)) return true; return false; }
+  for (const [x, y] of cantosCarro(c)) if (tileEm(x, y) === TL.PREDIO) return true; return false;
+}
 
 function fisicaCarro(c, dt, acel, freio, vira, freioMao) {
   const t = TIPOS_CARRO[c.modelo];
@@ -183,8 +188,8 @@ function moverCarro(c, dt) {
     const vn = c.vx * nx + c.vy * ny; if (vn < 0) { c.vx -= 1.5 * vn * nx; c.vy -= 1.5 * vn * ny; }
     if (v > 180) { danoCarro(c, v * 0.04); SOM.batida(v / 700); if (c === W.jog.carro) { W.ultBatida = W.tempo; W.forcaBatida = v; tremer(5); } }
   });
-  // tá na água? afunda
-  if (tileEm(c.x, c.y) === TL.AGUA) danoCarro(c, 999);
+  // tá na água? afunda (barco não)
+  if (!TIPOS_CARRO[c.modelo].barco && tileEm(c.x, c.y) === TL.AGUA && !ehPonte(Math.floor(c.x / T), Math.floor(c.y / T))) afundarCarro(c, dt);
 }
 
 function cairDaMoto(c, v) {
