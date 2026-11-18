@@ -46,7 +46,7 @@ def roda(jid, url, tipo, q):
             j['fase'] = 'convertendo'
     base = {'outtmpl': os.path.join(j['dir'], '%(id)s.%(ext)s'), 'quiet': True, 'noprogress': True, 'noplaylist': True,
             'progress_hooks': [gancho], 'socket_timeout': 20, 'retries': 3, 'concurrent_fragment_downloads': 4,
-            'extractor_args': {'youtube': {'player_client': ['default', 'tv', 'web_safari', 'mweb', 'android_vr']}}}
+            'extractor_args': {'youtube': {'player_client': ['default', 'mweb']}}}
     try:
         with yt_dlp.YoutubeDL({**base, 'skip_download': True}) as y:
             info = y.extract_info(url, download=False)
