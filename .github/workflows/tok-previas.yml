@@ -1,0 +1,33 @@
+name: prévias do SimasTok
+# de tempos em tempos olha se tem vídeo novo no SimasTok e, se tiver, publica a página de prévia dele
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+concurrency:
+  group: deploy-hosting
+  cancel-in-progress: false
+jobs:
+  previas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm i firebase-admin@12 --no-save --silent
+      - id: gera
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node scripts/gerar-previas.js
+      - id: compara
+        run: |
+          VIVO=$(curl -s "https://ofisimas.web.app/v/manifest.json?x=$(date +%s)" | python3 -c 'import sys,json
+          try: print(json.load(sys.stdin)["hash"])
+          except Exception: print("")')
+          echo "vivo=$VIVO novo=${{ steps.gera.outputs.hash }}"
+          if [ "$VIVO" = "${{ steps.gera.outputs.hash }}" ]; then echo "muda=0" >> $GITHUB_OUTPUT; else echo "muda=1" >> $GITHUB_OUTPUT; fi
+      - if: steps.compara.outputs.muda == '1'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: simasfitness2
+          channelId: live

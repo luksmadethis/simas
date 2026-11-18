@@ -16,9 +16,24 @@
             "value": "no-cache"
           }
         ]
+      },
+      {
+        "source": "/v/manifest.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
       }
     ],
-    "trailingSlash": true
+    "trailingSlash": true,
+    "rewrites": [
+      {
+        "source": "/v/**",
+        "destination": "/simastok/index.html"
+      }
+    ]
   },
   "firestore": {
     "rules": "firestore.rules"

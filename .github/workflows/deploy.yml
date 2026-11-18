@@ -3,11 +3,19 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+concurrency:
+  group: deploy-hosting
+  cancel-in-progress: false
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: npm i firebase-admin@12 --no-save --silent
+      - name: páginas de prévia dos vídeos do SimasTok
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node scripts/gerar-previas.js
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}

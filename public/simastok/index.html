@@ -222,7 +222,7 @@ function render() {
     it.v = v; atualizar(it);
     if (feed.children[i] !== it.el) feed.insertBefore(it.el, feed.children[i] || null);
   });
-  if (!render.foi) { render.foi = true; const alvo = new URLSearchParams(location.search).get('v'); if (alvo && items.get(alvo)) items.get(alvo).el.scrollIntoView(); }
+  if (!render.foi) { render.foi = true; const alvo = (location.pathname.match(/^\/v\/([A-Za-z0-9]+)/) || [])[1] || new URLSearchParams(location.search).get('v'); if (alvo && items.get(alvo)) items.get(alvo).el.scrollIntoView(); }
   carregarPerto();
 }
 
@@ -260,7 +260,7 @@ function criar(v) {
   });
   like.onclick = () => curtir(it);
   com.onclick = () => abrirCom(it.v);
-  share.onclick = () => { const url = location.origin + '/simastok/?v=' + it.v.id; (navigator.share ? navigator.share({ url, title: 'SimasTok' }) : navigator.clipboard.writeText(url).then(() => toast('link copiado'))).catch(() => {}); };
+  share.onclick = () => { const url = location.origin + '/v/' + it.v.id + '/'; (navigator.share ? navigator.share({ url, title: 'SimasTok' }) : navigator.clipboard.writeText(url).then(() => toast('link copiado'))).catch(() => {}); };
   mais.onclick = () => {
     const old = el.querySelector('.menu'); if (old) { old.remove(); return; }
     const m = document.createElement('div'); m.className = 'menu';
@@ -304,7 +304,7 @@ function ativar(it) {
   it.video.muted = mudo; it.video.currentTime = 0;
   it.video.play().catch(() => { it.video.muted = true; mudo = true; updMute(); it.video.play().catch(() => it.el.classList.add('paused')); });
   carregarPerto();
-  const u = new URL(location.href); u.searchParams.set('v', it.v.id); history.replaceState(null, '', u);
+  history.replaceState(null, '', '/v/' + it.v.id + '/');
 }
 // só baixa o vídeo atual e o próximo (economiza internet e a cota grátis)
 function carregarPerto() {
