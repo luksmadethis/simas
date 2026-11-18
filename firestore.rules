@@ -136,12 +136,17 @@ service cloud.firestore {
     match /tokcom/{id} {
       allow read: if signedIn();
       allow create: if signedIn()
-        && request.resource.data.keys().hasOnly(["vid", "autor", "nome", "texto", "t"])
+        && request.resource.data.keys().hasOnly(["vid", "autor", "nome", "texto", "t", "pai", "likes"])
+        && (!("pai" in request.resource.data) || request.resource.data.pai is string)
+        && request.resource.data.get("likes", []) == []
         && request.resource.data.autor == request.auth.uid
         && request.resource.data.vid is string
         && request.resource.data.nome is string && request.resource.data.nome.size() > 0 && request.resource.data.nome.size() <= 30
         && request.resource.data.texto is string && request.resource.data.texto.size() > 0 && request.resource.data.texto.size() <= 300
         && request.resource.data.t == request.time;
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["likes"])
+        && request.resource.data.likes is list && request.resource.data.likes.size() <= 500;
       allow delete: if aprovador() || (signedIn() && resource.data.autor == request.auth.uid);
     }
     // ===== Jogos: ranking do Galado Pula =====

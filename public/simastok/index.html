@@ -127,6 +127,15 @@
   .com:first-child{border-top:0}
   .com .av{width:34px;height:34px;font-size:14px;flex:none}
   .com b{font-size:13px}.com p{font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+  .com.resp{margin-left:44px;padding-top:6px;border-top:0}
+  .com.resp .av{width:26px;height:26px;font-size:11px}
+  .com .corpo{flex:1;min-width:0}
+  .com .acoes{display:flex;gap:14px;margin-top:4px;font-size:12px;color:var(--mut)}
+  .com .acoes button{background:none;border:0;color:var(--mut);font:inherit;font-weight:800;cursor:pointer;padding:0}
+  .com .acoes button:hover{color:var(--txt)}
+  .com .clike{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:1px;color:var(--mut);cursor:pointer;align-self:flex-start;padding:2px 4px;font-size:18px}
+  .com .clike small{font-size:11px;font-weight:800;min-height:13px}
+  .cbox .canc{background:none!important;color:var(--mut)!important;padding:0 6px!important}
   .com .x{margin-left:auto;background:none;border:0;color:var(--mut);font-size:13px;align-self:flex-start}
   .cbox{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
   .cbox input{flex:1}
@@ -266,7 +275,7 @@
   <div class="sheet">
     <header><span id="comTitle">comentarios</span> <button data-close>✕</button></header>
     <div class="body" id="comList"></div>
-    <div class="cbox"><input id="comTxt" maxlength="300" placeholder="comenta ai…"><button id="comSend">➤</button></div>
+    <div class="cbox"><button id="cancResp" class="canc" hidden title="cancelar resposta">✕</button><input id="comTxt" maxlength="300" placeholder="comenta ai…"><button id="comSend">➤</button></div>
   </div>
 </div>
 
@@ -601,7 +610,8 @@ $('sendBtn').onclick = () => {
 };
 
 /* ===== comentários ===== */
-let comVid = null, comUnsub = null;
+let comVid = null, comUnsub = null, respondendo = null;
+const cancelaResp = () => { respondendo = null; $('comTxt').placeholder = 'comenta ai…'; $('cancResp').hidden = true; };
 function abrirCom(v) {
   comVid = v; $('mCom').hidden = false; $('comList').innerHTML = '<p class="mut">carregando…</p>';
   if (comUnsub) comUnsub();
@@ -610,12 +620,31 @@ function abrirCom(v) {
     $('comTitle').textContent = l.length + ' comentario' + (l.length === 1 ? '' : 's');
     const box = $('comList'); box.innerHTML = '';
     if (!l.length) box.innerHTML = '<p class="mut">ninguem comentou ainda. comenta ai porra</p>';
-    for (const c of l) {
-      const row = document.createElement('div'); row.className = 'com';
-      const d = document.createElement('div'); const b = document.createElement('b'); b.textContent = c.nome; const p = document.createElement('p'); p.textContent = c.texto; d.append(b, p);
-      row.append(avatar(c.nome), d);
-      if (admin || aprovadores.includes(uid) || c.autor === uid) { const x = document.createElement('button'); x.className = 'x'; x.textContent = '🗑️'; x.onclick = () => db.doc('tokcom/' + c.id).delete().then(() => db.doc('tok/' + comVid.id).update({ coms: FV.increment(-1) }).catch(() => {})); row.appendChild(x); }
-      box.appendChild(row);
+    // comentário + respostas embaixo dele
+    const ids = new Set(l.map(c => c.id));
+    const raiz = l.filter(c => !c.pai || !ids.has(c.pai));
+    const filhos = {}; for (const c of l) if (c.pai && ids.has(c.pai)) (filhos[c.pai] = filhos[c.pai] || []).push(c);
+    const linha = (c, resp) => {
+      const row = document.createElement('div'); row.className = 'com' + (resp ? ' resp' : '');
+      const d = document.createElement('div'); d.className = 'corpo';
+      const b = document.createElement('b'); b.textContent = c.nome;
+      const p = document.createElement('p'); p.textContent = c.texto;
+      const acoes = document.createElement('div'); acoes.className = 'acoes';
+      const quando_ = document.createElement('span'); quando_.textContent = quando(c.t);
+      const rb = document.createElement('button'); rb.textContent = 'responder';
+      rb.onclick = () => { respondendo = { id: c.pai && ids.has(c.pai) ? c.pai : c.id, nome: c.nome }; $('comTxt').placeholder = 'respondendo @' + c.nome + '…'; $('comTxt').value = '@' + c.nome + ' '; $('comTxt').focus(); $('cancResp').hidden = false; };
+      acoes.append(quando_, rb);
+      if (admin || aprovadores.includes(uid) || c.autor === uid) { const x = document.createElement('button'); x.textContent = 'apagar'; x.onclick = () => { if (confirm('apagar esse comentario?')) db.doc('tokcom/' + c.id).delete().then(() => db.doc('tok/' + comVid.id).update({ coms: FV.increment(-1) }).catch(() => {})); }; acoes.appendChild(x); }
+      d.append(b, p, acoes);
+      const lk = c.likes || [], meu = lk.includes(uid);
+      const cor = document.createElement('button'); cor.className = 'clike' + (meu ? ' on' : ''); cor.innerHTML = `<span>${meu ? '❤️' : '🤍'}</span><small>${lk.length || ''}</small>`;
+      cor.onclick = () => db.doc('tokcom/' + c.id).update({ likes: meu ? FV.arrayRemove(uid) : FV.arrayUnion(uid) }).catch(() => toast('nao deu pra curtir'));
+      row.append(avatar(c.nome), d, cor);
+      return row;
+    };
+    for (const c of raiz) {
+      box.appendChild(linha(c, false));
+      for (const r of (filhos[c.id] || [])) box.appendChild(linha(r, true));
     }
     box.scrollTop = box.scrollHeight;
   }, () => { $('comList').innerHTML = '<p class="mut">nao deu pra carregar</p>'; });
@@ -627,11 +656,14 @@ const mandarCom = async () => {
   if (!nome) { nome = (prompt('qual teu nick?') || '').trim().slice(0, 30); if (!nome) return; try { localStorage.setItem('simas-nick', nome); } catch (e) {} }
   $('comTxt').value = '';
   try {
-    await db.collection('tokcom').add({ vid: comVid.id, autor: uid, nome, texto, t: FV.serverTimestamp() });
+    const doc = { vid: comVid.id, autor: uid, nome, texto, t: FV.serverTimestamp(), likes: [] };
+    if (respondendo) doc.pai = respondendo.id;
+    await db.collection('tokcom').add(doc); cancelaResp();
     db.doc('tok/' + comVid.id).update({ coms: FV.increment(1) }).catch(() => {});
   } catch (e) { toast('nao deu pra comentar'); $('comTxt').value = texto; }
 };
 $('comSend').onclick = mandarCom;
+$('cancResp').onclick = () => { cancelaResp(); $('comTxt').value = ''; };
 $('comTxt').addEventListener('keydown', e => { if (e.key === 'Enter') mandarCom(); });
 </script>
 </body>
