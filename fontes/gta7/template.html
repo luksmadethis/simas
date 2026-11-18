@@ -9,6 +9,9 @@
 <meta property="og:description" content="a Rockstar demorou 12 anos pro GTA 6. a gente fez o 7 numa tarde. e ficou melhor.">
 <meta property="og:image" content="https://ofisimas.web.app/jogos/gta7/capa.jpg">
 <script src="/jogos/som-midia.js?v=1"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;height:100%;overflow:hidden;background:#0d0c12;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
@@ -29,6 +32,9 @@ canvas{display:block;cursor:crosshair}
 #titulo button:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 #000}
 #titulo button.novo{background:#333;color:#fff;font-size:14px;padding:8px 18px;box-shadow:3px 3px 0 #000}
 #titulo .volta{color:#ff8c00;font-weight:800;text-decoration:none;font-size:14px}
+#topTitulo{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;max-width:620px;font:700 13px system-ui;color:#ddd}
+#topTitulo b{width:100%;color:#ffd23f}
+#topTitulo i{color:#7fd7ff;font-style:normal}
 #dicas-ctrl{color:#888;font-size:12px;max-width:640px;line-height:1.5}
 #menu{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);padding:12px}
 #menu.aberto{display:flex}
@@ -86,6 +92,7 @@ body.titulo-on #radio{right:auto;left:50%;transform:translateX(-50%);bottom:12px
   <p class="tag">Nerivan saiu da saidinha. O Ltzin virou Rei de Recife e deu choque no sistema de todo mundo. Só tu pode resolver essa porra.</p>
   <button class="jogar">▶ JOGAR</button>
   <button class="novo" style="display:none">começar do zero</button>
+  <div id="topTitulo"></div>
   <p id="dicas-ctrl"></p>
   <a class="volta" href="/jogos/">← voltar pros jogos</a>
 </div>

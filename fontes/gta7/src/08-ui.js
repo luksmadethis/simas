@@ -80,6 +80,7 @@ function desenharHUD(dt) {
   g.textAlign = 'right'; g.font = `900 ${peq ? 22 : 30}px ${FONTE}`;
   const gv = j.grana; HUD_GRANA = lerp(HUD_GRANA, gv, Math.min(1, dt * 6)); if (Math.abs(HUD_GRANA - gv) < 1) HUD_GRANA = gv;
   textoContorno(g, fmt$(HUD_GRANA), VW - 14, peq ? 30 : 38, '#ffe14d', 6);
+  g.font = `900 ${peq ? 12 : 14}px ${FONTE}`; HUD_PTS_T = Math.max(0, HUD_PTS_T - dt); textoContorno(g, '★ ' + Math.floor(W.pontos).toLocaleString('pt-BR') + ' pts', VW - 14, (peq ? 30 : 38) + (peq ? 16 : 20), HUD_PTS_T > 0 ? '#ffffff' : '#7fd7ff', 4);
 
   // objetivo, tempo, barra
   g.textAlign = 'center';
@@ -166,6 +167,7 @@ function desenharHUD(dt) {
     g.font = `bold ${peq ? 14 : 18}px system-ui`; quebraTexto(g, CORTINA.txt, Math.min(620, VW - 40)).forEach((l, i) => textoContorno(g, l, VW / 2, VH * 0.4 + 44 + i * 26, '#fff', 4));
     g.globalAlpha = 1; if (CORTINA.t > 4.1) CORTINA = null;
   }
+  desenharTrofeuAviso(g, dt);
   if (MISSAO.dialogo) desenharDialogo(g, dt);
   if (TELA_FIM) desenharFim(g, dt);
   if (MAPA_ABERTO) desenharMapaGrande(g);
@@ -347,7 +349,7 @@ function menuGaragem() {
   } else {
     const itens = W.garagem.map((g, i) => ({ txt: `🚗 ${TIPOS_CARRO[g.modelo] ? TIPOS_CARRO[g.modelo].nome : g.modelo} (motor ${g.motor}, blindagem ${g.blind})`, cor: g.cor, fn: () => {
       W.garagem.splice(i, 1);
-      const l = MENU_GAR_LUGAR, c = novoCarro(g.modelo, l.x, l.y - 10, 0, { cor: g.cor, motor: g.motor, blind: g.blind, listra: g.listra });
+      const l = MENU_GAR_LUGAR, c = novoCarro(g.modelo, l.x, l.y - 10, 0, { cor: g.cor, motor: g.motor, blind: g.blind, listra: g.listra, doJogador: true });
       W.carros.push(c); j.x = c.x; j.y = c.y; c.motorista = j; j.carro = c; RADIO.tocar(true); CARRO_AVISO = { txt: TIPOS_CARRO[g.modelo].nome, t: 0 };
     } }));
     if (!itens.length) itens.push({ txt: 'garagem vazia. traz um carro aqui pra guardar ou turbinar', off: true, fn: () => { } });
@@ -408,7 +410,7 @@ function menuMotors() {
   const j = W.jog;
   abrirMenu('🏍️ SIMAS MOTORS & IMÓVEIS', [
     { txt: '🚗 Comprar veículo', fn: () => { abrirMenu('🚗 VEÍCULOS', VEICULOS_VENDA.map(([m, p]) => ({ txt: TIPOS_CARRO[m].nome + (TIPOS_CARRO[m].moto ? ' 🏍️' : ''), preco: p, fn: () => {
-      const L = LUGAR.motors, c = novoCarro(m, L.x, L.y + 10, 0); W.carros.push(c);
+      const L = LUGAR.motors, c = novoCarro(m, L.x, L.y + 10, 0, { doJogador: true }); W.carros.push(c);
       if (j.carro) entrarSair(); j.x = c.x; j.y = c.y; c.motorista = j; j.carro = c; RADIO.tocar(true); CARRO_AVISO = { txt: TIPOS_CARRO[m].nome, t: 0 };
       falar('luketa', 'comprado! e é teu de verdade, sem nota fiscal falsa. guarda na garagem pra não perder', 3.5);
     } })), 'zero bala, com 0 km (de rolê)'); return false; } },
@@ -454,6 +456,8 @@ function menuPausa() {
   abrirMenu('⏸️ PAUSA', [
     { txt: '▶️ Continuar', fn: () => { } },
     { txt: '🗺️ Ver o mapa', fn: () => { MAPA_ABERTO = true; } },
+    { txt: `🏆 Troféus: ${(W.trofeus || []).length}/${TROFEUS.length}`, fn: () => { menuTrofeus(); return false; } },
+    { txt: `📊 Ranking (teus pontos: ${W.pontos.toLocaleString('pt-BR')})`, fn: () => { menuRanking(); return false; } },
     { txt: `🔍 Segredos achados: ${(W.segredos || []).length}/${SEGREDOS.length}`, fn: () => { abrirMenu('🔍 SEGREDOS', SEGREDOS.map(sg => ({ txt: (W.segredos || []).includes(sg[0]) ? '✅ ' + sg[1] : '❓ ' + sg[2], off: true, fn: () => { } })).concat([{ txt: '⬅️ voltar', fn: () => { menuPausa(); return false; } }]), 'acha todos e ganha a PLATINA SIMAS'); return false; } },
     { txt: '💾 Salvar agora', fn: () => { salvar(); falar('luketa', 'jogo salvo!', 2); } },
     { txt: PAUSA_SOM ? '🔊 Ligar o som' : '🔇 Tirar o som', fn: () => { PAUSA_SOM = !PAUSA_SOM; if (SOM.master) SOM.master.gain.value = PAUSA_SOM ? 0 : 0.8; atualizaYT(); } },

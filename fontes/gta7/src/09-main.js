@@ -10,7 +10,7 @@ function salvar() {
   const j = W.jog; if (!j) return;
   const d = { v: 1, grana: j.grana, tem: j.tem, municao: { ...j.municao, punho: 0 }, camisa: j.camisa, calca: j.calca, chapeu: j.chapeu, oculos: j.oculos, feitas: MISSAO.feitas, garagem: W.garagem, stats: W.stats,
     roupa: { estampa: j.estampa, jaqueta: j.jaqueta, mochila: j.mochila, corrente: j.corrente, chapeuTipo: j.chapeuTipo, tenis: j.tenis, tenisCor: j.tenisCor, temTenis: j.temTenis, temRodas: j.temRodas },
-    imoveis: W.imoveis || [], segredos: W.segredos || [], extras: W.extras || {} };
+    imoveis: W.imoveis || [], segredos: W.segredos || [], extras: W.extras || {}, pontos: Math.floor(W.pontos), trofeus: W.trofeus || [] };
   try { localStorage.setItem('gta7-save', JSON.stringify(d)); } catch (e) { }
 }
 function carregar() { try { const s = localStorage.getItem('gta7-save'); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
@@ -55,7 +55,7 @@ function comecar(save) {
     j.grana = save.grana; Object.assign(j.tem, save.tem); Object.assign(j.municao, save.municao); j.municao.punho = Infinity;
     j.camisa = save.camisa; j.calca = save.calca; j.chapeu = save.chapeu; j.oculos = save.oculos;
     MISSAO.feitas = save.feitas || 0; W.garagem = save.garagem || []; W.stats = { ...W.stats, ...(save.stats || {}) };
-    Object.assign(j, save.roupa || {}); W.imoveis = save.imoveis || []; W.segredos = save.segredos || []; W.extras = save.extras || {};
+    Object.assign(j, save.roupa || {}); W.imoveis = save.imoveis || []; W.segredos = save.segredos || []; W.extras = save.extras || {}; W.pontos = save.pontos || 0; W.trofeus = save.trofeus || [];
   }
   espalharItens(); criarFixos(); criarFiguras(); estacionados(); criarSegredos();
   if (MISSAO.feitas >= MISSOES.length) liberarFatal(false);
@@ -143,7 +143,7 @@ function passo(dt) {
   if (!j.carro) SOM.atualizaMotor(0, false);
   atualizaPeds(dt); atualizaCarros(dt); colisoes(dt); atualizaBalas(dt); atualizaItens(dt); atualizaChefes(dt);
   atualizaProcurado(dt); atualizaEfeitos(dt); povoar(dt, VW / cam.zoom, VH / cam.zoom);
-  MISSAO.tick(dt); gatilhos(); atualizaGangueMoto(dt); atualizaDicas(dt); atualizaFiguras(dt); atualizaRenda(dt); atualizaSegredos(dt);
+  MISSAO.tick(dt); gatilhos(); atualizaConquistas(dt); atualizaGangueMoto(dt); atualizaDicas(dt); atualizaFiguras(dt); atualizaRenda(dt); atualizaSegredos(dt);
 }
 
 // som do baile do Meco: uma música do "Malando com Zensat", sem grave até devolver o paredão

@@ -139,6 +139,7 @@ h1{margin:6px 0 4px;font-size:38px;font-weight:900}
         <h3>🚗 GTA 7</h3>
         <p><b>GRAND THEFT AUTO 7.</b> o maior lançamento da história. a Rockstar levou 12 ano pra fazer o 6, a gente fez o 7 numa tarde. o Nerivan saiu da saidinha e tem q derrubar o LTZIN, Rei de Recife. rouba carro, foge do SEGURANÇA GELADO, turbina na garagem e escuta o Popai na Rádio Poli FM. 11 missão da história, missão de moto, Indonésia, Fatal Model e 16 segredo escondido</p>
         <div class="rec">🗺️ São Simas · Juazeiro · Rio · BH · Recife · Serra · Indonésia</div>
+        <div class="top5"><b>🏆 TOP 5 (pontos)</b><ol id="top0"><li>carregando...</li></ol></div>
         <span class="btn">jogar essa porra →</span>
       </div>
     </a>
@@ -182,7 +183,7 @@ try { const r = localStorage.getItem('galado-recorde'); if (r) document.getEleme
 try { const r = localStorage.getItem('patroa-recorde'); if (r) document.getElementById('rec2').textContent = '🏆 teu recorde: ' + r; } catch (e) {}
 // top 5 dos jogos
 (function () {
-  const jogos = [['galado', 'top1'], ['patroa', 'top2']];
+  const jogos = [['gta7', 'top0'], ['galado', 'top1'], ['patroa', 'top2']];
   const fora = () => jogos.forEach(([, id]) => document.getElementById(id).innerHTML = '<li>ranking fora do ar</li>');
   if (typeof firebase === 'undefined') { fora(); return; }
   firebase.initializeApp({
@@ -200,7 +201,7 @@ try { const r = localStorage.getItem('patroa-recorde'); if (r) document.getEleme
       const el = document.getElementById(id);
       firebase.firestore().collection(col).orderBy('pts', 'desc').limit(5).onSnapshot(q => {
         const li = [];
-        q.forEach(d => { const r = d.data(); li.push('<li><span>' + ['🥇','🥈','🥉','4º','5º'][li.length] + ' ' + esc(r.nome) + '</span><span>' + r.pts + '</span></li>'); });
+        q.forEach(d => { const r = d.data(); li.push('<li><span>' + ['🥇','🥈','🥉','4º','5º'][li.length] + ' ' + esc(r.nome) + '</span><span>' + (r.pts || 0).toLocaleString('pt-BR') + '</span></li>'); });
         el.innerHTML = li.join('') || '<li>ninguem jogou ainda</li>';
       }, () => el.innerHTML = '<li>ranking fora do ar</li>');
     });

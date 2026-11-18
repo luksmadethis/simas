@@ -9,6 +9,9 @@
 <meta property="og:description" content="a Rockstar demorou 12 anos pro GTA 6. a gente fez o 7 numa tarde. e ficou melhor.">
 <meta property="og:image" content="https://ofisimas.web.app/jogos/gta7/capa.jpg">
 <script src="/jogos/som-midia.js?v=1"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;height:100%;overflow:hidden;background:#0d0c12;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
@@ -29,6 +32,9 @@ canvas{display:block;cursor:crosshair}
 #titulo button:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 #000}
 #titulo button.novo{background:#333;color:#fff;font-size:14px;padding:8px 18px;box-shadow:3px 3px 0 #000}
 #titulo .volta{color:#ff8c00;font-weight:800;text-decoration:none;font-size:14px}
+#topTitulo{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;max-width:620px;font:700 13px system-ui;color:#ddd}
+#topTitulo b{width:100%;color:#ffd23f}
+#topTitulo i{color:#7fd7ff;font-style:normal}
 #dicas-ctrl{color:#888;font-size:12px;max-width:640px;line-height:1.5}
 #menu{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);padding:12px}
 #menu.aberto{display:flex}
@@ -86,6 +92,7 @@ body.titulo-on #radio{right:auto;left:50%;transform:translateX(-50%);bottom:12px
   <p class="tag">Nerivan saiu da saidinha. O Ltzin virou Rei de Recife e deu choque no sistema de todo mundo. Só tu pode resolver essa porra.</p>
   <button class="jogar">▶ JOGAR</button>
   <button class="novo" style="display:none">começar do zero</button>
+  <div id="topTitulo"></div>
   <p id="dicas-ctrl"></p>
   <a class="volta" href="/jogos/">← voltar pros jogos</a>
 </div>
@@ -896,7 +903,7 @@ function quebrarDeco(d, c) {
   SOM.batida(0.35); W.efeitos.push({ t: 'faisca', x: d.x, y: d.y, vida: 0.3, max: 0.3 });
   if (d.t === 'hidrante') { d.jorra = 10; }
   if (d.t === 'poste') for (let k = 0; k < 6; k++) W.efeitos.push({ t: 'faisca', x: d.x + rnd(-20, 20), y: d.y + rnd(-20, 20), vida: 0.4, max: 0.4 });
-  if (c === W.jog.carro) { W.stats.quebrou = (W.stats.quebrou || 0) + 1; if (d.t === 'hidrante' && rnd() < 0.3) falar('luketa', pick(['hidrante no chão! a SABESP vai te cobrar isso', 'que chuveirão, hein']), 2.5); }
+  if (c === W.jog.carro) { W.stats.quebrou = (W.stats.quebrou || 0) + 1; pontuar(5); if (d.t === 'hidrante' && rnd() < 0.3) falar('luketa', pick(['hidrante no chão! a SABESP vai te cobrar isso', 'que chuveirão, hein']), 2.5); }
 }
 function danoCarro(c, d, quem) {
   if (c.hp <= 0) return;
@@ -909,13 +916,14 @@ function danoCarro(c, d, quem) {
   if (c.hp <= 0) {
     c.hp = 0; c.fogo = 2.5;
     if (c.policia && quem === W.jog) crime(1);
+    if (quem === W.jog) pontuar(c.policia ? 80 : 40, 'CARRO DESTRUÍDO');
     // moto destruída: o motoqueiro cai morto
     const m = c.motorista;
     if (TIPOS_CARRO[c.modelo].moto && m && m !== W.jog) {
       c.fogo = 0.6; c.motorista = null; c.ia = null;
       m.x = c.x; m.y = c.y; m.hp = 0; m.morto = true; m.dentroCarro = false; W.peds.push(m);
       W.manchas.push({ t: 'sangue', x: m.x, y: m.y, r: 16, a: 0 });
-      if (quem === W.jog) matouMotoqueiro(c);
+      if (quem === W.jog) { matouMotoqueiro(c); conta('motoqueiros'); pontuar(30); }
     }
   }
 }
@@ -986,7 +994,8 @@ function feriPed(p, d, quem) {
     p.morto = true;
     W.manchas.push({ t: 'sangue', x: p.x, y: p.y, r: rnd(12, 20), a: rnd(6) });
     if (!p.semGrana && rnd() < 0.3) W.itens.push({ t: 'grana', x: p.x + rnd(-8, 8), y: p.y + rnd(-8, 8), v: rndi(5, 40), vida: 30 });
-    if (quem === W.jog && p.motoqueiro) matouMotoqueiro(null);
+    if (quem === W.jog) pontuar(p.policia ? 50 : p.motoqueiro ? 30 : p.hostil ? 40 : 10);
+    if (quem === W.jog && p.motoqueiro) { matouMotoqueiro(null); conta('motoqueiros'); }
     if (quem === W.jog) crime(p.policia ? 2 : (copsPerto(600) || rnd() < 0.25 ? 1 : 0));
     if (p.aoMorrer) p.aoMorrer();
   }
@@ -1004,7 +1013,7 @@ function crime(n) {
   W.calor += n; W.semVer = 0;
   const novo = clamp(Math.ceil(W.calor / 3), 0, 5);
   if (novo > W.procurado) {
-    W.procurado = novo;
+    W.procurado = novo; W.picoFuga = Math.max(W.picoFuga || 0, novo);
     if (novo === 1) falar('luketa', pick(['ih rapaz, os home tão na tua cola', 'polícia na área! some daí']), 2.5);
     if (novo === 3) falar('luketa', 'TRÊS ESTRELA?! o SEGURANÇA GELADO vai vir pessoalmente atrás de tu!', 3.5);
   }
@@ -1235,8 +1244,8 @@ function entrarSair() {
     W.peds.push(m);
     if (rnd() < 0.5) falarPed(m, pick(['MEU CARRO!!', 'ô ladrão!!', 'socorro, roubaram meu possante', 'vai se fuder nerivan', 'tava quitado, desgraça']));
     if (c.policia) crime(3);
-    W.stats.roubos++;
   }
+  if (!c.doJogador && !c.missao) { c.doJogador = true; W.stats.roubos = (W.stats.roubos || 0) + 1; pontuar(15); }
   c.motorista = j; c.ia = null; j.carro = c; c.vel = Math.hypot(c.vx, c.vy) * 0.5;
   RADIO.tocar(true);
   if (!W.radioAviso) { W.radioAviso = true; falar('poli', 'aqui é a Rádio Poli FM, o rei do entretenimento! aperta R pra trocar de estação', 4); }
@@ -1556,7 +1565,7 @@ function atualizaProcurado(dt) {
   const tempo = 6 + W.procurado * 3;
   if (W.semVer > tempo) {
     W.semVer = 0; W.procurado--; W.calor = W.procurado * 2;
-    if (W.procurado === 0) falar('luketa', 'despistou os home! boa, nerivan', 2.5);
+    if (W.procurado === 0) { falar('luketa', 'despistou os home! boa, nerivan', 2.5); conta('fugas'); const nv = W.picoFuga || 1; if (nv >= 3) conta('fugaGrande'); pontuar(100 * nv, 'DESPISTOU'); W.picoFuga = 0; }
   }
   // preso: polícia a pé encosta em você a pé
   const j = W.jog;
@@ -1629,7 +1638,7 @@ function atualizaEfeitos(dt) {
 let TELA_FIM = null;
 function morreu(tipo) {
   const j = W.jog; if (j.morto) return;
-  j.morto = true; TELA_FIM = { tipo, t: 0 };
+  j.morto = true; TELA_FIM = { tipo, t: 0 }; conta(tipo === 'preso' ? 'presos' : 'mortes');
   if (j.carro) { j.carro.motorista = null; j.carro = null; }
   SOM.falha(); SOM.atualizaMotor(0, false); RADIO.tocar(false);
   if (MISSAO.ativa) MISSAO.falhar(tipo === 'preso' ? 'tu foi PRESO' : 'tu MORREU');
@@ -2335,8 +2344,9 @@ async function iniciarMissao(m) {
     await m.fn();
     if (MISSAO.ativa !== m) return;
     MISSAO.ativa = null; MISSAO.limpar();
-    if (m.extra) { W.extras = W.extras || {}; W.extras[m.id] = true; }
-    else MISSAO.feitas = Math.max(MISSAO.feitas, MISSOES.indexOf(m) + 1);
+    if (m.extra) { W.extras = W.extras || {}; W.extras[m.id] = true; pontuar(800); }
+    else { MISSAO.feitas = Math.max(MISSAO.feitas, MISSOES.indexOf(m) + 1); pontuar(1000 + 250 * MISSOES.indexOf(m)); }
+    RANK.enviar();
     W.stats.missoes = MISSAO.feitas;
     if (m.id !== 'ltzin') { AVISO = { titulo: 'MISSÃO CUMPRIDA', sub: m.premio ? '+' + fmt$(m.premio) : 'respeito +100', cor: '#7CFC00', t: 0, dur: 4 }; SOM.missao(); }
     salvar();
@@ -2841,7 +2851,7 @@ function liberarFatal(aviso) {
 }
 function menuFatal() {
   const j = W.jog;
-  const cena = (txt, efeito) => () => { CORTINA = { t: 0, txt }; efeito && efeito(); };
+  const cena = (txt, efeito) => () => { CORTINA = { t: 0, txt }; conta('fatal'); efeito && efeito(); };
   abrirMenu('💋 FATAL MODEL', [
     { txt: '🍷 Jantar à luz de velas', preco: 500, fn: cena('jantar chique, vinho caro e o Nerivan contando como engana idosa no telefone... ela riu. ❤️ vida cheia', () => { j.hp = 100; }) },
     { txt: '💃 Noite de dança no salão', preco: 800, fn: cena('o Nerivan dançou funk de BH até as 5 da manhã. ❤️ vida cheia + 🛡️ colete', () => { j.hp = 100; j.colete = 100; }) },
@@ -2882,7 +2892,7 @@ function atualizaFiguras(dt) {
     const d = dist(p.x, p.y, j.x, j.y);
     p.cdFala = (p.cdFala || 0) - dt;
     if (p.figura === 'sibito') {
-      if (d < 230 && p.cdFala <= 0) { p.cdFala = rnd(2, 3.2); const x = pick(XINGOS_SIBITO); falarPed(p, x); if (d < 120) falar('sibito', x, 2.5); }
+      if (d < 230 && p.cdFala <= 0) { p.cdFala = rnd(2, 3.2); conta('xingado'); const x = pick(XINGOS_SIBITO); falarPed(p, x); if (d < 120) falar('sibito', x, 2.5); }
     } else if (d < 110 && p.cdFala <= 0) {
       p.cdFala = rnd(4, 7); const x = pick(FALAS_FIG[p.figura]); falarPed(p, x);
       if (p.figura === 'masadakun' && !p.falou) { p.falou = true; falar('masadakun', x, 4); }
@@ -2969,7 +2979,7 @@ function criarSegredos() {
 function achouSegredo(id) {
   W.segredos = W.segredos || []; if (W.segredos.includes(id)) return;
   W.segredos.push(id); const s = SEGREDOS.find(x => x[0] === id);
-  W.jog.grana += 300; SOM.missao();
+  W.jog.grana += 300; SOM.missao(); pontuar(300);
   AVISO = { titulo: `SEGREDO ${W.segredos.length}/${SEGREDOS.length}`, sub: s[1] + ' (+R$ 300)', cor: '#00e5ff', t: 0, dur: 4 };
   if (W.segredos.length === SEGREDOS.length) setTimeout(() => {
     AVISO = { titulo: 'PLATINA SIMAS 🏆', sub: 'achou TODOS os segredos! +R$ 10.000 e uma Lamborghini dourada na garagem', cor: '#f1c40f', t: 0, dur: 6 };
@@ -3270,6 +3280,7 @@ function desenharHUD(dt) {
   g.textAlign = 'right'; g.font = `900 ${peq ? 22 : 30}px ${FONTE}`;
   const gv = j.grana; HUD_GRANA = lerp(HUD_GRANA, gv, Math.min(1, dt * 6)); if (Math.abs(HUD_GRANA - gv) < 1) HUD_GRANA = gv;
   textoContorno(g, fmt$(HUD_GRANA), VW - 14, peq ? 30 : 38, '#ffe14d', 6);
+  g.font = `900 ${peq ? 12 : 14}px ${FONTE}`; HUD_PTS_T = Math.max(0, HUD_PTS_T - dt); textoContorno(g, '★ ' + Math.floor(W.pontos).toLocaleString('pt-BR') + ' pts', VW - 14, (peq ? 30 : 38) + (peq ? 16 : 20), HUD_PTS_T > 0 ? '#ffffff' : '#7fd7ff', 4);
 
   // objetivo, tempo, barra
   g.textAlign = 'center';
@@ -3356,6 +3367,7 @@ function desenharHUD(dt) {
     g.font = `bold ${peq ? 14 : 18}px system-ui`; quebraTexto(g, CORTINA.txt, Math.min(620, VW - 40)).forEach((l, i) => textoContorno(g, l, VW / 2, VH * 0.4 + 44 + i * 26, '#fff', 4));
     g.globalAlpha = 1; if (CORTINA.t > 4.1) CORTINA = null;
   }
+  desenharTrofeuAviso(g, dt);
   if (MISSAO.dialogo) desenharDialogo(g, dt);
   if (TELA_FIM) desenharFim(g, dt);
   if (MAPA_ABERTO) desenharMapaGrande(g);
@@ -3537,7 +3549,7 @@ function menuGaragem() {
   } else {
     const itens = W.garagem.map((g, i) => ({ txt: `🚗 ${TIPOS_CARRO[g.modelo] ? TIPOS_CARRO[g.modelo].nome : g.modelo} (motor ${g.motor}, blindagem ${g.blind})`, cor: g.cor, fn: () => {
       W.garagem.splice(i, 1);
-      const l = MENU_GAR_LUGAR, c = novoCarro(g.modelo, l.x, l.y - 10, 0, { cor: g.cor, motor: g.motor, blind: g.blind, listra: g.listra });
+      const l = MENU_GAR_LUGAR, c = novoCarro(g.modelo, l.x, l.y - 10, 0, { cor: g.cor, motor: g.motor, blind: g.blind, listra: g.listra, doJogador: true });
       W.carros.push(c); j.x = c.x; j.y = c.y; c.motorista = j; j.carro = c; RADIO.tocar(true); CARRO_AVISO = { txt: TIPOS_CARRO[g.modelo].nome, t: 0 };
     } }));
     if (!itens.length) itens.push({ txt: 'garagem vazia. traz um carro aqui pra guardar ou turbinar', off: true, fn: () => { } });
@@ -3598,7 +3610,7 @@ function menuMotors() {
   const j = W.jog;
   abrirMenu('🏍️ SIMAS MOTORS & IMÓVEIS', [
     { txt: '🚗 Comprar veículo', fn: () => { abrirMenu('🚗 VEÍCULOS', VEICULOS_VENDA.map(([m, p]) => ({ txt: TIPOS_CARRO[m].nome + (TIPOS_CARRO[m].moto ? ' 🏍️' : ''), preco: p, fn: () => {
-      const L = LUGAR.motors, c = novoCarro(m, L.x, L.y + 10, 0); W.carros.push(c);
+      const L = LUGAR.motors, c = novoCarro(m, L.x, L.y + 10, 0, { doJogador: true }); W.carros.push(c);
       if (j.carro) entrarSair(); j.x = c.x; j.y = c.y; c.motorista = j; j.carro = c; RADIO.tocar(true); CARRO_AVISO = { txt: TIPOS_CARRO[m].nome, t: 0 };
       falar('luketa', 'comprado! e é teu de verdade, sem nota fiscal falsa. guarda na garagem pra não perder', 3.5);
     } })), 'zero bala, com 0 km (de rolê)'); return false; } },
@@ -3644,6 +3656,8 @@ function menuPausa() {
   abrirMenu('⏸️ PAUSA', [
     { txt: '▶️ Continuar', fn: () => { } },
     { txt: '🗺️ Ver o mapa', fn: () => { MAPA_ABERTO = true; } },
+    { txt: `🏆 Troféus: ${(W.trofeus || []).length}/${TROFEUS.length}`, fn: () => { menuTrofeus(); return false; } },
+    { txt: `📊 Ranking (teus pontos: ${W.pontos.toLocaleString('pt-BR')})`, fn: () => { menuRanking(); return false; } },
     { txt: `🔍 Segredos achados: ${(W.segredos || []).length}/${SEGREDOS.length}`, fn: () => { abrirMenu('🔍 SEGREDOS', SEGREDOS.map(sg => ({ txt: (W.segredos || []).includes(sg[0]) ? '✅ ' + sg[1] : '❓ ' + sg[2], off: true, fn: () => { } })).concat([{ txt: '⬅️ voltar', fn: () => { menuPausa(); return false; } }]), 'acha todos e ganha a PLATINA SIMAS'); return false; } },
     { txt: '💾 Salvar agora', fn: () => { salvar(); falar('luketa', 'jogo salvo!', 2); } },
     { txt: PAUSA_SOM ? '🔊 Ligar o som' : '🔇 Tirar o som', fn: () => { PAUSA_SOM = !PAUSA_SOM; if (SOM.master) SOM.master.gain.value = PAUSA_SOM ? 0 : 0.8; atualizaYT(); } },
@@ -3740,7 +3754,7 @@ function salvar() {
   const j = W.jog; if (!j) return;
   const d = { v: 1, grana: j.grana, tem: j.tem, municao: { ...j.municao, punho: 0 }, camisa: j.camisa, calca: j.calca, chapeu: j.chapeu, oculos: j.oculos, feitas: MISSAO.feitas, garagem: W.garagem, stats: W.stats,
     roupa: { estampa: j.estampa, jaqueta: j.jaqueta, mochila: j.mochila, corrente: j.corrente, chapeuTipo: j.chapeuTipo, tenis: j.tenis, tenisCor: j.tenisCor, temTenis: j.temTenis, temRodas: j.temRodas },
-    imoveis: W.imoveis || [], segredos: W.segredos || [], extras: W.extras || {} };
+    imoveis: W.imoveis || [], segredos: W.segredos || [], extras: W.extras || {}, pontos: Math.floor(W.pontos), trofeus: W.trofeus || [] };
   try { localStorage.setItem('gta7-save', JSON.stringify(d)); } catch (e) { }
 }
 function carregar() { try { const s = localStorage.getItem('gta7-save'); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
@@ -3785,7 +3799,7 @@ function comecar(save) {
     j.grana = save.grana; Object.assign(j.tem, save.tem); Object.assign(j.municao, save.municao); j.municao.punho = Infinity;
     j.camisa = save.camisa; j.calca = save.calca; j.chapeu = save.chapeu; j.oculos = save.oculos;
     MISSAO.feitas = save.feitas || 0; W.garagem = save.garagem || []; W.stats = { ...W.stats, ...(save.stats || {}) };
-    Object.assign(j, save.roupa || {}); W.imoveis = save.imoveis || []; W.segredos = save.segredos || []; W.extras = save.extras || {};
+    Object.assign(j, save.roupa || {}); W.imoveis = save.imoveis || []; W.segredos = save.segredos || []; W.extras = save.extras || {}; W.pontos = save.pontos || 0; W.trofeus = save.trofeus || [];
   }
   espalharItens(); criarFixos(); criarFiguras(); estacionados(); criarSegredos();
   if (MISSAO.feitas >= MISSOES.length) liberarFatal(false);
@@ -3873,7 +3887,7 @@ function passo(dt) {
   if (!j.carro) SOM.atualizaMotor(0, false);
   atualizaPeds(dt); atualizaCarros(dt); colisoes(dt); atualizaBalas(dt); atualizaItens(dt); atualizaChefes(dt);
   atualizaProcurado(dt); atualizaEfeitos(dt); povoar(dt, VW / cam.zoom, VH / cam.zoom);
-  MISSAO.tick(dt); gatilhos(); atualizaGangueMoto(dt); atualizaDicas(dt); atualizaFiguras(dt); atualizaRenda(dt); atualizaSegredos(dt);
+  MISSAO.tick(dt); gatilhos(); atualizaConquistas(dt); atualizaGangueMoto(dt); atualizaDicas(dt); atualizaFiguras(dt); atualizaRenda(dt); atualizaSegredos(dt);
 }
 
 // som do baile do Meco: uma música do "Malando com Zensat", sem grave até devolver o paredão
@@ -3947,6 +3961,134 @@ function iniciarTela() {
   carregarYT();
 }
 addEventListener('load', iniciarTela);
+
+// =========================================================
+// PONTUAÇÃO, TROFÉUS E RANKING (Firestore gta7/{uid})
+// =========================================================
+W.pontos = 0;
+const ST = () => W.stats;
+function pontuar(n, txt) {
+  if (!n || !W.jog) return;
+  W.pontos += n; HUD_PTS_T = 1.2;
+  if (txt) W.efeitos.push({ t: 'texto', x: W.jog.x, y: W.jog.y - 46, txt: `${txt} +${n}`, vida: 1.4, max: 1.4, cor: '#7fd7ff' });
+}
+let HUD_PTS_T = 0;
+function conta(k, n = 1) { const s = ST(); s[k] = (s[k] || 0) + n; }
+function maxStat(k, v) { const s = ST(); if (!(s[k] >= v)) s[k] = v; }
+
+const TROFEUS = [
+  ['roubo1', '🚗', 'Primeiro Assalto', 'rouba o primeiro carro', s => s.roubos >= 1],
+  ['roubo25', '🔑', 'Ladrão Profissional', 'rouba 25 carros', s => s.roubos >= 25],
+  ['estrela5', '⭐', 'Inimigo Público nº 1', 'chega a 5 estrelas', s => s.maxEstrela >= 5],
+  ['fuga3', '💨', 'Fugiu do Gelado', 'despista a polícia com 3+ estrelas', s => s.fugaGrande >= 1],
+  ['fuga10', '🏃', 'Ninguém Me Pega', 'despista a polícia 10 vezes', s => s.fugas >= 10],
+  ['moto10', '🏍️', 'Treta com os Motoqueiro', 'derruba 10 motoqueiros', s => s.motoqueiros >= 10],
+  ['quebra50', '🔨', 'Quebradeira', 'quebra 50 coisas na rua (poste, hidrante...)', s => s.quebrou >= 50],
+  ['drift5', '🛞', 'Rei do Drift', 'faz um drift de 5 segundos', s => s.driftMax >= 5],
+  ['fatal3', '💋', 'Cliente VIP', 'vai 3 vezes no Fatal Model', s => s.fatal >= 3],
+  ['rico', '💰', 'Não Faz Menos que R$500', 'junta R$ 50.000 no bolso', s => W.jog && W.jog.grana >= 50000],
+  ['imovel3', '🏠', 'Magnata do Simas', 'compra 3 imóveis', s => (W.imoveis || []).length >= 3],
+  ['garagem4', '🅿️', 'Colecionador', 'enche a garagem (4 carros)', s => W.garagem.length >= 4],
+  ['seg8', '🔍', 'Caçador de Segredo', 'acha 8 segredos', s => (W.segredos || []).length >= 8],
+  ['platina', '🏆', 'Platina Simas', 'acha os 16 segredos', s => (W.segredos || []).length >= 16],
+  ['galinha', '🐔', 'Pegou o Galado', 'pega a galinha com a cara do Gelado', s => (W.segredos || []).includes('galinha')],
+  ['alan', '🛹', 'Desvalorizado Não', 'ganha o racha de skate do Alan', s => MISSAO.feitas >= 4],
+  ['zerou', '👑', 'Novo Rei de Recife', 'zera a história', s => MISSAO.feitas >= MISSOES.length],
+  ['motos3', '🔥', 'Grau Master', 'faz as 3 missões de moto', s => Object.keys(W.extras || {}).length >= 3],
+  ['indonesia', '🇮🇩', 'Passaporte Carimbado', 'vai até a Indonésia', s => s.indonesia >= 1],
+  ['mirante', '⛰️', 'Turista da Serra', 'chega no Mirante da Serra', s => s.mirante >= 1],
+  ['sibito', '🤬', 'Saco de Pancada', 'ouve 20 xingamentos da Sibito', s => s.xingado >= 20],
+  ['morreu10', '💀', 'Paga Nada, Primo', 'morre 10 vezes', s => s.mortes >= 10],
+  ['preso5', '🚔', 'Freguês da Delegacia', 'é preso 5 vezes', s => s.presos >= 5],
+  ['arsenal', '🧨', 'Arsenal Completo', 'tem todas as armas', s => W.jog && ORDEM_ARMAS.every(k => W.jog.tem[k])]
+];
+let trofeuTimer = 1;
+function atualizaConquistas(dt) {
+  const j = W.jog; if (!j || j.morto) return;
+  const s = ST();
+  // drift contínuo
+  if (j.carro && j.carro.derrapa > 180 && Math.abs(j.carro.vel) > 220) { W.driftT = (W.driftT || 0) + dt; maxStat('driftMax', W.driftT); }
+  else if (W.driftT) { if (W.driftT > 1) pontuar(Math.floor(W.driftT * 25), 'DRIFT ' + W.driftT.toFixed(1) + 's'); W.driftT = 0; }
+  maxStat('maxEstrela', W.procurado);
+  const reg = regiaoEm(j.x, j.y);
+  if (reg === REG.INDONESIA) maxStat('indonesia', 1);
+  if (LUGAR.mirante && dist(j.x, j.y, LUGAR.mirante.x, LUGAR.mirante.y) < 300) maxStat('mirante', 1);
+  trofeuTimer -= dt; if (trofeuTimer > 0) return; trofeuTimer = 1;
+  W.trofeus = W.trofeus || [];
+  for (const [id, ic, nome, , cond] of TROFEUS) {
+    if (W.trofeus.includes(id)) continue;
+    let ok = false; try { ok = cond(s); } catch (e) { }
+    if (ok) {
+      W.trofeus.push(id); pontuar(500); SOM.missao();
+      TROFEU_AVISO = { ic, nome, t: 0 };
+      salvar(); break;
+    }
+  }
+  // manda pro ranking de vez em quando
+  RANK.timer -= 1; if (RANK.timer <= 0) { RANK.timer = 20; RANK.enviar(); }
+}
+let TROFEU_AVISO = null;
+function desenharTrofeuAviso(g, dt) {
+  const a = TROFEU_AVISO; if (!a) return;
+  a.t += dt; if (a.t > 4.5) { TROFEU_AVISO = null; return; }
+  const k = a.t < 0.35 ? a.t / 0.35 : a.t > 4 ? (4.5 - a.t) / 0.5 : 1;
+  const w = Math.min(380, VW - 30), x = VW / 2 - w / 2, y = VH - (ehToque() ? 300 : 150) + (1 - k) * 40;
+  g.globalAlpha = k; g.fillStyle = 'rgba(15,12,25,.94)'; rr(g, x, y, w, 62, 12); g.fill(); g.strokeStyle = '#f1c40f'; g.lineWidth = 3; g.stroke();
+  g.font = '30px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(a.ic, x + 36, y + 31);
+  g.textAlign = 'left'; g.font = '900 11px system-ui'; g.fillStyle = '#f1c40f'; g.fillText('🏆 TROFÉU DESBLOQUEADO  +500', x + 66, y + 20);
+  g.font = '900 17px system-ui'; g.fillStyle = '#fff'; g.fillText(a.nome, x + 66, y + 42); g.textBaseline = 'alphabetic'; g.globalAlpha = 1;
+}
+function menuTrofeus() {
+  const t = W.trofeus || [];
+  abrirMenu(`🏆 TROFÉUS ${t.length}/${TROFEUS.length}`, TROFEUS.map(([id, ic, nome, desc]) => ({ txt: (t.includes(id) ? ic + ' ' + nome : '🔒 ' + nome) + ' — ' + desc, off: true, fn: () => { } }))
+    .concat([{ txt: '⬅️ voltar', fn: () => { menuPausa(); return false; } }]), `${W.pontos.toLocaleString('pt-BR')} pontos`);
+}
+
+// ---------- ranking online ----------
+const RANK = {
+  ok: false, uid: null, db: null, melhor: 0, top: [], timer: 20,
+  nome() { try { return (localStorage.getItem('galado-nome') || '').trim(); } catch (e) { return ''; } },
+  iniciar() {
+    if (typeof firebase === 'undefined') return;
+    try {
+      if (!firebase.apps.length) firebase.initializeApp({ apiKey: 'AIzaSyA0G_qSK5eEVzGnLskGS8leXCwC7XNzK0A', authDomain: 'simasfitness2.firebaseapp.com', projectId: 'simasfitness2', storageBucket: 'simasfitness2.firebasestorage.app', messagingSenderId: '1068623437415', appId: '1:1068623437415:web:63ccdb065e991452563ec2' });
+      this.db = firebase.firestore();
+      firebase.auth().onAuthStateChanged(async u => {
+        if (!u) { firebase.auth().signInAnonymously().catch(() => { }); return; }
+        this.uid = u.uid; this.ok = true;
+        try { const d = await this.db.collection('gta7').doc(u.uid).get(); if (d.exists) this.melhor = d.data().pts || 0; } catch (e) { }
+        this.db.collection('gta7').orderBy('pts', 'desc').limit(10).onSnapshot(q => { const l = []; q.forEach(d => l.push({ ...d.data(), eu: d.id === this.uid })); this.top = l; mostraTopTitulo(); }, () => { });
+      });
+    } catch (e) { }
+  },
+  enviar(forca) {
+    const nome = this.nome(), p = Math.min(1000000, Math.floor(W.pontos));
+    if (!this.ok || !nome || (!forca && p <= this.melhor)) return;
+    const novo = Math.max(p, this.melhor);
+    this.db.collection('gta7').doc(this.uid).set({ nome: nome.slice(0, 20), pts: novo, t: firebase.firestore.FieldValue.serverTimestamp() }).then(() => { this.melhor = novo; }).catch(() => { });
+  }
+};
+function menuRanking() {
+  const esc = t => String(t).replace(/[<>&]/g, '');
+  const l = RANK.top.map((r, i) => ({ txt: `${['🥇', '🥈', '🥉'][i] || (i + 1) + 'º'} ${esc(r.nome)}${r.eu ? ' (tu)' : ''} — ${r.pts.toLocaleString('pt-BR')} pts`, off: true, fn: () => { } }));
+  abrirMenu('📊 RANKING GTA 7', (l.length ? l : [{ txt: RANK.ok ? 'ninguém no ranking ainda, bora ser o primeiro' : 'ranking fora do ar agora', off: true, fn: () => { } }])
+    .concat([{ txt: '✏️ ' + (RANK.nome() ? 'trocar o nome (' + esc(RANK.nome()) + ')' : 'botar nome pra entrar no ranking'), fn: () => { pedeNome(); return false; } }, { txt: '⬅️ voltar', fn: () => { menuPausa(); return false; } }]),
+    `teus pontos: ${W.pontos.toLocaleString('pt-BR')} · melhor no ranking: ${RANK.melhor.toLocaleString('pt-BR')}`);
+}
+function pedeNome() {
+  const el = document.getElementById('menu');
+  el.innerHTML = `<div class="caixa"><h2>✏️ TEU NOME</h2><p class="sub">aparece no ranking do GTA 7 (o mesmo nome dos outros jogos)</p><div class="lista"><input id="nomeRank" maxlength="20" placeholder="teu nome" style="padding:12px;border-radius:8px;border:2px solid #ffd23f;background:#100d18;color:#fff;font:700 16px system-ui"><button class="item" id="nomeOk"><span>salvar</span></button></div><button class="fechar">voltar</button></div>`;
+  const inp = el.querySelector('#nomeRank'); inp.value = RANK.nome(); setTimeout(() => inp.focus(), 50);
+  const ok = () => { const n = inp.value.replace(/\s+/g, ' ').trim().slice(0, 20); if (!n) return; try { localStorage.setItem('galado-nome', n); } catch (e) { } RANK.enviar(true); menuRanking(); };
+  el.querySelector('#nomeOk').onclick = ok; inp.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') ok(); };
+  el.querySelector('.fechar').onclick = () => menuRanking();
+}
+function mostraTopTitulo() {
+  const el = document.getElementById('topTitulo'); if (!el) return;
+  const esc = t => String(t).replace(/[<>&]/g, '');
+  el.innerHTML = RANK.top.length ? '<b>📊 TOP 5</b>' + RANK.top.slice(0, 5).map((r, i) => `<span>${['🥇', '🥈', '🥉', '4º', '5º'][i]} ${esc(r.nome)} <i>${r.pts.toLocaleString('pt-BR')}</i></span>`).join('') : '';
+}
+RANK.iniciar();
 
 </script>
 </body>

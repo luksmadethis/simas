@@ -155,8 +155,9 @@ async function iniciarMissao(m) {
     await m.fn();
     if (MISSAO.ativa !== m) return;
     MISSAO.ativa = null; MISSAO.limpar();
-    if (m.extra) { W.extras = W.extras || {}; W.extras[m.id] = true; }
-    else MISSAO.feitas = Math.max(MISSAO.feitas, MISSOES.indexOf(m) + 1);
+    if (m.extra) { W.extras = W.extras || {}; W.extras[m.id] = true; pontuar(800); }
+    else { MISSAO.feitas = Math.max(MISSAO.feitas, MISSOES.indexOf(m) + 1); pontuar(1000 + 250 * MISSOES.indexOf(m)); }
+    RANK.enviar();
     W.stats.missoes = MISSAO.feitas;
     if (m.id !== 'ltzin') { AVISO = { titulo: 'MISSÃO CUMPRIDA', sub: m.premio ? '+' + fmt$(m.premio) : 'respeito +100', cor: '#7CFC00', t: 0, dur: 4 }; SOM.missao(); }
     salvar();
@@ -661,7 +662,7 @@ function liberarFatal(aviso) {
 }
 function menuFatal() {
   const j = W.jog;
-  const cena = (txt, efeito) => () => { CORTINA = { t: 0, txt }; efeito && efeito(); };
+  const cena = (txt, efeito) => () => { CORTINA = { t: 0, txt }; conta('fatal'); efeito && efeito(); };
   abrirMenu('💋 FATAL MODEL', [
     { txt: '🍷 Jantar à luz de velas', preco: 500, fn: cena('jantar chique, vinho caro e o Nerivan contando como engana idosa no telefone... ela riu. ❤️ vida cheia', () => { j.hp = 100; }) },
     { txt: '💃 Noite de dança no salão', preco: 800, fn: cena('o Nerivan dançou funk de BH até as 5 da manhã. ❤️ vida cheia + 🛡️ colete', () => { j.hp = 100; j.colete = 100; }) },
@@ -702,7 +703,7 @@ function atualizaFiguras(dt) {
     const d = dist(p.x, p.y, j.x, j.y);
     p.cdFala = (p.cdFala || 0) - dt;
     if (p.figura === 'sibito') {
-      if (d < 230 && p.cdFala <= 0) { p.cdFala = rnd(2, 3.2); const x = pick(XINGOS_SIBITO); falarPed(p, x); if (d < 120) falar('sibito', x, 2.5); }
+      if (d < 230 && p.cdFala <= 0) { p.cdFala = rnd(2, 3.2); conta('xingado'); const x = pick(XINGOS_SIBITO); falarPed(p, x); if (d < 120) falar('sibito', x, 2.5); }
     } else if (d < 110 && p.cdFala <= 0) {
       p.cdFala = rnd(4, 7); const x = pick(FALAS_FIG[p.figura]); falarPed(p, x);
       if (p.figura === 'masadakun' && !p.falou) { p.falou = true; falar('masadakun', x, 4); }
@@ -789,7 +790,7 @@ function criarSegredos() {
 function achouSegredo(id) {
   W.segredos = W.segredos || []; if (W.segredos.includes(id)) return;
   W.segredos.push(id); const s = SEGREDOS.find(x => x[0] === id);
-  W.jog.grana += 300; SOM.missao();
+  W.jog.grana += 300; SOM.missao(); pontuar(300);
   AVISO = { titulo: `SEGREDO ${W.segredos.length}/${SEGREDOS.length}`, sub: s[1] + ' (+R$ 300)', cor: '#00e5ff', t: 0, dur: 4 };
   if (W.segredos.length === SEGREDOS.length) setTimeout(() => {
     AVISO = { titulo: 'PLATINA SIMAS 🏆', sub: 'achou TODOS os segredos! +R$ 10.000 e uma Lamborghini dourada na garagem', cor: '#f1c40f', t: 0, dur: 6 };

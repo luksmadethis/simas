@@ -45,8 +45,8 @@ function entrarSair() {
     W.peds.push(m);
     if (rnd() < 0.5) falarPed(m, pick(['MEU CARRO!!', 'ô ladrão!!', 'socorro, roubaram meu possante', 'vai se fuder nerivan', 'tava quitado, desgraça']));
     if (c.policia) crime(3);
-    W.stats.roubos++;
   }
+  if (!c.doJogador && !c.missao) { c.doJogador = true; W.stats.roubos = (W.stats.roubos || 0) + 1; pontuar(15); }
   c.motorista = j; c.ia = null; j.carro = c; c.vel = Math.hypot(c.vx, c.vy) * 0.5;
   RADIO.tocar(true);
   if (!W.radioAviso) { W.radioAviso = true; falar('poli', 'aqui é a Rádio Poli FM, o rei do entretenimento! aperta R pra trocar de estação', 4); }
@@ -366,7 +366,7 @@ function atualizaProcurado(dt) {
   const tempo = 6 + W.procurado * 3;
   if (W.semVer > tempo) {
     W.semVer = 0; W.procurado--; W.calor = W.procurado * 2;
-    if (W.procurado === 0) falar('luketa', 'despistou os home! boa, nerivan', 2.5);
+    if (W.procurado === 0) { falar('luketa', 'despistou os home! boa, nerivan', 2.5); conta('fugas'); const nv = W.picoFuga || 1; if (nv >= 3) conta('fugaGrande'); pontuar(100 * nv, 'DESPISTOU'); W.picoFuga = 0; }
   }
   // preso: polícia a pé encosta em você a pé
   const j = W.jog;
@@ -439,7 +439,7 @@ function atualizaEfeitos(dt) {
 let TELA_FIM = null;
 function morreu(tipo) {
   const j = W.jog; if (j.morto) return;
-  j.morto = true; TELA_FIM = { tipo, t: 0 };
+  j.morto = true; TELA_FIM = { tipo, t: 0 }; conta(tipo === 'preso' ? 'presos' : 'mortes');
   if (j.carro) { j.carro.motorista = null; j.carro = null; }
   SOM.falha(); SOM.atualizaMotor(0, false); RADIO.tocar(false);
   if (MISSAO.ativa) MISSAO.falhar(tipo === 'preso' ? 'tu foi PRESO' : 'tu MORREU');

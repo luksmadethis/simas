@@ -201,7 +201,7 @@ function quebrarDeco(d, c) {
   SOM.batida(0.35); W.efeitos.push({ t: 'faisca', x: d.x, y: d.y, vida: 0.3, max: 0.3 });
   if (d.t === 'hidrante') { d.jorra = 10; }
   if (d.t === 'poste') for (let k = 0; k < 6; k++) W.efeitos.push({ t: 'faisca', x: d.x + rnd(-20, 20), y: d.y + rnd(-20, 20), vida: 0.4, max: 0.4 });
-  if (c === W.jog.carro) { W.stats.quebrou = (W.stats.quebrou || 0) + 1; if (d.t === 'hidrante' && rnd() < 0.3) falar('luketa', pick(['hidrante no chão! a SABESP vai te cobrar isso', 'que chuveirão, hein']), 2.5); }
+  if (c === W.jog.carro) { W.stats.quebrou = (W.stats.quebrou || 0) + 1; pontuar(5); if (d.t === 'hidrante' && rnd() < 0.3) falar('luketa', pick(['hidrante no chão! a SABESP vai te cobrar isso', 'que chuveirão, hein']), 2.5); }
 }
 function danoCarro(c, d, quem) {
   if (c.hp <= 0) return;
@@ -214,13 +214,14 @@ function danoCarro(c, d, quem) {
   if (c.hp <= 0) {
     c.hp = 0; c.fogo = 2.5;
     if (c.policia && quem === W.jog) crime(1);
+    if (quem === W.jog) pontuar(c.policia ? 80 : 40, 'CARRO DESTRUÍDO');
     // moto destruída: o motoqueiro cai morto
     const m = c.motorista;
     if (TIPOS_CARRO[c.modelo].moto && m && m !== W.jog) {
       c.fogo = 0.6; c.motorista = null; c.ia = null;
       m.x = c.x; m.y = c.y; m.hp = 0; m.morto = true; m.dentroCarro = false; W.peds.push(m);
       W.manchas.push({ t: 'sangue', x: m.x, y: m.y, r: 16, a: 0 });
-      if (quem === W.jog) matouMotoqueiro(c);
+      if (quem === W.jog) { matouMotoqueiro(c); conta('motoqueiros'); pontuar(30); }
     }
   }
 }
@@ -291,7 +292,8 @@ function feriPed(p, d, quem) {
     p.morto = true;
     W.manchas.push({ t: 'sangue', x: p.x, y: p.y, r: rnd(12, 20), a: rnd(6) });
     if (!p.semGrana && rnd() < 0.3) W.itens.push({ t: 'grana', x: p.x + rnd(-8, 8), y: p.y + rnd(-8, 8), v: rndi(5, 40), vida: 30 });
-    if (quem === W.jog && p.motoqueiro) matouMotoqueiro(null);
+    if (quem === W.jog) pontuar(p.policia ? 50 : p.motoqueiro ? 30 : p.hostil ? 40 : 10);
+    if (quem === W.jog && p.motoqueiro) { matouMotoqueiro(null); conta('motoqueiros'); }
     if (quem === W.jog) crime(p.policia ? 2 : (copsPerto(600) || rnd() < 0.25 ? 1 : 0));
     if (p.aoMorrer) p.aoMorrer();
   }
@@ -309,7 +311,7 @@ function crime(n) {
   W.calor += n; W.semVer = 0;
   const novo = clamp(Math.ceil(W.calor / 3), 0, 5);
   if (novo > W.procurado) {
-    W.procurado = novo;
+    W.procurado = novo; W.picoFuga = Math.max(W.picoFuga || 0, novo);
     if (novo === 1) falar('luketa', pick(['ih rapaz, os home tão na tua cola', 'polícia na área! some daí']), 2.5);
     if (novo === 3) falar('luketa', 'TRÊS ESTRELA?! o SEGURANÇA GELADO vai vir pessoalmente atrás de tu!', 3.5);
   }
