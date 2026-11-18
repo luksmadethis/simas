@@ -205,11 +205,11 @@
       <input id="nomeCanal" maxlength="40" placeholder="nome do canal (ex: TV Cultura)">
       <button class="bt2" type="submit">salvar</button>
     </form>
-    <p class="dica">link <b>https</b> é o que funciona melhor. link http a TV tenta (primeiro em https, depois do jeito que veio), mas o navegador pode bloquear porque o site é https. o site de origem também tem que deixar tocar em outros sites. se der erro, não é a TV que tá quebrada, é o link que não deixa. os canais salvos ficam só no TEU navegador.</p>
+    <p class="dica">link <b>https</b> é o que funciona melhor. link http a TV tenta (primeiro em https, depois do jeito que veio), mas o navegador pode bloquear porque o site é https. o site de origem também tem que deixar tocar em outros sites. se der erro, não é a TV que tá quebrada, é o link que não deixa. os canais que tu salvar ficam só no TEU navegador.</p>
   </div>
 
   <div class="box">
-    <h2>📺 canais salvos</h2>
+    <h2>📺 canais</h2>
     <div id="canais"></div>
   </div>
 </div>
@@ -219,7 +219,16 @@ const $ = id => document.getElementById(id);
 const ls = { get(k){ try { return localStorage.getItem(k) } catch(e){ return null } }, set(k,v){ try { localStorage.setItem(k,v) } catch(e){} } };
 const esc = t => String(t).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 const video = $('video'), tela = $('tela'), msgEl = $('msg');
-let canais = []; try { canais = JSON.parse(ls.get('simastv-canais') || '[]'); } catch (e) {}
+// canais que já vêm na TV (lives oficiais no YouTube). Os que a galera salvar entram depois deles.
+const PADRAO = [
+  { nome: 'O Incrível Mundo de Gumball', url: 'https://www.youtube.com/channel/UC0CNGfg_nO5ZnmWwhyQvQLg/live' },
+  { nome: 'Bob Esponja', url: 'https://www.youtube.com/channel/UCx68_7D0FoZSu_u0z7Qc8sQ/live' },
+  { nome: 'Pica-Pau', url: 'https://www.youtube.com/channel/UCiFg-2CjsG_xcSsHNjDeLpw/live' },
+  { nome: 'Hora de Aventura', url: 'https://www.youtube.com/channel/UCMHZYGeVSKFoN0b5nIBv0jQ/live' },
+];
+const NP = PADRAO.length;
+let canais = []; try { canais = JSON.parse(ls.get('simastv-canais') || '[]'); } catch (e) {}   // só os da pessoa
+const todos = () => PADRAO.concat(canais);
 let atual = '', hls = null, iframe = null, girando = 0, fila = [], linkHttp = false;
 
 // ---------- chuvisco (quando tá sem sinal / carregando) ----------
@@ -244,8 +253,12 @@ function idYoutube(u) {
   const m = u.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|live\/|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
   return m ? m[1] : null;
 }
+function canalYoutube(u) {
+  const m = u.match(/youtube\.com\/channel\/(UC[A-Za-z0-9_-]{22})(?:\/live|\/?$|\/?\?)/);
+  return m ? m[1] : null;
+}
 function tipo(u) {
-  if (idYoutube(u)) return 'youtube';
+  if (idYoutube(u) || canalYoutube(u)) return 'youtube';
   if (/\.m3u8(\?|#|$)/i.test(u) || /m3u8/i.test(u)) return 'hls';
   return 'arquivo';
 }
@@ -285,8 +298,8 @@ async function assistir(u, nomeCanal) {
   fila = linkHttp ? [u] : [];
   para(); mostraChuvisco(true); msg('sintonizando... 📡'); led(false);
   girando += 45; $('btCanal').style.setProperty('--g', girando + 'deg');
-  const i = canais.findIndex(c => c.url === u);
-  mostraCanal(i >= 0 ? 'CH ' + (i + 1) + (nomeCanal || canais[i].nome ? ' · ' + (nomeCanal || canais[i].nome) : '') : 'AV');
+  const lista = todos(), i = lista.findIndex(c => c.url === u);
+  mostraCanal(i >= 0 ? 'CH ' + (i + 1) + ' · ' + (nomeCanal || lista[i].nome) : 'AV');
   marcaCanais();
   tocar(linkHttp ? u.replace(/^http:/i, 'https:') : u);
 }
@@ -295,7 +308,9 @@ async function tocar(u) {
   const t = tipo(u);
   if (t === 'youtube') {
     iframe = document.createElement('iframe');
-    iframe.src = 'https://www.youtube.com/embed/' + idYoutube(u) + '?autoplay=1&playsinline=1&rel=0';
+    const ch = canalYoutube(u), mudo = assistir.mudo ? '&mute=1' : '';
+    iframe.src = (ch ? 'https://www.youtube.com/embed/live_stream?channel=' + ch + '&' : 'https://www.youtube.com/embed/' + idYoutube(u) + '?') + 'autoplay=1&playsinline=1&rel=0' + mudo;
+    if (assistir.mudo) { assistir.mudo = false; setTimeout(() => { if (iframe) { msg('🔇 começou sem som: toca no som do video pra ligar'); setTimeout(() => msg(''), 4000); } }, 1500); }
     iframe.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
     iframe.allowFullscreen = true;
     iframe.onload = () => { mostraChuvisco(false); msg(''); led(true); };
@@ -334,18 +349,19 @@ function desliga() {
 function salvaLista() { ls.set('simastv-canais', JSON.stringify(canais)); montaCanais(); }
 function montaCanais() {
   const el = $('canais');
-  if (!canais.length) { el.innerHTML = '<p class="vazio">nenhum canal salvo ainda. assiste um link e aperta 💾 salvar canal</p>'; return; }
-  el.innerHTML = canais.map((c, i) => '<div class="ch" data-i="' + i + '"><span class="n">CH ' + (i + 1) + '</span><span class="t"><b>' + esc(c.nome) + '</b><small>' + esc(c.url) + '</small></span><button data-a="ver" title="assistir">▶</button><button data-a="sobe" title="subir">↑</button><button data-a="tira" title="apagar">✕</button></div>').join('');
+  el.innerHTML = todos().map((c, i) => '<div class="ch" data-i="' + i + '"><span class="n">CH ' + (i + 1) + '</span><span class="t"><b>' + esc(c.nome) + '</b><small>' + (i < NP ? '📌 canal fixo da TV' : esc(c.url)) + '</small></span><button data-a="ver" title="assistir">▶</button>' +
+    (i < NP ? '' : '<button data-a="sobe" title="subir">↑</button><button data-a="tira" title="apagar">✕</button>') + '</div>').join('') +
+    (canais.length ? '' : '<p class="vazio">quer mais canal? assiste um link e aperta 💾 salvar canal que ele entra aqui embaixo</p>');
   el.querySelectorAll('.ch button').forEach(b => b.onclick = () => {
-    const i = +b.closest('.ch').dataset.i;
-    if (b.dataset.a === 'ver') { assistir(canais[i].url, canais[i].nome); scrollTo({ top: 0, behavior: 'smooth' }); }
-    if (b.dataset.a === 'sobe' && i > 0) { [canais[i - 1], canais[i]] = [canais[i], canais[i - 1]]; salvaLista(); }
-    if (b.dataset.a === 'tira' && confirmaTira(i)) { canais.splice(i, 1); salvaLista(); }
+    const i = +b.closest('.ch').dataset.i, k = i - NP, c = todos()[i];
+    if (b.dataset.a === 'ver') { assistir(c.url, c.nome); scrollTo({ top: 0, behavior: 'smooth' }); }
+    if (b.dataset.a === 'sobe' && k > 0) { [canais[k - 1], canais[k]] = [canais[k], canais[k - 1]]; salvaLista(); }
+    if (b.dataset.a === 'tira' && k >= 0 && confirmaTira(i)) { canais.splice(k, 1); salvaLista(); }
   });
   marcaCanais();
 }
 function confirmaTira(i) { const b = document.querySelector('.ch[data-i="' + i + '"] [data-a="tira"]'); if (b.dataset.ok) return true; b.dataset.ok = 1; b.textContent = 'apagar?'; setTimeout(() => { if (b.isConnected) { delete b.dataset.ok; b.textContent = '✕'; } }, 2500); return false; }
-function marcaCanais() { document.querySelectorAll('.ch').forEach(d => d.classList.toggle('on', canais[+d.dataset.i] && canais[+d.dataset.i].url === atual)); }
+function marcaCanais() { const l = todos(); document.querySelectorAll('.ch').forEach(d => d.classList.toggle('on', l[+d.dataset.i] && l[+d.dataset.i].url === atual)); }
 
 // ---------- botões ----------
 $('form').onsubmit = e => { e.preventDefault(); assistir($('link').value); };
@@ -358,7 +374,8 @@ $('salvarBox').onsubmit = e => {
   e.preventDefault();
   let u = atual || $('link').value.trim(); if (!u) return;
   if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
-  const nome = $('nomeCanal').value.trim() || ('canal ' + (canais.length + 1));
+  if (PADRAO.some(c => c.url === u)) { $('salvarBox').classList.remove('on'); mostraCanal('esse já é canal fixo'); return; }
+  const nome = $('nomeCanal').value.trim() || ('canal ' + (NP + canais.length + 1));
   const i = canais.findIndex(c => c.url === u);
   if (i >= 0) canais[i].nome = nome; else canais.push({ nome, url: u });
   $('salvarBox').classList.remove('on'); salvaLista();
@@ -372,15 +389,14 @@ function telaCheia() {
 $('btFull').onclick = telaCheia; $('btTela').onclick = telaCheia;
 $('btDesliga').onclick = desliga;
 $('btCanal').onclick = () => {
-  if (!canais.length) { mostraCanal('sem canal salvo'); return; }
-  const i = canais.findIndex(c => c.url === atual), prox = canais[(i + 1) % canais.length];
+  const l = todos(), i = l.findIndex(c => c.url === atual), prox = l[(i + 1) % l.length];
   assistir(prox.url, prox.nome);
 };
 
-// ---------- ao abrir: volta pro último link que tava passando ----------
+// ---------- ao abrir: já liga no CH 1 (Gumball). Começa sem som porque o navegador não deixa tocar com som sem um toque antes ----------
 montaCanais();
-const ultimo = ls.get('simastv-ultimo');
-if (ultimo) assistir(ultimo);
+assistir.mudo = true;
+assistir(PADRAO[0].url, PADRAO[0].nome);
 </script>
 </body>
 </html>
