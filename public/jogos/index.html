@@ -85,7 +85,7 @@ h1{margin:6px 0 4px;font-size:38px;font-weight:900}
     <a class="jogo" href="/jogos/malandro-hero/">
       <canvas id="prev3" width="560" height="220"></canvas>
       <div class="info">
-        <h3>🎧 Malandro Hero com o Zensat</h3>
+        <h3>🎧 Malando com Zensat</h3>
         <p>o guitar hero do funk na favela de BH. 3 pista, as bolinha vem no ritmo das braba do Zensat. errou? corta o som. acerta as 5 ⭐ e ganha bônus. BH é quem? BH É NÓIS</p>
         <div class="rec">🎵 Kika pra Bandido · Meu Erro · MTG Tem que Ser no Sigilo</div>
         <span class="btn">jogar essa porra →</span>
@@ -143,7 +143,7 @@ function loop(t) {
   drawCas(x2, dorme ? 'dormindo' : 'jogando', t);
   if (dorme && ciclo > 4.6) drawAna(x2, 'deboa', t);
   x2.restore();
-  // prévia do Malandro Hero: 3 pistas de neon com bolinhas descendo
+  // prévia do Malando com Zensat: 3 pistas de neon com bolinhas descendo
   const x3 = c3.getContext('2d'), CR = ['#2a7bff', '#21e05a', '#ff3030'];
   x3.fillStyle = '#120a22'; x3.fillRect(0, 0, 560, 220);
   for (let l = 0; l < 3; l++) {
