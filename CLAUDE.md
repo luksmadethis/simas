@@ -90,6 +90,8 @@ Piadas internas já usadas: "aqui pagou papai #constancia", "duas serie de levan
   - As notas (`charts.json`) foram geradas analisando o áudio (librosa: batidas a ~129 BPM + ataques por faixa de frequência; grave = esquerda, médio = meio, agudo = direita), nível médio ~2 notas/s. Pra música nova: pôr o mp3 em `musicas/`, gerar as notas do mesmo jeito e adicionar o slug em `MUSICAS` no `index.html`.
   - Ranking: Firestore `hero/{musica}/pts/{uid}` (regra `galadoOk()`), mesmo nome salvo dos outros jogos (`galado-nome`); recorde local `hero-rec-<musica>`.
 
+- **Som no celular como mídia** (os 3 jogos): `public/jogos/som-midia.js` faz o som tocar mesmo com o iPhone no silencioso (pede `navigator.audioSession.type = 'playback'` e, no primeiro toque, toca um `<audio>` de silêncio em loop que passa a página pro canal de mídia). Jogo novo precisa incluir esse script.
+
 ## Visual
 Fundo escuro (#0d0c12), cores do arco-íris LGBT, **animadas** em todas as páginas: `--rainbow` é um repeating-gradient que anda com a variável registrada `--rbx` (bloco "cores LGBT animadas" no fim do <style> de cada página; steps(90) em 9s pra não pesar). O cabeçalho (`.snav`) é igual em todas as páginas: logo Simas + Home, SimasTelas, Fitness, SimasTok, Jogos, ConverSimas e Sugestões. Página nova precisa ganhar o link em TODOS os cabeçalhos.
 Home: arco-íris que desce serpenteando conforme o scroll e barra de progresso arco-íris no topo. O mouse é o normal: a varinha e o brilho foram removidos porque deixavam o site lento.
