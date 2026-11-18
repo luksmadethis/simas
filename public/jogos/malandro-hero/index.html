@@ -74,6 +74,8 @@ canvas{display:block;width:100%;height:auto;border-radius:16px;background:#120a2
 .nota{font-size:64px;font-weight:900;line-height:1;margin:6px 0}
 .acoes{display:flex;gap:8px;width:100%}
 .acoes button{flex:1}
+#menuBt{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:4;background:rgba(10,6,20,.78);border:1px solid #3a3450;color:#fff;border-radius:10px;padding:7px 12px;font-size:13px;font-weight:800;cursor:pointer}
+#menuBt[hidden]{display:none}
 
 /* ===== cores LGBT animadas (o arco-íris anda devagar em tudo que usa --rainbow) ===== */
 @property --rbx{syntax:'<percentage>';inherits:true;initial-value:0%}
@@ -93,6 +95,7 @@ canvas{display:block;width:100%;height:auto;border-radius:16px;background:#120a2
   <h1><span class="grad">MALANDO COM ZENSAT</span> 🎧<small>BH é quem? BH é nóis</small></h1>
   <div id="palco">
     <canvas id="c" width="600" height="820"></canvas>
+    <button id="menuBt" hidden>🎵 músicas</button>
 
     <!-- nome -->
     <div class="camada" id="nomeBox" hidden>
@@ -206,7 +209,7 @@ if (temFB) auth.onAuthStateChanged(async u => {
 
 // ===================================== NOME / MENU =====================================
 const camadas = ['nomeBox', 'menu', 'fim', 'pausa'];
-function mostra(id) { camadas.forEach(k => $(k).hidden = k !== id); }
+function mostra(id) { camadas.forEach(k => $(k).hidden = k !== id); $('menuBt').hidden = id !== null; }
 function abreNome() { $('nomeIn').value = nome; mostra('nomeBox'); setTimeout(() => $('nomeIn').focus(), 50); }
 $('nomeForm').onsubmit = e => {
   e.preventDefault();
@@ -354,8 +357,10 @@ function pausa() {
   estado = 'pausa'; ac.suspend(); mostra('pausa');
 }
 function continua() { if (estado !== 'pausa') return; mostra(null); ac.resume(); estado = tAgora() < 0 ? 'contagem' : 'tocando'; }
-function sair() { try { fonte.stop(); } catch (e) {} if (ac.state === 'suspended') ac.resume(); abreMenu(); }
+function sair() { try { fonte.stop(); } catch (e) {} if (ac && ac.state === 'suspended') ac.resume(); abreMenu(); }
 $('continuar').onclick = continua; $('sair').onclick = sair;
+$('menuBt').addEventListener('pointerdown', e => { e.stopPropagation(); });
+$('menuBt').onclick = () => { if (estado === 'tocando' || estado === 'contagem' || estado === 'pausa' || estado === 'carregando') sair(); };
 $('denovo').onclick = () => comeca(musica); $('voltaMenu').onclick = abreMenu;
 document.addEventListener('visibilitychange', () => { if (document.hidden) pausa(); });
 
