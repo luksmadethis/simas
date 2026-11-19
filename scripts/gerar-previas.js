@@ -14,7 +14,7 @@ const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').re
   fs.rmSync(path.join(pub, 'v'), { recursive: true, force: true });
   for (const v of vids) {
     const base = `https://res.cloudinary.com/${v.cloud}/video/upload`;
-    const img = `${base}/so_0,w_720,h_720,c_fill,g_auto,q_auto/${v.pid}.jpg`;
+    const img = `${base}/so_auto,w_720,h_720,c_fill,g_auto,q_auto/${v.pid}.jpg`;
     const mp4 = `${base}/q_auto,vc_h264,w_720,c_limit/${v.pid}.mp4`;
     const url = `https://ofisimas.web.app/v/${v.id}/`;
     const tit = `@${v.nome || '?'} no SimasTok 🎬`;

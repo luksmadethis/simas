@@ -330,7 +330,7 @@ async function baixarComFinal(v) {
   }
   toast('demorou demais pra montar, tenta de novo daqui a pouco');
 }
-const purl = v => `https://res.cloudinary.com/${v.cloud}/video/upload/so_0,w_480,c_limit/${v.pid}.jpg`;
+const purl = v => `https://res.cloudinary.com/${v.cloud}/video/upload/so_auto,w_480,c_limit/${v.pid}.jpg`;
 
 let uid = null, admin = false, aprovadores = [], vids = [], items = new Map(), atual = null;
 let mudo = true; try { mudo = localStorage.getItem('simastok-som') !== '1'; } catch (e) {}
