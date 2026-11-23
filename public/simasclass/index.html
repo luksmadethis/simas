@@ -546,7 +546,7 @@ const ontemBR=()=>hojeBR(new Date(Date.now()-864e5));
 //  ALUNO
 // =====================================================================
 let A=null; // aluno logado
-let liberaTudo=ls.get('sc-libera')==='1';
+try{localStorage.removeItem('sc-libera')}catch(e){}
 function novoAluno(nome,chave){ return {nome,chave,xp:0,semana:semanaId(),xpSemana:0,ofensiva:0,ultimoDia:'',langs:{},criado:Date.now()}; }
 function prog(){ A.langs[LANG]=A.langs[LANG]||{feitos:{},xp:0}; return A.langs[LANG]; }
 function ajustaSemana(){ const s=semanaId(); if(A.semana!==s){A.semana=s;A.xpSemana=0;} }
@@ -598,7 +598,7 @@ $('chipLang').onclick=()=>{
   $('popup').querySelectorAll('.linguas button[data-l]').forEach(b=>b.onclick=()=>{ fecha(); if(b.dataset.l!==LANG){ trocaLingua(b.dataset.l); toast('agora: '+LINGUAS.find(l=>l.id===b.dataset.l).nome); } });
 };
 const feito=p=>prog().feitos[p.id]!==undefined;
-function liberado(p){ if(liberaTudo||p.i===0) return true; return feito(PAC[p.i-1]); }
+function liberado(p){ if(p.i===0) return true; return feito(PAC[p.i-1]); }
 function renderTrilha(){
   let h='', atual=PAC.find(p=>!feito(p)&&liberado(p));
   CURSO.modulos.forEach((m,mi)=>{
@@ -662,11 +662,9 @@ function renderPerfil(){
     <div class="opc"><div>efeitos sonoros</div><button class="tog ${somOn?'on':''}" id="tgSom" aria-label="efeitos sonoros"></button></div>
     <div class="opc"><div>voz mais devagar<small>pra quem tá começando</small></div><button class="tog ${vozLenta?'on':''}" id="tgLenta" aria-label="voz devagar"></button></div>
     <div class="opc"><div>testar a voz<small>${VOZES.length?VOZES.length+' voz(es) em '+CURSO.nome.toLowerCase()+' neste aparelho':'sem voz em '+CURSO.nome.toLowerCase()+' neste aparelho, as fases de áudio mostram o texto'}</small></div><button class="som" id="tstVoz" aria-label="testar voz">${IC.som}</button></div>
-    <div class="opc"><div>liberar todas as fases<small>modo teste, pra ver o curso todo</small></div><button class="tog ${liberaTudo?'on':''}" id="tgLib" aria-label="liberar tudo"></button></div>
     <button class="ghost" id="btSair" style="width:100%;margin-top:8px">sair / trocar de nome</button>`;
   $('tgSom').onclick=e=>{somOn=!somOn;ls.set('sc-som',somOn?'1':'0');e.target.classList.toggle('on',somOn);SOM.clique();};
   $('tgLenta').onclick=e=>{vozLenta=!vozLenta;e.target.classList.toggle('on',vozLenta);};
-  $('tgLib').onclick=e=>{liberaTudo=!liberaTudo;ls.set('sc-libera',liberaTudo?'1':'0');e.target.classList.toggle('on',liberaTudo);render.rolou=0;renderTrilha();};
   $('tstVoz').onclick=()=>{ const TESTE={es:'¡Hola! Bienvenido a SimasClass. ¿Qué tal?',en:"Hi! Welcome to SimasClass. Let's learn English together!",id:'Halo! Selamat datang di SimasClass. Ayo belajar bahasa Indonesia bersama!'}; preparaFase('geral'); falar(TESTE[LANG]||TESTE.es); };
   $('btSair').onclick=()=>{A=null;$('principal').hidden=true;$('entrar').hidden=false;render.rolou=0;};
 }
