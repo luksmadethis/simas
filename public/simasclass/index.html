@@ -546,7 +546,9 @@ const ontemBR=()=>hojeBR(new Date(Date.now()-864e5));
 //  ALUNO
 // =====================================================================
 let A=null; // aluno logado
-try{localStorage.removeItem('sc-libera')}catch(e){}
+// liberar todas as fases: só no artefato (no site do Simas não aparece)
+const NO_SITE=/ofisimas\.web\.app$/.test(location.hostname);
+let liberaTudo=!NO_SITE&&ls.get('sc-libera')==='1';
 function novoAluno(nome,chave){ return {nome,chave,xp:0,semana:semanaId(),xpSemana:0,ofensiva:0,ultimoDia:'',langs:{},criado:Date.now()}; }
 function prog(){ A.langs[LANG]=A.langs[LANG]||{feitos:{},xp:0}; return A.langs[LANG]; }
 function ajustaSemana(){ const s=semanaId(); if(A.semana!==s){A.semana=s;A.xpSemana=0;} }
@@ -567,6 +569,7 @@ $('formEntrar').onsubmit=async e=>{
   if(salvo) toast('bem-vindo de volta, '+A.nome+'!');
   const lg=(A.lingua&&window.CURSO[A.lingua])?A.lingua:(window.CURSO[ls.get('sc-lang')]?ls.get('sc-lang'):LANG);
   if(lg!==LANG) trocaLingua(lg); else render();
+  setTimeout(avisoNovidade,500);
 };
 $('nomeIn').value=ls.get('sc-ultimo-nome')||'';
 
@@ -579,6 +582,16 @@ function topo(){
   $('chipXp').innerHTML=IC.estrela+A.xp;
 }
 function render(){ topo(); renderTrilha(); }
+// aviso de novidade: aparece uma vez por aparelho
+function avisoNovidade(){
+  if(ls.get('sc-aviso-m4')==='1'||$('popup').innerHTML) return;
+  $('popup').innerHTML=`<div class="pop" id="popFundo"><div class="card" style="text-align:center"><div style="font-size:46px;line-height:1">🎉</div><h3>O MÓDULO 4 CHEGOU!</h3>
+    <div class="meta" style="font-size:15px;line-height:1.5"><b>Contando histórias</b>: agora tu aprende a contar o que aconteceu, descrever gente e lugar, fazer plano e passar FOFOCA adiante.<br><br>25 fases novas em <b>espanhol, inglês e indonésio</b>, com voz gravada. Termina o Módulo 3 e bora!</div>
+    <button class="bt ok" id="popNao" style="width:100%">bora!</button></div></div>`;
+  const fecha=()=>{ $('popup').innerHTML=''; ls.set('sc-aviso-m4','1'); };
+  $('popNao').onclick=fecha; $('popFundo').onclick=e=>{ if(e.target.id==='popFundo') fecha(); };
+  try{ SOM.nivel(); }catch(e){}
+}
 function trocaLingua(id){
   if(!window.CURSO[id]) return;
   LANG=id; CURSO=window.CURSO[id]; montaCurso(); carregaVozes(); preparaFase('geral');
@@ -598,7 +611,7 @@ $('chipLang').onclick=()=>{
   $('popup').querySelectorAll('.linguas button[data-l]').forEach(b=>b.onclick=()=>{ fecha(); if(b.dataset.l!==LANG){ trocaLingua(b.dataset.l); toast('agora: '+LINGUAS.find(l=>l.id===b.dataset.l).nome); } });
 };
 const feito=p=>prog().feitos[p.id]!==undefined;
-function liberado(p){ if(p.i===0) return true; return feito(PAC[p.i-1]); }
+function liberado(p){ if(liberaTudo||p.i===0) return true; return feito(PAC[p.i-1]); }
 function renderTrilha(){
   let h='', atual=PAC.find(p=>!feito(p)&&liberado(p));
   CURSO.modulos.forEach((m,mi)=>{
@@ -616,7 +629,7 @@ function renderTrilha(){
       h+='</div>';
     });
   });
-  PLANO.forEach(t=>{ h+=`<div class="mod trancado"><h2>${esc(t)}</h2><p>em breve 🔒</p></div>`; });
+  PLANO.slice(Math.max(0,CURSO.modulos.length-3)).forEach(t=>{ h+=`<div class="mod trancado"><h2>${esc(t)}</h2><p>em breve 🔒</p></div>`; });
   $('vTrilha').innerHTML=h;
   $('vTrilha').querySelectorAll('.no').forEach(b=>b.onclick=()=>{SOM.clique();abrePacote(PAC[+b.dataset.i]);});
   const a=$('vTrilha').querySelector('.no.atual'); if(a&&!render.rolou){render.rolou=1;setTimeout(()=>a.scrollIntoView({block:'center'}),50);}
@@ -662,9 +675,12 @@ function renderPerfil(){
     <div class="opc"><div>efeitos sonoros</div><button class="tog ${somOn?'on':''}" id="tgSom" aria-label="efeitos sonoros"></button></div>
     <div class="opc"><div>voz mais devagar<small>pra quem tá começando</small></div><button class="tog ${vozLenta?'on':''}" id="tgLenta" aria-label="voz devagar"></button></div>
     <div class="opc"><div>testar a voz<small>${VOZES.length?VOZES.length+' voz(es) em '+CURSO.nome.toLowerCase()+' neste aparelho':'sem voz em '+CURSO.nome.toLowerCase()+' neste aparelho, as fases de áudio mostram o texto'}</small></div><button class="som" id="tstVoz" aria-label="testar voz">${IC.som}</button></div>
-    <button class="ghost" id="btSair" style="width:100%;margin-top:8px">sair / trocar de nome</button>`;
+    ${NO_SITE?'':`<div class="opc"><div>liberar todas as fases<small>modo teste, pra ver o curso todo</small></div><button class="tog ${liberaTudo?'on':''}" id="tgLib" aria-label="liberar tudo"></button></div>`}
+    <button class="ghost" id="btSair" style="width:100%;margin-top:8px">sair / trocar de nome</button>
+    <p style="margin:14px 0 0;text-align:center;font-size:12px;color:var(--mut)">vozes: ElevenLabs e VoiceStudio</p>`;
   $('tgSom').onclick=e=>{somOn=!somOn;ls.set('sc-som',somOn?'1':'0');e.target.classList.toggle('on',somOn);SOM.clique();};
   $('tgLenta').onclick=e=>{vozLenta=!vozLenta;e.target.classList.toggle('on',vozLenta);};
+  if($('tgLib')) $('tgLib').onclick=e=>{liberaTudo=!liberaTudo;ls.set('sc-libera',liberaTudo?'1':'0');e.target.classList.toggle('on',liberaTudo);render.rolou=0;renderTrilha();};
   $('tstVoz').onclick=()=>{ const TESTE={es:'¡Hola! Bienvenido a SimasClass. ¿Qué tal?',en:"Hi! Welcome to SimasClass. Let's learn English together!",id:'Halo! Selamat datang di SimasClass. Ayo belajar bahasa Indonesia bersama!'}; preparaFase('geral'); falar(TESTE[LANG]||TESTE.es); };
   $('btSair').onclick=()=>{A=null;$('principal').hidden=true;$('entrar').hidden=false;render.rolou=0;};
 }
@@ -870,9 +886,13 @@ function desenha(a){
   }
   if(a.tipo==='conversa'){
     const d=a.d, vozOk=temVoz();
+    // boneco certo pra cada um: voz f/g = mulher (cabelo comprido), m/n = homem; dois do mesmo gênero = o 2º com outra cor
+    const vz=(d.vozes||'fm'), mulher=i=>'fg'.includes(vz[i]);
+    const figura=i=>{ const bon=mulher(i)?pessoaB:pessoaA; const outra=i===1&&mulher(0)===mulher(1);
+      return outra?`<span style="display:inline-block;filter:hue-rotate(140deg) saturate(1.2)">${bon}</span>`:bon; };
     c.innerHTML=`<span class="etq">conversa · só áudio</span><h2 class="enun">${esc(d.cena)}</h2>
       <p style="margin:0;color:var(--mut)">escuta a conversa (sem texto!). depois vêm perguntas sobre ela. pode ouvir quantas vezes quiser.</p>
-      <div class="cena"><div class="pessoas"><div class="pessoa" id="pA">${pessoaA}<span>${esc(d.nomes?d.nomes[0]:'A')}</span></div><div class="pessoa" id="pB">${pessoaB}<span>${esc(d.nomes?d.nomes[1]:'B')}</span></div></div>
+      <div class="cena"><div class="pessoas"><div class="pessoa" id="pA">${figura(0)}<span>${esc(d.nomes?d.nomes[0]:'A')}</span></div><div class="pessoa" id="pB">${figura(1)}<span>${esc(d.nomes?d.nomes[1]:'B')}</span></div></div>
         <div class="ctl"><button class="som big" id="tocaConv" aria-label="ouvir conversa">${IC.som}</button><button class="som lento" id="tocaConvL" aria-label="ouvir devagar">${IC.lento}</button></div>
         ${vozOk?'':`<div class="transcr"><p><b>sem voz em ${esc(CURSO.nome.toLowerCase())} neste aparelho</b>, então segue o texto:</p>${d.falas.map(x=>`<p><b>${esc(x[0]==='A'?(d.nomes?d.nomes[0]:'A'):(d.nomes?d.nomes[1]:'B'))}:</b> ${esc(x[1])}</p>`).join('')}</div>`}
       </div>`;
